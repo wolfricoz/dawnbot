@@ -73,7 +73,7 @@ class config(commands.GroupCog):
 
     @app_commands.command(name='category')
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def channel(self, interaction: Interaction, category: discord.CategoryChannel):
+    async def category(self, interaction: Interaction, category: discord.CategoryChannel):
         await interaction.response.defer(ephemeral=True)
         key = "channels"
         channels = []
