@@ -71,6 +71,18 @@ class config(commands.GroupCog):
                 await guildconfiger.addchannel(interaction.guild.id, interaction, channel.id, key)
                 await interaction.followup.send(f"channel removed from {key}")
 
+    @app_commands.command(name='category')
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def channel(self, interaction: Interaction, category: discord.CategoryChannel):
+        await interaction.response.defer(ephemeral=True)
+        key = "channels"
+        channels = []
+        for channel in category.channels:
+            await guildconfiger.addchannel(interaction.guild.id, interaction, channel.id, key)
+            channels.append(channel.name)
+        await interaction.followup.send(f"Channels added: {', '.join(channels)}")
+
+
     @app_commands.command(name='forum')
     @app_commands.choices(option=[
         Choice(name="add", value="add"),
