@@ -45,6 +45,7 @@ class xpEvents(commands.Cog):
         if message.author.bot:
             return
         channels = await guildconfiger.get(message.guild.id, "channels")
+        xp_gain = await guildconfiger.get(message.guild.id, "xp_gain")
         if message.channel.id not in channels:
             found = False
             for c in channels:
@@ -56,7 +57,7 @@ class xpEvents(commands.Cog):
         # Checks if user is in database, if not; user is added.
         user = transaction.get_user(session, message.author.id)
         # Checks message length and converts it into XP
-        user.xp += round(len(message.content) / 10)
+        user.xp += round(len(message.content) / xp_gain)
         user.messages += 1
         role = transaction.get_highest_role(session, message.guild, user)
         new_rank = message.guild.get_role(role)

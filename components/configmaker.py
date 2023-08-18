@@ -72,7 +72,8 @@ class guildconfiger(ABC):
             newdictionary = {
                 "Name": data.get('Name', None),
                 "channels": data.get('channels', []),
-                "announcement": data.get("announcement", None)
+                "announcement": data.get("announcement", None),
+                "xp_gain": data.get("xp_gain", 1)
             }
         with open(f'jsons/{guildid}.json', 'w') as f:
             json.dump(newdictionary, f, indent=4)

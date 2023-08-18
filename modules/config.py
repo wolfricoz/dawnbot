@@ -55,6 +55,13 @@ class config(commands.GroupCog):
         await guildconfiger.edit_value(interaction.guild.id, channel.id, "announcement")
         await interaction.followup.send(f"Announcement channel set to {channel.mention}")
 
+    @app_commands.command(name='xp_gain')
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def xp_per_character(self, interaction: Interaction, amount_of_characters: int):
+        await interaction.response.defer(ephemeral=True)
+        await guildconfiger.edit_value(interaction.guild.id, amount_of_characters, "xp_gain")
+        await interaction.followup.send(f"xp_per_character set to {amount_of_characters}")
+
     @app_commands.command(name='channel')
     @app_commands.choices(option=[
         Choice(name="add", value="add"),
