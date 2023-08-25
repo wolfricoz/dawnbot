@@ -9,6 +9,7 @@ class transaction(ABC):
     @staticmethod
     @abstractmethod
     def get_user(session, id):
+        session.close()
         user = session.scalars(select(db.Users).where(db.Users.uid == id)).first()
         if user is None:
             user = db.Users(uid=id)
@@ -50,6 +51,6 @@ class transaction(ABC):
 
         role = [x for x in possible_ranks if possible_ranks[x] == min(possible_ranks.values())]
 
-        role.append("Max Rank")
+        role.append(query[-1].role_id)
         rankinfo = possible_ranks.get(role[0])
         return role[0], rankinfo

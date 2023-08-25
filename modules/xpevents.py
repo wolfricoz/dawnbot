@@ -23,6 +23,9 @@ class xpEvents(commands.Cog):
         user = transaction.get_user(session, interaction.user.id)
         roleid, rankinfo = transaction.get_lowest_role(session, interaction.guild, user)
         role = interaction.guild.get_role(roleid)
+        if rankinfo is None:
+            rankinfo = user.xp
+
         embed = discord.Embed(title=f"{interaction.user.name}'s level",
                               description=f"You need {rankinfo - user.xp} to reach {role.name}")
         embed.set_footer(text=f"Current xp: {user.xp}. You've sent {user.messages} messages")

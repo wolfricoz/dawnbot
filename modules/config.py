@@ -77,6 +77,7 @@ class config(commands.GroupCog):
             case 'remove':
                 await guildconfiger.remchannel(interaction.guild.id, channel.id, key)
                 await interaction.followup.send(f"channel removed from {key}")
+        session.commit()
 
     @app_commands.command(name='category')
     @app_commands.checks.has_permissions(manage_guild=True)
@@ -88,7 +89,7 @@ class config(commands.GroupCog):
             await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
             channels.append(channel.name)
         await interaction.followup.send(f"Channels added: {', '.join(channels)}")
-
+        session.commit()
 
     @app_commands.command(name='forum')
     @app_commands.choices(option=[
@@ -105,6 +106,7 @@ class config(commands.GroupCog):
             case 'remove':
                 await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
                 await interaction.followup.send(f"channel removed from {key}")
+        session.commit()
 
 
 
