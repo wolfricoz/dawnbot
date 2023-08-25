@@ -75,7 +75,7 @@ class config(commands.GroupCog):
             case 'add':
                 await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
             case 'remove':
-                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
+                await guildconfiger.remchannel(interaction.guild.id, channel.id, key)
                 await interaction.followup.send(f"channel removed from {key}")
 
     @app_commands.command(name='category')
