@@ -77,7 +77,9 @@ class xpEvents(commands.Cog):
         if message.channel.id not in channels:
             found = False
             for c in channels:
-                if message.channel in message.channel.threads:
+                print(c)
+                ch = self.bot.get_channel(c)
+                if message.channel in ch.threads:
                     print("found")
                     found = True
             if found is False:
