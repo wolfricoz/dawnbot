@@ -77,14 +77,13 @@ class xpEvents(commands.Cog):
         if message.channel.id not in channels:
             found = False
             for c in channels:
-
                 try:
                     ch = self.bot.get_channel(c)
                     if message.channel in ch.threads:
                         print("found")
                         found = True
                 except AttributeError:
-                    pass
+                    print(f"[Channel Error] Failed at {c}")
             if found is False:
                 return
         role = await xpCalculations.calculate(message, session)
