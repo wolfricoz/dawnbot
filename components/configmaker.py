@@ -1,17 +1,15 @@
 import json
 import os
 from abc import ABC, abstractmethod
-import datetime
-from datetime import datetime, timedelta
 
 import discord
-import pytz
-from components.databaseEvents import transaction
+
 from components.xpcalculations import xpCalculations
 
 
 class guildconfiger(ABC):
 
+    @staticmethod
     @abstractmethod
     async def create(guildid, guildname):
         try:
@@ -32,6 +30,7 @@ class guildconfiger(ABC):
                 outfile.write(json_object)
                 print(f"config created for {guildid}")
 
+    @staticmethod
     @abstractmethod
     async def edit_value(guildid, newvalue, key):
         if os.path.exists(f"jsons/{guildid}.json"):
@@ -41,6 +40,7 @@ class guildconfiger(ABC):
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
 
+    @staticmethod
     @abstractmethod
     async def addchannel(guildid, interaction, channel: discord.TextChannel, key, session):
         if os.path.exists(f"jsons/{guildid}.json"):
@@ -58,6 +58,8 @@ class guildconfiger(ABC):
 
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
+
+    @staticmethod
     @abstractmethod
     async def remchannel(guildid: int, channelid: int, key):
         if os.path.exists(f"jsons/{guildid}.json"):
@@ -67,6 +69,7 @@ class guildconfiger(ABC):
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
 
+    @staticmethod
     @abstractmethod
     async def get(guildid: int, key):
         if os.path.exists(f"jsons/{guildid}.json"):
@@ -74,6 +77,7 @@ class guildconfiger(ABC):
                 data = json.load(f)
                 return data[key]
 
+    @staticmethod
     @abstractmethod
     async def updateconfig(guildid):
         with open(f'jsons/{guildid}.json', 'r+') as file:
