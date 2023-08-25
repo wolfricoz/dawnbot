@@ -78,7 +78,7 @@ class xpEvents(commands.Cog):
             found = False
             for c in channels:
                 try:
-                    ch = self.bot.get_channel(c)
+                    ch = message.guild.get_channel(c)
                     if message.channel in ch.threads:
                         print("found")
                         found = True
