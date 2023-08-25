@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from components.configmaker import guildconfiger
 import components.database as db
 from components.databaseEvents import transaction
+from components.xpcalculations import xpCalculations
 
 session = Session(bind=db.engine)
 
@@ -40,12 +41,36 @@ class xpEvents(commands.Cog):
         session.commit()
         await interaction.followup.send(f"xp of {member.mention} set to {xp}")
 
+    @app_commands.command(name="addxp")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def addxp(self, interaction: discord.Interaction, member: discord.Member, xp: int):
+        await interaction.response.defer(ephemeral=True)
+        user = session.scalars(select(db.Users).where(db.Users.uid == member.id)).first()
+        if user is None:
+            user = db.Users(uid=member.id)
+            session.add(user)
+        user.xp += xp
+        session.commit()
+        await interaction.followup.send(f"added {xp} to {member.mention}")
+
+    @app_commands.command(name="removexp")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def removexp(self, interaction: discord.Interaction, member: discord.Member, xp: int):
+        await interaction.response.defer(ephemeral=True)
+        user = session.scalars(select(db.Users).where(db.Users.uid == member.id)).first()
+        if user is None:
+            user = db.Users(uid=member.id)
+            session.add(user)
+        user.xp -= xp
+        session.commit()
+        await interaction.followup.send(f"added {xp} to {member.mention}")
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:
             return
         channels = await guildconfiger.get(message.guild.id, "channels")
-        xp_gain = await guildconfiger.get(message.guild.id, "xp_gain")
+
         if message.channel.id not in channels:
             found = False
             for c in channels:
@@ -54,16 +79,9 @@ class xpEvents(commands.Cog):
                     found = True
             if found is False:
                 return
-        # Checks if user is in database, if not; user is added.
-        user = transaction.get_user(session, message.author.id)
-        # Checks message length and converts it into XP
-        gained_xp = round(len(message.content) / xp_gain)
-        print(gained_xp)
-        user.xp += gained_xp
-        user.messages += 1
-        role = transaction.get_highest_role(session, message.guild, user)
+        role = await xpCalculations.calculate(message, session)
         new_rank = message.guild.get_role(role)
-        if new_rank in message.author.roles:
+        if new_rank in message.author.roles or new_rank is None:
             return
         # prepares the list of roles that have to be removed
         remroles = transaction.get_roles(session, message.guild)
@@ -72,7 +90,6 @@ class xpEvents(commands.Cog):
         lvlch = self.bot.get_channel(announcement)
         await lvlch.send(f"Congratulations {message.author.mention}, you've leveled up to {new_rank}")
         await message.author.add_roles(new_rank)
-        session.commit()
 
 
 async def setup(bot):

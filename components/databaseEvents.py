@@ -25,6 +25,7 @@ class transaction(ABC):
         for r in temp_roles:
             roles.append(guild.get_role(r))
         return roles
+
     @staticmethod
     @abstractmethod
     def get_highest_role(session, guild, user):
@@ -34,7 +35,8 @@ class transaction(ABC):
             if user.xp >= q.xp_required:
                 possible_ranks[q.role_id] = q.xp_required
         role = [x for x in possible_ranks if possible_ranks[x] == max(possible_ranks.values())]
-        return role[0]
+        if len(role) > 0:
+            return role[0]
 
     @staticmethod
     @abstractmethod

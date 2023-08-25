@@ -3,7 +3,13 @@ import os
 from abc import ABC, abstractmethod
 import datetime
 from datetime import datetime, timedelta
+
+import discord
 import pytz
+from components.databaseEvents import transaction
+from components.xpcalculations import xpCalculations
+
+
 class guildconfiger(ABC):
 
     @abstractmethod
@@ -36,17 +42,20 @@ class guildconfiger(ABC):
                 json.dump(data, f, indent=4)
 
     @abstractmethod
-    async def addchannel(guildid, interaction, channelid, key):
+    async def addchannel(guildid, interaction, channel: discord.TextChannel, key, session):
         if os.path.exists(f"jsons/{guildid}.json"):
             with open(f"jsons/{guildid}.json") as f:
                 data = json.load(f)
                 for x in data[key]:
-                    if x == channelid:
+                    if x == channel.id:
                         await interaction.followup.send("Failed to add channel! forum already in config")
                         break
                 else:
-                    data[key].append(channelid)
+                    data[key].append(channel.id)
                     await interaction.followup.send(f"channel added to {key}")
+                    async for message in channel.history():
+                        await xpCalculations.calculate(message, session)
+
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
     @abstractmethod

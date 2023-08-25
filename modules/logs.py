@@ -9,11 +9,6 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 load_dotenv('main.env')
-channels72 = os.getenv('channels72')
-spec = os.getenv('spec')
-channels24 = os.getenv('channels24')
-single = os.getenv('single')
-test = os.getenv('test')
 count = 0
 if os.path.exists('logs'):
     d = os.listdir('logs')
@@ -62,7 +57,7 @@ class Logging(commands.Cog):
         else:
             await ctx.send(error)
             logger.warning(f"\n{ctx.guild.name} {ctx.guild.id} {ctx.command.name}: {error}")
-            channel = self.bot.get_channel(1033787967929589831)
+            channel = self.bot.get_channel(1141714483312599200)
             with open('error.txt', 'w', encoding='utf-8') as file:
                 file.write(str(error))
             await channel.send(
@@ -85,7 +80,7 @@ class Logging(commands.Cog):
             error: AppCommandError
     ):
         await interaction.followup.send(f"Command failed: {error} \nreport this to Rico")
-        channel = self.bot.get_channel(1033787967929589831)
+        channel = self.bot.get_channel(1141714483312599200)
         with open('error.txt', 'w', encoding='utf-8') as File:
             File.write(traceback.format_exc())
         await channel.send(

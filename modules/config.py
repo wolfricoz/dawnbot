@@ -73,9 +73,9 @@ class config(commands.GroupCog):
         key = "channels"
         match option.value:
             case 'add':
-                await guildconfiger.addchannel(interaction.guild.id, interaction, channel.id, key)
+                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
             case 'remove':
-                await guildconfiger.addchannel(interaction.guild.id, interaction, channel.id, key)
+                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
                 await interaction.followup.send(f"channel removed from {key}")
 
     @app_commands.command(name='category')
@@ -85,7 +85,7 @@ class config(commands.GroupCog):
         key = "channels"
         channels = []
         for channel in category.channels:
-            await guildconfiger.addchannel(interaction.guild.id, interaction, channel.id, key)
+            await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
             channels.append(channel.name)
         await interaction.followup.send(f"Channels added: {', '.join(channels)}")
 
@@ -101,9 +101,9 @@ class config(commands.GroupCog):
         key = "channels"
         match option.value:
             case 'add':
-                await guildconfiger.addchannel(interaction.guild.id, interaction, channel.id, key)
+                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
             case 'remove':
-                await guildconfiger.addchannel(interaction.guild.id, interaction, channel.id, key)
+                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
                 await interaction.followup.send(f"channel removed from {key}")
 
 
