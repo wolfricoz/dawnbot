@@ -84,7 +84,7 @@ class xpEvents(commands.Cog):
                         found = True
                 except AttributeError:
                     print(f"[Channel Error] Failed at {c} and removed from config")
-                    guildconfiger.remchannel(message.guild.id, c, "channels")
+                    await guildconfiger.remchannel(message.guild.id, c, "channels")
             if found is False:
                 return
         role = await xpCalculations.calculate(message, session)
