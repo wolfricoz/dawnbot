@@ -61,6 +61,26 @@ class guildconfiger(ABC):
 
     @staticmethod
     @abstractmethod
+    async def addforum(guildid, interaction, channel: discord.ForumChannel, key, session):
+        if os.path.exists(f"jsons/{guildid}.json"):
+            with open(f"jsons/{guildid}.json") as f:
+                data = json.load(f)
+                for x in data[key]:
+                    if x == channel.id:
+                        await interaction.followup.send("Failed to add channel! forum already in config")
+                        break
+                else:
+                    data[key].append(channel.id)
+                    await interaction.followup.send(f"channel added to {key}")
+                    for thread in channel.threads
+                    async for message in thread.history():
+                        await xpCalculations.calculate(message, session)
+
+            with open(f"jsons/{guildid}.json", 'w') as f:
+                json.dump(data, f, indent=4)
+
+    @staticmethod
+    @abstractmethod
     async def remchannel(guildid: int, channelid: int, key):
         if os.path.exists(f"jsons/{guildid}.json"):
             with open(f"jsons/{guildid}.json") as f:

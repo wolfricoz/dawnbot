@@ -22,3 +22,4 @@ class xpCalculations(ABC):
         role = transaction.get_highest_role(session, message.guild, user)
         session.commit()
         return role
+
