@@ -69,11 +69,11 @@ class xpEvents(commands.Cog):
         await interaction.followup.send(f"added {xp} to {member.mention}")
 
     #textchannels
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if message.channel.type != discord.TextChannel:
+    @commands.Cog.listener("on_message")
+    async def on_channel_message(self, message: discord.Message):
+        if message.channel.type != discord.ChannelType.text:
             return
-        print("Message")
+        # print("Message")
         if message.author.bot:
             return
         channels = await guildconfiger.get(message.guild.id, "channels")
@@ -105,11 +105,11 @@ class xpEvents(commands.Cog):
 
     #forums
     # Rewrite this to check if the thread is part of forum,
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    @commands.Cog.listener("on_message")
+    async def on_forum_message(self, message: discord.Message):
         if message.channel.type != discord.ChannelType.public_thread:
             return
-        print("forum/thread")
+        # print("forum/thread")
         if message.author.bot:
             return
         channels = await guildconfiger.get(message.guild.id, "channels")
