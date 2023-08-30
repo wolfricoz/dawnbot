@@ -68,8 +68,12 @@ class xpEvents(commands.Cog):
         session.commit()
         await interaction.followup.send(f"added {xp} to {member.mention}")
 
+    #textchannels
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        if message.channel.type != discord.TextChannel:
+            return
+        print("Message")
         if message.author.bot:
             return
         channels = await guildconfiger.get(message.guild.id, "channels")
@@ -99,6 +103,41 @@ class xpEvents(commands.Cog):
         await lvlch.send(f"Congratulations {message.author.mention}, you've leveled up to {new_rank}")
         await message.author.add_roles(new_rank)
 
+    #forums
+    # Rewrite this to check if the thread is part of forum,
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.channel.type != discord.ChannelType.public_thread:
+            return
+        print("forum/thread")
+        if message.author.bot:
+            return
+        channels = await guildconfiger.get(message.guild.id, "channels")
+
+        if message.channel not in channels:
+            found = False
+            for c in channels:
+                try:
+                    ch = message.guild.get_channel(c)
+                    if message.channel in ch.threads:
+                        print("found")
+                        found = True
+                except AttributeError:
+                    print(f"[Channel Error] Failed at {c} and removed from config")
+                    await guildconfiger.remchannel(message.guild.id, c, "channels")
+            if found is False:
+                return
+        role = await xpCalculations.calculate(message, session)
+        new_rank = message.guild.get_role(role)
+        if new_rank in message.author.roles or new_rank is None:
+            return
+        # prepares the list of roles that have to be removed
+        remroles = transaction.get_roles(session, message.guild)
+        await message.author.remove_roles(*remroles)
+        announcement = await guildconfiger.get(message.guild.id, "announcement")
+        lvlch = self.bot.get_channel(announcement)
+        await lvlch.send(f"Congratulations {message.author.mention}, you've leveled up to {new_rank}")
+        await message.author.add_roles(new_rank)
 
 async def setup(bot):
     await bot.add_cog(xpEvents(bot))

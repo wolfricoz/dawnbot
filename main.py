@@ -20,8 +20,8 @@ bot = commands.Bot(command_prefix=PREFIX, case_insensitive=False, intents=intent
 
 @bot.event
 async def on_ready():
-    dev = bot.get_channel(1141714483312599200)
-    await dev.send("Dawnbot online and ready.")
+    # dev = bot.get_channel(1141714483312599200)
+    # await dev.send("Dawnbot online and ready.")
 
     for guild in bot.guilds:
         await guildconfiger.create(guild.id, guild.name)
