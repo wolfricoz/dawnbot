@@ -9,7 +9,7 @@ class Tools(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="dice", description="rolls a dice for you!")
-    async def dice(self, interaction: discord.Interaction, dicetype: int, amount: int = 1):
+    async def dice(self, interaction: discord.Interaction, dicetype: int, amount: int = 1, title: str = "No goal given."):
         await interaction.response.defer(thinking=False, ephemeral=True)
         if dicetype < 2:
             interaction.followup.send("Please choose a dice with at least 2 sides!")
@@ -29,7 +29,10 @@ class Tools(commands.Cog):
         t = ", ".join(rm)
         counted = sum(results)
         await interaction.followup.send(f"The dice has been cast..")
-        await interaction.channel.send(f"Results for {interaction.user.mention} {amount}d{dicetype}: {t} (total: {counted})")
+        embed = discord.Embed(title=title, description=f"You roll {amount}d{dicetype}: {t} \n(total: {counted})")
+        embed.set_footer(text=f"{interaction.user.nick}")
+
+        await interaction.channel.send(f"{interaction.user.mention}", embed=embed)
 
 
     @app_commands.command(name="coinflip", description="flips a coin for you!")
