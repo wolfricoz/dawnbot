@@ -24,8 +24,8 @@ class Tools(commands.Cog):
         Choice(name=-4, value=-4),
         Choice(name=-5, value=-5),
     ])
-    async def dice(self, interaction: discord.Interaction, dicetype: int, title: str = "No goal given.",
-                   amount: int = 1, modifier: Choice[int]):
+    async def dice(self, interaction: discord.Interaction, dicetype: int, modifier: Choice[int], title: str = "No goal given.",
+                   amount: int = 1, ):
         await interaction.response.defer(thinking=False, ephemeral=True)
         if dicetype < 2:
             interaction.followup.send("Please choose a dice with at least 2 sides!")
