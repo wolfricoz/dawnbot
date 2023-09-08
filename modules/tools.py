@@ -42,7 +42,7 @@ class Tools(commands.Cog):
             x += 1
             result = random.randint(1, dicetype)
             mod_result = result + modifier.value
-            results.append(1 if mod_result < 1 else mod_result)
+            results.append("1(Mod)" if mod_result < 1 else mod_result)
 
         rm = map(str, results)
         t = ", ".join(rm)
