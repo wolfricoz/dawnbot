@@ -38,10 +38,14 @@ class Tools(commands.Cog):
             return
         x = 0
         results = []
+        mod = modifier.value
+        if dicetype >= 100:
+            mod = modifier.value * 10
+        print(mod)
         while x < amount:
             x += 1
             result = random.randint(1, dicetype)
-            mod_result = result + modifier.value
+            mod_result = result + mod
             results.append(mod_result)
 
         rm = map(str, results)
@@ -49,7 +53,7 @@ class Tools(commands.Cog):
         counted = sum(results)
         await interaction.followup.send(f"The dice has been cast..")
         embed = discord.Embed(title=title,
-                              description=f"You roll {amount}d{dicetype}{'+' if modifier.value >= 0 else ''}{modifier.name}: {t} \n(total: {counted})")
+                              description=f"You roll {amount}d{dicetype}{'+' if modifier.value >= 0 else ''}{mod}: {t} \n(total: {counted})")
         embed.set_footer(text=f"{interaction.user.nick}")
 
         await interaction.channel.send(f"{interaction.user.mention}", embed=embed)
