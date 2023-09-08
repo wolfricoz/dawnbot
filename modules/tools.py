@@ -49,7 +49,7 @@ class Tools(commands.Cog):
         counted = sum(results)
         await interaction.followup.send(f"The dice has been cast..")
         embed = discord.Embed(title=title,
-                              description=f"You roll {amount}d{dicetype}{'+' if modifier.value >= 0 else '-'}{modifier.name}: {t} \n(total: {counted})")
+                              description=f"You roll {amount}d{dicetype}{'+' if modifier.value >= 0 else ''}{modifier.name}: {t} \n(total: {counted})")
         embed.set_footer(text=f"{interaction.user.nick}")
 
         await interaction.channel.send(f"{interaction.user.mention}", embed=embed)
