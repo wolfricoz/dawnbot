@@ -41,9 +41,7 @@ class Tools(commands.Cog):
         while x < amount:
             x += 1
             result = random.randint(1, dicetype)
-            print(result)
             mod_result = result + modifier.value
-            print(mod_result)
             results.append(mod_result)
 
         rm = map(str, results)
