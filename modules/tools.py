@@ -96,9 +96,9 @@ class Tools(commands.Cog):
                         await asyncio.sleep(1)
                         await message.delete()
 
-    # @unarchiver.before_loop  # it's called before the actual task runs
-    # async def before_checkactiv(self):
-    #     await self.bot.wait_until_ready()
+    @unarchiver.before_loop  # it's called before the actual task runs
+    async def before_checkactiv(self):
+        await self.bot.wait_until_ready()
 
 async def setup(bot):
     await bot.add_cog(Tools(bot))
