@@ -1,14 +1,17 @@
+import asyncio
 import random
 
 import discord
 from discord import app_commands
 from discord.app_commands import Choice
-from discord.ext import commands
+from discord.ext import commands, tasks
+from discord import Task
 
 
 class Tools(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.unarchiver.start()
 
     @app_commands.command(name="dice", description="rolls a dice for you!")
     @app_commands.choices(modifier=[
@@ -68,6 +71,20 @@ class Tools(commands.Cog):
         else:
             await interaction.channel.send(f"Tails!")
 
+    @tasks.loop(hours=24)
+    async def unarchiver(self):
+        "makes all posts active again"
+        for x in self.bot.guilds:
+            for channel in x.channels:
+                if channel == discord.ForumChannel:
+                    for post in channel.archived_threads():
+                        message = await post.send("bump")
+                        await asyncio.sleep(1)
+                        await message.delete()
+
+    @unarchiver.before_loop  # it's called before the actual task runs
+    async def before_checkactiv(self):
+        await self.bot.wait_until_ready()
 
 async def setup(bot):
     await bot.add_cog(Tools(bot))
