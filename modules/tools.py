@@ -81,9 +81,9 @@ class Tools(commands.Cog):
             message = await post.send("bump")
             await asyncio.sleep(1)
             await message.delete()
-        await interaction.response.send("Done")
+        await interaction.followup.send("Done")
 
-    @tasks.loop(hours=24)
+    @tasks.loop(minutes=5)
     async def unarchiver(self):
         "makes all posts active again"
         for x in self.bot.guilds:
