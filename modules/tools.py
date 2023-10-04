@@ -12,6 +12,9 @@ class Tools(commands.Cog):
         self.bot = bot
         self.unarchiver.start()
 
+    def cog_unload(self):
+        self.unarchiver.cancel()
+
     @app_commands.command(name="dice", description="rolls a dice for you!")
     @app_commands.choices(modifier=[
         Choice(name=+5, value=5),
@@ -70,20 +73,32 @@ class Tools(commands.Cog):
         else:
             await interaction.channel.send(f"Tails!")
 
-    @tasks.loop(hours=24)
+    @app_commands.command()
+    async def unarchive(self, interaction: discord.Interaction, channel:discord.ForumChannel):
+        await interaction.response.defer(thinking=False, ephemeral=True)
+        for post in channel.archived_threads():
+            print(post.name)
+            message = await post.send("bump")
+            await asyncio.sleep(1)
+            await message.delete()
+        await interaction.response.send("Done")
+
+    @tasks.loop(minutes=1)
     async def unarchiver(self):
         "makes all posts active again"
         for x in self.bot.guilds:
             for channel in x.channels:
+                print(channel.name)
                 if channel == discord.ForumChannel:
                     for post in channel.archived_threads():
+                        print(post.name)
                         message = await post.send("bump")
                         await asyncio.sleep(1)
                         await message.delete()
 
-    @unarchiver.before_loop  # it's called before the actual task runs
-    async def before_checkactiv(self):
-        await self.bot.wait_until_ready()
+    # @unarchiver.before_loop  # it's called before the actual task runs
+    # async def before_checkactiv(self):
+    #     await self.bot.wait_until_ready()
 
 async def setup(bot):
     await bot.add_cog(Tools(bot))
