@@ -73,23 +73,14 @@ class Tools(commands.Cog):
         else:
             await interaction.channel.send(f"Tails!")
 
-    @app_commands.command()
-    async def unarchive(self, interaction: discord.Interaction, channel:discord.ForumChannel):
-        await interaction.response.defer(thinking=False, ephemeral=True)
-        async for post in channel.archived_threads():
-            print(post.name)
-            message = await post.send("bump")
-            await asyncio.sleep(1)
-            await message.delete()
-        await interaction.followup.send("Done")
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(hours=72)
     async def unarchiver(self):
         "makes all posts active again"
         for x in self.bot.guilds:
             for channel in x.channels:
-                print(channel.name)
-                if channel.type == discord.ForumChannel:
+                print(channel.name, " ", channel.type)
+                if channel.type == discord.ChannelType.forum:
                     async for post in channel.archived_threads():
                         print(post.name)
                         message = await post.send("bump")
