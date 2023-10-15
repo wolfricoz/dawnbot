@@ -55,6 +55,9 @@ class guildconfiger(ABC):
                     await interaction.followup.send(f"channel added to {key}")
                     async for message in channel.history():
                         await xpCalculations.calculate(message, session)
+                    for thread in channel.threads:
+                        async for m in thread.history():
+                            await xpCalculations.calculate(m, session)
 
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)

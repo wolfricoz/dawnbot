@@ -79,10 +79,8 @@ class Tools(commands.Cog):
         "makes all posts active again"
         for x in self.bot.guilds:
             for channel in x.channels:
-                print(channel.name, " ", channel.type)
                 if channel.type == discord.ChannelType.forum:
                     async for post in channel.archived_threads():
-                        print(post.name)
                         message = await post.send("bump")
                         await asyncio.sleep(1)
                         await message.delete()
