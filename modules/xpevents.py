@@ -73,7 +73,6 @@ class xpEvents(commands.Cog):
     async def on_channel_message(self, message: discord.Message):
         if message.channel.type != discord.ChannelType.text:
             return
-        # print("Message")
         if message.author.bot:
             return
         channels = await guildconfiger.get(message.guild.id, "channels")
@@ -91,6 +90,14 @@ class xpEvents(commands.Cog):
                     await guildconfiger.remchannel(message.guild.id, c, "channels")
             if found is False:
                 return
+        if len(message.content) <= 300:
+            try:
+                await message.author.send(f"Your message is too short, please make it longer than 300 characters. No XP has been awarded and your post has been removed.\n {message.content}")
+            except discord.Forbidden:
+                await message.channel.send(f"{message.author.mention} Your message is too short, please make it longer than 300 characters. No XP has been awarded and your post has been removed. **The bot could not DM you, please open your dms.**\n {message.content}")
+            await message.delete()
+            return
+
         role = await xpCalculations.calculate(message, session)
         new_rank = message.guild.get_role(role)
         if new_rank in message.author.roles or new_rank is None:
