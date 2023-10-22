@@ -90,7 +90,7 @@ class xpEvents(commands.Cog):
                     await guildconfiger.remchannel(message.guild.id, c, "channels")
             if found is False:
                 return
-        if len(message.content) <= 300:
+        if len(message.content) <= 300 and message.author.guild_permissions.manage_messages is False:
             try:
                 await message.author.send(f"Your message is too short, please make it longer than 300 characters. No XP has been awarded and your post has been removed.\n {message.content}")
             except discord.Forbidden:
