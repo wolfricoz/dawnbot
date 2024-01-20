@@ -1,11 +1,13 @@
 import discord
+from discord import app_commands, Interaction
 from discord.app_commands import Choice
 from discord.ext import commands
-from discord import app_commands, Interaction
 from sqlalchemy import select
-from sqlalchemy.orm import Session, sessionmaker
-from components.configmaker import guildconfiger
+from sqlalchemy.orm import Session
+
 import components.database as db
+from components.configmaker import guildconfiger
+
 session = Session(bind=db.engine)
 
 
@@ -79,6 +81,15 @@ class config(commands.GroupCog):
                 await interaction.followup.send(f"channel removed from {key}")
         session.commit()
 
+    @app_commands.command()
+    @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.choices(option=[Choice(name=x, value=x) for x in ["character", "timeline", "modlog"]])
+    async def singlechannels(self, interaction: Interaction, option: Choice[str], channel: discord.TextChannel|discord.ForumChannel):
+        await interaction.response.defer(ephemeral=True)
+        key = option.value
+        await guildconfiger.edit_value(interaction.guild.id, channel.id, key)
+        await interaction.followup.send(f"{key} channel set to {channel.mention}")
+
     @app_commands.command(name='category')
     @app_commands.checks.has_permissions(manage_guild=True)
     async def category(self, interaction: Interaction, category: discord.CategoryChannel):
@@ -107,7 +118,6 @@ class config(commands.GroupCog):
                 await guildconfiger.remchannel(interaction.guild.id, channel.id, key)
                 await interaction.followup.send(f"channel removed from {key}")
         session.commit()
-
 
 
 async def setup(bot):

@@ -1,36 +1,51 @@
+"""Logs all the happenings of the bot."""
 import logging
 import os
+import time
 import traceback
+from sys import platform
 
 import discord.utils
-from discord import Interaction
+from discord import Interaction, app_commands
 from discord.app_commands import AppCommandError, command
 from discord.ext import commands
 from dotenv import load_dotenv
 
 load_dotenv('main.env')
+channels72 = os.getenv('channels72')
+spec = os.getenv('spec')
+channels24 = os.getenv('channels24')
+single = os.getenv('single')
+test = os.getenv('test')
 count = 0
-if os.path.exists('logs'):
-    d = os.listdir('logs')
-    count = len(d)
-    print(count)
-else:
+os.environ['TZ'] = 'America/New_York'
+if platform == "linux" or platform == "linux2":
+    time.tzset()
+logfile = f"logs/log-{time.strftime('%m-%d-%Y')}.txt"
+
+if os.path.exists('logs') is False:
+    print("Making logd directory")
     os.mkdir('logs')
-    count = 0
-with open(f'logs/log{count}', 'w') as f:
-    f.write("logging started")
-    print(f.name)
+
+if os.path.exists(logfile) is False:
+    with open(logfile, 'w') as f:
+        f.write("logging started")
+
+with open(logfile, 'a') as f:
+    f.write(f"\n\n----------------------------------------------------"
+            f"\nbot started at: {time.strftime('%c %Z')}\n"
+            f"----------------------------------------------------\n\n")
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.WARN)
-handler = logging.FileHandler(filename=f.name, encoding='utf-8', mode='a')
+handler = logging.FileHandler(filename=logfile, encoding='utf-8', mode='a')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 alogger = logging.getLogger('sqlalchemy')
 alogger.setLevel(logging.WARN)
-handler2 = logging.FileHandler(filename=f.name, encoding='utf-8', mode='a')
+handler2 = logging.FileHandler(filename=logfile, encoding='utf-8', mode='a')
 handler2.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logging.basicConfig(filename=f.name, encoding='utf-8', level=logging.DEBUG, filemode='a')
+logging.basicConfig(filename=logfile, encoding='utf-8', level=logging.DEBUG, filemode='a')
 
 alogger.addHandler(handler2)
 
@@ -41,6 +56,7 @@ class Logging(commands.Cog):
 
     @commands.Cog.listener("on_command_error")
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        """handles chat-based command errors."""
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Please fill in the required arguments")
         elif isinstance(error, commands.CommandNotFound):
@@ -55,15 +71,15 @@ class Logging(commands.Cog):
         #     logging.warning(error)
         #     raise error
         else:
-            await ctx.send(error)
             logger.warning(f"\n{ctx.guild.name} {ctx.guild.id} {ctx.command.name}: {error}")
-            channel = self.bot.get_channel(1141714483312599200)
-            with open('error.txt', 'w', encoding='utf-8') as file:
+            channel = self.bot.get_channel(self.bot.DEV)
+            with open('error.txt', 'w', encoding='utf-16') as file:
                 file.write(str(error))
             await channel.send(
                     f"{ctx.guild.name} {ctx.guild.id}: {ctx.author}: {ctx.command.name}",
                     file=discord.File(file.name, "error.txt"))
             print('error logged')
+            print(traceback.format_exc())
 
     def cog_load(self):
         tree = self.bot.tree
@@ -74,35 +90,68 @@ class Logging(commands.Cog):
         tree = self.bot.tree
         tree.on_error = self._old_tree_error
 
+    async def on_fail_message(self, interaction: Interaction, message: str):
+        """sends a message to the user if the command fails."""
+        try:
+            await interaction.channel.send(message)
+        except Exception as e:
+            logging.error(e)
+
     async def on_app_command_error(
             self,
             interaction: Interaction,
             error: AppCommandError
     ):
-        await interaction.followup.send(f"Command failed: {error} \nreport this to Rico")
-        channel = self.bot.get_channel(1141714483312599200)
-        with open('error.txt', 'w', encoding='utf-8') as File:
-            File.write(traceback.format_exc())
-        await channel.send(
-            f"{interaction.guild.name} {interaction.guild.id}: {interaction.user}: {interaction.command.name}",
-            file=discord.File(File.name, "error.txt"))
+        """app command error handler."""
+        try:
+            data = [f"{a['name']}: {a['value']}" for a in interaction.data['options']]
+            formatted_data = ", ".join(data)
+        except KeyError:
+            formatted_data = "KeyError/No data"
+        channel = self.bot.get_channel(self.bot.DEV)
+        if isinstance(error, commands.MemberNotFound):
+            await self.on_fail_message(interaction, "User not found.")
+            return
+
+        with open('error.txt', 'w', encoding='utf-8') as file:
+            file.write(traceback.format_exc())
+        try:
+            await channel.send(
+                    f"{interaction.guild.name} {interaction.guild.id}: {interaction.user}: {interaction.command.name} with arguments {formatted_data}",
+                    file=discord.File(file.name, "error.txt"))
+        except Exception as e:
+            logging.error(e)
         logger.warning(
-            f"\n{interaction.guild.name} {interaction.guild.id} {interaction.command.name}: {traceback.format_exc()}")
+                f"\n{interaction.guild.name} {interaction.guild.id} {interaction.command.name} with arguments {formatted_data}: {traceback.format_exc()}")
+
+        await self.on_fail_message(interaction, f"Command failed: {error} \nreport this to Rico")
         # raise error
 
     @commands.Cog.listener(name='on_command')
-    async def print(self, ctx):
+    async def print(self, ctx: commands.Context):
+        """logs the chat command when initiated"""
         server = ctx.guild
         user = ctx.author
-        executed_cmd = ctx.command
-        logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued command: {executed_cmd}')
+        commandname = ctx.command
+        logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued command: {commandname}')
 
     @commands.Cog.listener(name='on_app_command_completion')
-    async def print(self, ctx: Interaction, command: command):
-        server = ctx.guild
-        user = ctx.user
-        logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: {command.name}')
+    async def appprint(self, interaction: Interaction, commandname: command):
+        """logs the app command when finished."""
+        server = interaction.guild
+        user = interaction.user
+        try:
+            logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: `{commandname.name}` with arguments: {interaction.data["options"]}')
+        except KeyError:
+            logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: `{commandname.name}` with no arguments.')
+
+    @app_commands.command(name="getlog")
+    async def getlog(self, interaction: Interaction):
+        """gets the log file"""
+        with open(logfile, 'rb') as file:
+            await interaction.response.send_message("Here's the log file.", file=discord.File(file.name, "log.txt"))
 
 
 async def setup(bot):
+    """Adds the cog to the bot."""
     await bot.add_cog(Logging(bot))

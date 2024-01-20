@@ -18,7 +18,7 @@ class guildconfiger(ABC):
             pass
         "Creates the config"
         dictionary = {
-            "Name": guildname,
+            "Name"    : guildname,
             "channels": [],
         }
         json_object = json.dumps(dictionary, indent=4)
@@ -94,7 +94,7 @@ class guildconfiger(ABC):
 
     @staticmethod
     @abstractmethod
-    async def get(guildid: int, key):
+    async def get(guildid: int, key) -> str | list | int:
         if os.path.exists(f"jsons/{guildid}.json"):
             with open(f"jsons/{guildid}.json") as f:
                 data = json.load(f)
@@ -106,10 +106,13 @@ class guildconfiger(ABC):
         with open(f'jsons/{guildid}.json', 'r+') as file:
             data = json.load(file)
             newdictionary = {
-                "Name": data.get('Name', None),
-                "channels": data.get('channels', []),
+                "Name"        : data.get('Name', None),
+                "channels"    : data.get('channels', []),
                 "announcement": data.get("announcement", None),
-                "xp_gain": data.get("xp_gain", 1)
+                "xp_gain"     : data.get("xp_gain", 1),
+                "timeline"    : data.get("timeline", ""),
+                "character"   : data.get("character", ""),
+                "modlog"      : data.get("modlog", ""),
             }
         with open(f'jsons/{guildid}.json', 'w') as f:
             json.dump(newdictionary, f, indent=4)

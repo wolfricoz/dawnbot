@@ -6,6 +6,8 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands, tasks
 
+from components.configmaker import guildconfiger
+
 
 class Tools(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -15,22 +17,23 @@ class Tools(commands.Cog):
     def cog_unload(self):
         self.unarchiver.cancel()
 
+    @app_commands.command(name="endscene", description="ends the scene")
+    async def endscene(self, interaction: discord.Interaction, rpenddate: str, title: str = None):
+        await interaction.response.defer(thinking=False, ephemeral=True)
+        message: discord.Message = await interaction.channel.send(f"{interaction.user.mention} ended the scene.")
+        channel = self.bot.get_channel(int(await guildconfiger.get(interaction.guild.id, "timeline")))
+        await channel.send(f"{title if title is not None else ''}\n"
+                           f"Author: {interaction.user.mention}\n"
+                           f"Link to final message: {message.jump_url}\n"
+                           f"In roleplay date: {rpenddate}\n"
+                           f"Brief summary of what happened:")
+
     @app_commands.command(name="dice", description="rolls a dice for you!")
-    @app_commands.choices(modifier=[
-        Choice(name=+5, value=5),
-        Choice(name=+4, value=4),
-        Choice(name=+3, value=3),
-        Choice(name=+2, value=2),
-        Choice(name=+1, value=1),
-        Choice(name=0, value=0),
-        Choice(name=-1, value=-1),
-        Choice(name=-2, value=-2),
-        Choice(name=-3, value=-3),
-        Choice(name=-4, value=-4),
-        Choice(name=-5, value=-5),
-    ])
-    async def dice(self, interaction: discord.Interaction, dicetype: int, modifier: Choice[int], title: str = "No goal given.",
+    @app_commands.choices(modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)])
+    async def dice(self, interaction: discord.Interaction, dicetype: int, modifier: Choice[int] = 0, title: str = "No goal given.",
                    amount: int = 1, ):
+        if isinstance(modifier, Choice):
+            modifier = modifier.value
         await interaction.response.defer(thinking=False, ephemeral=True)
         if dicetype < 2:
             interaction.followup.send("Please choose a dice with at least 2 sides!")
@@ -43,23 +46,25 @@ class Tools(commands.Cog):
             return
         x = 0
         results = []
-        mod = modifier.value
+        text_results = []
         if dicetype >= 100:
-            mod = modifier.value * 10
-        print(mod)
+            modifier *= 3
         while x < amount:
             x += 1
             result = random.randint(1, dicetype)
-            mod_result = result + mod
+            mod_result = result + modifier
             results.append(mod_result)
+            text_result = f"{result + modifier} ({result}+{modifier})"
+            text_results.append(text_result)
 
         rm = map(str, results)
         t = ", ".join(rm)
+        ts = ", ".join(text_results)
         counted = sum(results)
         await interaction.followup.send(f"The dice has been cast..")
         embed = discord.Embed(title=title,
-                              description=f"You roll {amount}d{dicetype}{'+' if modifier.value >= 0 else ''}{mod}: {t} \n(total: {counted})")
-        embed.set_footer(text=f"{interaction.user.nick}")
+                              description=f"You roll {amount}d{dicetype}{'+' if modifier >= 0 else ''}{modifier}: {ts} \n(total: {counted})")
+        embed.set_footer(text=f"{interaction.user.name}")
 
         await interaction.channel.send(f"{interaction.user.mention}", embed=embed)
 
@@ -72,7 +77,6 @@ class Tools(commands.Cog):
             await interaction.channel.send(f"Heads!")
         else:
             await interaction.channel.send(f"Tails!")
-
 
     @tasks.loop(hours=72)
     async def unarchiver(self):
@@ -88,6 +92,7 @@ class Tools(commands.Cog):
     @unarchiver.before_loop  # it's called before the actual task runs
     async def before_checkactiv(self):
         await self.bot.wait_until_ready()
+
 
 async def setup(bot):
     await bot.add_cog(Tools(bot))
