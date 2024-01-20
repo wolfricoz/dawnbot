@@ -15,11 +15,9 @@ class forumEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_thread_create(self, thread: discord.Thread):
-        forum = self.bot.get_channel(await guildconfiger.get(thread.guild.id, "character"))
         modlog = self.bot.get_channel(await guildconfiger.get(thread.guild.id, "modlog"))
-        if thread.parent_id != forum.id:
-            return
-        await modlog.send(f"New character created by {thread.owner.mention} in {thread.mention}")
+        forum = self.bot.get_channel(thread.parent_id)
+        await modlog.send(f"new thread in {forum.mention} created by {thread.owner.mention} in {thread.mention}")
 
 
 async def setup(bot):

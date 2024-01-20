@@ -22,7 +22,7 @@ class Tools(commands.Cog):
         await interaction.response.defer(thinking=False, ephemeral=True)
         message: discord.Message = await interaction.channel.send(f"{interaction.user.mention} ended the scene.")
         channel = self.bot.get_channel(int(await guildconfiger.get(interaction.guild.id, "timeline")))
-        await channel.send(f"{title if title is not None else ''}\n"
+        await channel.send(f"{f'# {title}' if title is not None else ''}\n"
                            f"Author: {interaction.user.mention}\n"
                            f"Link to final message: {message.jump_url}\n"
                            f"In roleplay date: {rpenddate}\n"
