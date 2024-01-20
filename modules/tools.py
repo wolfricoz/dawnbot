@@ -26,7 +26,7 @@ class Tools(commands.Cog):
                            f"Author: {interaction.user.mention}\n"
                            f"Link to final message: {message.jump_url}\n"
                            f"In roleplay date: {rpenddate}\n"
-                           f"Brief summary of what happened:")
+                           f"Brief summary of what happened: (Post below!)")
 
     @app_commands.command(name="dice", description="rolls a dice for you!")
     @app_commands.choices(modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)])
