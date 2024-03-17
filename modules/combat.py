@@ -36,7 +36,7 @@ class Combat(commands.GroupCog):
         crit = False
         hit_dice_count = 2 if advantage.lower() == "yes" else 1
         hit_results = []
-        hit_mod = chosen_character['perception'] + chosen_weapon['hitmodifier']
+        hit_mod = round(chosen_character['perception'] / 2) + chosen_weapon['hitmodifier']
         while hit_dice_count > 0:
             hit_dice_count -= 1
             temp_result = random.randint(1, 20)
