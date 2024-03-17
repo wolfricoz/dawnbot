@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from components.autocomplete import autocomplete
 from components.databaseEvents import CombatSystem
 
 
@@ -11,9 +12,10 @@ class armor(commands.GroupCog):
 
     @app_commands.command(name="create", description="creates an armor set")
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def create(self, interaction: discord.Interaction, name: str, hp: int, ac: int, hitchance: int, modifier: str = None) -> None:
+    async def create(self, interaction: discord.Interaction, name: str, hp: int, ac: int, hitchance: int  = 0, modifier: str = "None") -> None:
         """
         Create an armor set
+        :param modifier:
         :param interaction:
         :param name:
         :param hp:
@@ -29,6 +31,7 @@ class armor(commands.GroupCog):
 
     @app_commands.command(name="delete", description="deletes an armor set")
     @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.autocomplete(name=autocomplete().armor)
     async def delete(self, interaction: discord.Interaction, name: str) -> None:
         """
         Delete an armor set
@@ -59,6 +62,7 @@ class armor(commands.GroupCog):
 
     @app_commands.command(name="edit", description="edits an armor set")
     @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.autocomplete(name=autocomplete().armor)
     async def edit(self, interaction: discord.Interaction, name: str, hp: int = None, ac: int = None, hitchance: int = None, modifier: str = None) -> None:
         """
         Edit an armor set
@@ -83,6 +87,7 @@ class armor(commands.GroupCog):
             armors[name]['modifier'] = modifier
         CombatSystem().update_armor(name, armors[name]['hp'], armors[name]['ac'], armors[name]['hitchance'], armors[name]['modifier'])
         await interaction.response.send_message(f"Armor set {name} edited")
+
 
 async def setup(bot):
     await bot.add_cog(armor(bot))

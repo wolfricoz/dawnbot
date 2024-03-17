@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from components.autocomplete import autocomplete
 from components.databaseEvents import CombatSystem
 
 
@@ -27,6 +28,7 @@ class weapon(commands.GroupCog):
 
     @app_commands.command(name="delete", description="deletes a weapon type")
     @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.autocomplete(name=autocomplete().weapon)
     async def delete(self, interaction: discord.Interaction,
                      name: str):
         await interaction.response.defer(ephemeral=True)
@@ -48,6 +50,7 @@ class weapon(commands.GroupCog):
 
     @app_commands.command(name="edit", description="edits a weapon type")
     @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.autocomplete(name=autocomplete().weapon)
     async def edit(self, interaction: discord.Interaction,
                    name: str,
                    dice: str = None,

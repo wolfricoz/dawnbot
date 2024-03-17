@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from components.autocomplete import autocomplete
 from components.databaseEvents import CombatSystem
 
 
@@ -9,16 +10,10 @@ class Character(commands.GroupCog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    async def armor_autocomplete(self, interaction: discord.Interaction, current: str):
-        data = []
-        armors = CombatSystem().armor
-        for x in armors.keys():
-            if current.lower() in x.lower():
-                data.append(app_commands.Choice(name=x.lower(), value=x.lower()))
-        return data
+
 
     @app_commands.command(name="create", description="creates a character")
-    @app_commands.autocomplete(armor=armor_autocomplete)
+    @app_commands.autocomplete(armor=autocomplete().armor)
     async def create(self, interaction: discord.Interaction,
                      name: str,
                      armor: str,
@@ -65,7 +60,7 @@ class Character(commands.GroupCog):
         await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="edit", description="edits a character")
-    @app_commands.autocomplete(armor=armor_autocomplete)
+    @app_commands.autocomplete(name=autocomplete().character, armor=autocomplete().armor)
     async def edit(self, interaction: discord.Interaction,
                    name: str,
                    armor: str = None,
@@ -101,6 +96,7 @@ class Character(commands.GroupCog):
         await interaction.followup.send(f"Character {name} edited")
 
     @app_commands.command(name="profile", description="shows the profile of a character")
+    @app_commands.autocomplete(name=autocomplete().character)
     async def profile(self, interaction: discord.Interaction, name: str):
         characters = CombatSystem().get_characters()[interaction.user.id]
         if name not in characters.keys():
@@ -128,10 +124,10 @@ class Character(commands.GroupCog):
     async def show(self, interaction: discord.Interaction, member: discord.Member, name: str):
         characters = CombatSystem().get_characters()[member.id]
 
-        if name not in characters.keys():
+        if name.lower() not in characters.keys():
             await interaction.response.send_message(f"Character {name} does not exist")
             return
-        character = characters[name]
+        character = characters[name.lower()]
         armors = CombatSystem().armor
         for y, x in armors.items():
             print(x, y)

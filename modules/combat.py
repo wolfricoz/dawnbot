@@ -5,6 +5,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from components.autocomplete import autocomplete
 from components.databaseEvents import CombatSystem
 
 
@@ -12,30 +13,14 @@ class Combat(commands.GroupCog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    async def weapon_autocomplete(self, interaction: discord.Interaction, current: str):
-        data = []
-        armors = CombatSystem().weapons
-        for x in armors.keys():
-            if current.lower() in x.lower():
-                data.append(app_commands.Choice(name=x.lower(), value=x.lower()))
-        return data
-
-    async def character_autocomplete(self, interaction: discord.Interaction, current: str):
-        data = []
-        characters = CombatSystem().characters[interaction.user.id]
-        for x in characters.keys():
-            if current.lower() in x.lower():
-                data.append(app_commands.Choice(name=x.lower(), value=x.lower()))
-        return data
 
     @app_commands.command(name="attack", description="attacks a target")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    @app_commands.autocomplete(character=character_autocomplete,
-                               weapon=weapon_autocomplete)
+    @app_commands.autocomplete(character=autocomplete().character,
+                               weapon=autocomplete().weapon)
     @app_commands.choices(damage_modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)],
                           advantage=[Choice(name="yes", value="yes"), Choice(name="no", value="no")])
     async def attack(self, interaction: discord.Interaction, title: str, character: str, weapon: str, enemy_ac: int, damage_modifier: Choice[int] = 0, advantage: Choice[str] = "no"):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer()
 
         embed = discord.Embed(title=title)
 
