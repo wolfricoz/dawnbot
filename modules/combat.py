@@ -36,13 +36,15 @@ class Combat(commands.GroupCog):
         crit = False
         hit_dice_count = 2 if advantage.lower() == "yes" else 1
         hit_results = []
-        hit_mod = round(chosen_character['perception'] / 2) + chosen_weapon['hitmodifier']
+        hit_mod = round(chosen_character['perception'] / 2) + chosen_weapon['hitmodifier'] + hitchance_modifier
+        if weapon.endswith('spell'):
+            hit_mod = round(chosen_character['charisma'] / 2) + chosen_weapon['hitmodifier'] + hitchance_modifier
         while hit_dice_count > 0:
             hit_dice_count -= 1
             temp_result = random.randint(1, 20)
             if temp_result == 20:
                 crit = True
-            hit_results.append(temp_result + hit_mod + hitchance_modifier)
+            hit_results.append(temp_result + hit_mod)
         hit_result = max(hit_results)
         if hit_result < enemy_ac:
             embed.description = f"**{character}** missed the attack"
