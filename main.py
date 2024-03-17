@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from components import database
 from sqlalchemy.orm import Session
 from components.configmaker import guildconfiger
+from components.databaseEvents import CombatSystem
+
 database.database().create()
 session = Session(database.engine)
 load_dotenv('.env')
@@ -17,7 +19,6 @@ intents.message_content = True
 intents.members = True
 activity = discord.Activity(type=discord.ActivityType.watching, name="over RMR")
 bot = commands.Bot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
-
 @bot.event
 async def on_ready():
     # dev = bot.get_channel(1141714483312599200)
@@ -33,7 +34,7 @@ async def on_ready():
             user = database.Users(uid=member.id)
             session.add(user)
             session.commit()
-
+    CombatSystem().load_all()
     await bot.tree.sync()
     print("Commands synced, start up _done_")
 

@@ -1,14 +1,47 @@
 from abc import ABC, abstractmethod
 
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 import components.database as db
 
 
-class transaction(ABC):
+class CommitError(Exception):
+    """the commit failed."""
+
+    def __init__(self, message="Commiting the data to the database failed and has been rolled back; please try again."):
+        self.message = message
+        super().__init__(self.message)
+
+
+class TransactionController(ABC):
+
+    @staticmethod
+    @abstractmethod
+    def commit(session):
+        """
+
+        :param session:
+        """
+        try:
+            session.commit()
+        except SQLAlchemyError as e:
+            print(e)
+            session.rollback()
+            raise CommitError()
+        finally:
+            session.close()
+
     @staticmethod
     @abstractmethod
     def get_user(session, id):
+        """
+
+        :param session:
+        :param id:
+        :return:
+        """
         session.close()
         user = session.scalars(select(db.Users).where(db.Users.uid == id)).first()
         if user is None:
@@ -20,6 +53,12 @@ class transaction(ABC):
     @staticmethod
     @abstractmethod
     def get_roles(session, guild):
+        """
+
+        :param session:
+        :param guild:
+        :return:
+        """
         query = session.scalars(select(db.Levels).where(db.Levels.guildid == guild.id)).all()
         temp_roles = [x.role_id for x in query]
         roles = []
@@ -54,3 +93,206 @@ class transaction(ABC):
         role.append(query[-1].role_id)
         rankinfo = possible_ranks.get(role[0])
         return role[0], rankinfo
+
+
+class CombatSystem(ABC):
+    session = Session(db.engine)
+    armor = {}
+    weapons = {}
+    characters = {}
+
+    def load_all(self):
+        self.load_armor()
+        self.load_weapons()
+        self.load_characters()
+        print("loaded all")
+
+    def load_armor(self):
+        self.armor.clear()
+        for x in self.session.scalars(select(db.Armors)).all():
+            self.armor[x.name] = {}
+            self.armor[x.name]["id"] = x.id
+            self.armor[x.name]["hp"] = x.hp
+            self.armor[x.name]["ac"] = x.ac
+            self.armor[x.name]["hitchance"] = x.hitchance
+            self.armor[x.name]["modifier"] = x.modifier
+        print(self.armor)
+        return self.armor
+
+    def load_weapons(self):
+        self.weapons.clear()
+        for x in self.session.scalars(select(db.Weapons)).all():
+            self.weapons[x.name] = {}
+            self.weapons[x.name]["dice"] = x.dice
+            self.weapons[x.name]["modifier"] = x.modifier
+            self.weapons[x.name]["hitmodifier"] = x.hitmodifier
+        print(self.weapons)
+        return self.weapons
+
+    def load_characters(self):
+        self.characters.clear()
+        for x in self.session.scalars(select(db.Characters)).all():
+            if x.uid not in self.characters:
+                self.characters[x.uid] = {}
+            self.characters[x.uid][x.name] = {}
+            self.characters[x.uid][x.name]["prestige"] = x.prestige
+            self.characters[x.uid][x.name]["strength"] = x.strength
+            self.characters[x.uid][x.name]["perception"] = x.perception
+            self.characters[x.uid][x.name]["endurance"] = x.endurance
+            self.characters[x.uid][x.name]["charisma"] = x.charisma
+            self.characters[x.uid][x.name]["intelligence"] = x.intelligence
+            self.characters[x.uid][x.name]["agility"] = x.agility
+
+            self.characters[x.uid][x.name]["armor"] = x.armor
+        print(self.characters)
+        return self.characters
+
+    def create_character(self, user, name, armor, strength, perception, endurance, charisma, intelligence, agility, prestige):
+        armor = self.armor[armor]["id"]
+
+        character = db.Characters(uid=user.id, name=name, armor=armor, strength=strength, perception=perception,
+                                  endurance=endurance, charisma=charisma, intelligence=intelligence, agility=agility,
+                                  prestige=prestige)
+        self.session.add(character)
+        TransactionController.commit(self.session)
+        self.load_characters()
+        return character
+
+    def create_armor(self, name: str, hp, ac, hitchance, modifier) -> db.Armors:
+        """
+
+        :param name:
+        :param hp:
+        :param ac:
+        :param hitchance:
+        :param modifier:
+        :return db.Armors:
+        """
+        armor = db.Armors(name=name.lower(), hp=hp, ac=ac, hitchance=hitchance, modifier=modifier.lower())
+        self.session.add(armor)
+        TransactionController.commit(self.session)
+        self.load_armor()
+        return armor
+
+    def create_weapon(self, name: str, dice: str, modifier: str, hitmodifier: int) -> db.Weapons:
+        """
+
+        :param name:
+        :param dice:
+        :param modifier:
+        :return db.Weapons:
+        """
+        weapon = db.Weapons(name=name.lower(), dice=dice.lower(), modifier=modifier.lower(), hitmodifier=hitmodifier)
+        self.session.add(weapon)
+        TransactionController.commit(self.session)
+        self.load_weapons()
+        return weapon
+
+    def get_weapons(self):
+        return self.weapons
+
+    def get_characters(self):
+        return self.characters
+
+    def get_armor(self, name):
+        return self.armor.get(name)
+
+    def remove_weapon(self, name: str) -> None:
+        """
+
+        :param name:
+        :return None:
+        """
+        weapon = self.session.scalars(select(db.Weapons).where(db.Weapons.name == name)).first()
+        self.session.delete(weapon)
+        TransactionController.commit(self.session)
+        self.load_weapons()
+        return None
+
+    def remove_armor(self, name: str) -> None:
+        """
+
+        :param name:
+        :return None:
+        """
+        armor = self.session.scalars(select(db.Armors).where(db.Armors.name == name)).first()
+        self.session.delete(armor)
+        TransactionController.commit(self.session)
+        self.load_armor()
+        return None
+
+    def remove_character(self, user, name: str) -> None:
+        """
+
+        :param user:
+        :param name:
+        :return None:
+        """
+        character = self.session.scalars(select(db.Characters).where(db.Characters.uid == user.id).where(db.Characters.name == name)).first()
+        self.session.delete(character)
+        TransactionController.commit(self.session)
+        self.load_characters()
+        return None
+
+    def update_weapon(self, name: str, dice: str, modifier: str, hitmodifier: int) -> db.Weapons:
+        """
+
+        :param name:
+        :param dice:
+        :param modifier:
+        :return db.Weapons:
+        """
+        weapon = self.session.scalars(select(db.Weapons).where(db.Weapons.name == name)).first()
+        weapon.dice = dice
+        weapon.modifier = modifier
+        weapon.hitmodifier = hitmodifier
+        TransactionController.commit(self.session)
+        self.load_weapons()
+        return weapon
+
+    def update_armor(self, name: str, hp, ac, hitchance, modifier) -> db.Armors:
+        """
+
+        :param name:
+        :param hp:
+        :param ac:
+        :param hitchance:
+        :param modifier:
+        :return db.Armors:
+        """
+        armor = self.session.scalars(select(db.Armors).where(db.Armors.name == name)).first()
+        armor.hp = hp
+        armor.ac = ac
+        armor.hitchance = hitchance
+        armor.modifier = modifier
+        TransactionController.commit(self.session)
+        self.load_armor()
+        return armor
+
+    def update_character(self, user, name, armor, strength, perception, endurance, charisma, intelligence, agility, prestige):
+        """
+
+        :param user:
+        :param name:
+        :param armor:
+        :param strength:
+        :param perception:
+        :param endurance:
+        :param charisma:
+        :param intelligence:
+        :param agility:
+        :param prestige:
+        :return None:
+        """
+        character = self.session.scalars(select(db.Characters).where(db.Characters.uid == user.id).where(db.Characters.name == name)).first()
+        character.armor = self.armor[armor]["id"]
+        character.strength = strength
+        character.perception = perception
+        character.endurance = endurance
+        character.charisma = charisma
+        character.intelligence = intelligence
+        character.agility = agility
+        character.prestige = prestige
+        TransactionController.commit(self.session)
+        self.load_characters()
+        return None

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from components.configmaker import guildconfiger
 import components.database as db
-from components.databaseEvents import transaction
+from components.databaseEvents import TransactionController
 from components.xpcalculations import xpCalculations
 
 session = Session(bind=db.engine)
@@ -20,8 +20,8 @@ class xpEvents(commands.Cog):
     @app_commands.checks.has_permissions()
     async def checkxp(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        user = transaction.get_user(session, interaction.user.id)
-        roleid, rankinfo = transaction.get_lowest_role(session, interaction.guild, user)
+        user = TransactionController.get_user(session, interaction.user.id)
+        roleid, rankinfo = TransactionController.get_lowest_role(session, interaction.guild, user)
         role = interaction.guild.get_role(roleid)
         if rankinfo is None:
             rankinfo = user.xp
@@ -103,7 +103,7 @@ class xpEvents(commands.Cog):
         if new_rank in message.author.roles or new_rank is None:
             return
         # prepares the list of roles that have to be removed
-        remroles = transaction.get_roles(session, message.guild)
+        remroles = TransactionController.get_roles(session, message.guild)
         await message.author.remove_roles(*remroles)
         announcement = await guildconfiger.get(message.guild.id, "announcement")
         lvlch = self.bot.get_channel(announcement)
@@ -139,7 +139,7 @@ class xpEvents(commands.Cog):
         if new_rank in message.author.roles or new_rank is None:
             return
         # prepares the list of roles that have to be removed
-        remroles = transaction.get_roles(session, message.guild)
+        remroles = TransactionController.get_roles(session, message.guild)
         await message.author.remove_roles(*remroles)
         announcement = await guildconfiger.get(message.guild.id, "announcement")
         lvlch = self.bot.get_channel(announcement)
