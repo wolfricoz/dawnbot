@@ -46,7 +46,7 @@ class Combat(commands.GroupCog):
                 crit = True
             hit_results.append(temp_result + hit_mod)
         hit_result = max(hit_results)
-        if hit_result < enemy_ac:
+        if hit_result <= enemy_ac:
             embed.description = f"**{character}** missed the attack"
             embed.set_footer(text=f"Hit roll: {hit_result} vs {enemy_ac}")
             await interaction.followup.send(embed=embed)
