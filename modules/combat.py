@@ -13,13 +13,13 @@ class Combat(commands.GroupCog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-
-    @app_commands.command(name="attack", description="attacks a target")
+    @app_commands.command(name="attack", description="attacks a target. Only fill in modifier if you have extra bonuses that aren't from stats.")
     @app_commands.autocomplete(character=autocomplete().character,
                                weapon=autocomplete().weapon)
-    @app_commands.choices(damage_modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)],
+    @app_commands.choices(hitchance_modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)],
+                          damage_modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)],
                           advantage=[Choice(name="yes", value="yes"), Choice(name="no", value="no")])
-    async def attack(self, interaction: discord.Interaction, title: str, character: str, weapon: str, enemy_ac: int, damage_modifier: Choice[int] = 0, advantage: Choice[str] = "no"):
+    async def attack(self, interaction: discord.Interaction, title: str, character: str, weapon: str, enemy_ac: int, hitchance_modifier: Choice[int] = 0, damage_modifier: Choice[int] = 0, advantage: Choice[str] = "no"):
         await interaction.response.defer()
 
         embed = discord.Embed(title=title)
@@ -28,6 +28,8 @@ class Combat(commands.GroupCog):
             damage_modifier = damage_modifier.value
         if isinstance(advantage, Choice):
             advantage = advantage.value
+        if isinstance(hitchance_modifier, Choice):
+            hitchance_modifier = hitchance_modifier.value
         chosen_character = CombatSystem().characters[interaction.user.id][character]
         chosen_weapon = CombatSystem().weapons[weapon]
         # hit dice
@@ -40,7 +42,7 @@ class Combat(commands.GroupCog):
             temp_result = random.randint(1, 20)
             if temp_result == 20:
                 crit = True
-            hit_results.append(temp_result + hit_mod)
+            hit_results.append(temp_result + hit_mod + hitchance_modifier)
         hit_result = max(hit_results)
         if hit_result < enemy_ac:
             embed.description = f"**{character}** missed the attack"
@@ -67,9 +69,11 @@ class Combat(commands.GroupCog):
             results.append(result)
         total_damage = sum(results) + damage_mod
         if crit:
-           total_damage = (dice_size * dice_number) + (damage_mod * 2)
+            total_damage = (dice_size * dice_number) + (damage_mod * 2)
         embed.description = f"**{character}** hit the attack for **{total_damage}** damage"
         embed.set_footer(text=f"Debug: Hit roll: {hit_result} + {hit_mod} vs {enemy_ac}, Damage roll: {results} + {damage_mod} = {total_damage} (crit: {crit}) (advantage: {advantage})")
         await interaction.followup.send(embed=embed)
+
+
 async def setup(bot):
     await bot.add_cog(Combat(bot))
