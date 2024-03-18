@@ -105,7 +105,6 @@ class Character(commands.GroupCog):
         character = characters[name]
         armors = CombatSystem().armor
         for y, x in armors.items():
-            print(x, y)
             if x["id"] == character["armor"]:
                 character["armor"] = y
                 break

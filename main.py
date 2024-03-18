@@ -19,6 +19,8 @@ intents.message_content = True
 intents.members = True
 activity = discord.Activity(type=discord.ActivityType.watching, name="over RMR")
 bot = commands.Bot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
+bot.DEV = os.getenv('DEV')
+
 @bot.event
 async def on_ready():
     # dev = bot.get_channel(1141714483312599200)

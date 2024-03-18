@@ -45,7 +45,7 @@ class weapon(commands.GroupCog):
         weapons = CombatSystem().get_weapons()
         embed = discord.Embed(title="Weapon types")
         for x in weapons.keys():
-            embed.add_field(name=x, value=f"Damage: {weapons[x]['dice']} + {weapons[x]['modifier']}")
+            embed.add_field(name=x, value=f"Damage: {weapons[x]['dice']} + {weapons[x]['modifier']} \n Hit modifier: {weapons[x]['hitmodifier']}")
         await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="edit", description="edits a weapon type")

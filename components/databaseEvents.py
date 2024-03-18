@@ -194,8 +194,10 @@ class CombatSystem(ABC):
     def get_characters(self):
         return self.characters
 
-    def get_armor(self, name):
-        return self.armor.get(name)
+    def get_armor_by_id(self, id: int):
+        for y, x in self.armor.items():
+            if x["id"] == id:
+                return self.armor[y]
 
     def remove_weapon(self, name: str) -> None:
         """

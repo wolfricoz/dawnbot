@@ -12,7 +12,7 @@ class armor(commands.GroupCog):
 
     @app_commands.command(name="create", description="creates an armor set")
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def create(self, interaction: discord.Interaction, name: str, hp: int, ac: int, hitchance: int  = 0, modifier: str = "None") -> None:
+    async def create(self, interaction: discord.Interaction, name: str, hp: int, ac: int, hitchance: int = 0, modifier: str = "None") -> None:
         """
         Create an armor set
         :param modifier:
