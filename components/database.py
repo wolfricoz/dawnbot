@@ -76,6 +76,14 @@ class Weapons(Base):
     modifier: Mapped[str] = mapped_column(String(255))
     hitmodifier = mapped_column(BigInteger, default=0)
 
+class Npcs(Base):
+    __tablename__ = "npcs"
+    id: Mapped[id] = mapped_column(BigInteger,primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255))
+    hp: Mapped[int] = mapped_column(BigInteger)
+    ac: Mapped[int] = mapped_column(BigInteger)
+
+
 
 class database:
     def create(self):
