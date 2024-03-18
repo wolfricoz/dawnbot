@@ -38,6 +38,6 @@ class CombatController(ABC):
         hit_result = max(hit_results)
         print(hit_mod)
         final_hit = hit_result + hit_mod
-        if final_hit <= enemy_ac:
+        if final_hit < enemy_ac:
             return False, None, final_hit, None
         return final_hit, crit, hit_result, hit_mod
