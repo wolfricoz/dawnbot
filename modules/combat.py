@@ -65,6 +65,7 @@ class Combat(commands.GroupCog):
             if chosen_weapon['modifier'].lower().startswith("damage"):
                 damage_mod += chosen_character[chosen_weapon['modifier'].split(":")[1].lower()]
         damage_mod += damage_modifier
+        dice_number += extra_dice
         while dice_number > 0 and crit is False:
             dice_number -= 1
             result = random.randint(1, dice_size)
@@ -73,7 +74,7 @@ class Combat(commands.GroupCog):
         if crit:
             total_damage = (dice_size * dice_number) + (damage_mod * 2)
         embed.description = f"**{character}** hit the attack for **{total_damage}** damage"
-        embed.set_footer(text=f"Debug: Hit roll: {hit_result} + {hit_mod} vs {enemy_ac}, Damage roll: {results} + {damage_mod} = {total_damage} (crit: {crit}) (advantage: {advantage})")
+        embed.set_footer(text=f"Debug: Hit roll: ({hit_result} + {hit_mod}) vs {enemy_ac}, Damage roll: {results} + {damage_mod} = {total_damage} (crit: {crit}) (advantage: {advantage})")
         await interaction.followup.send(embed=embed)
 
 
