@@ -1,3 +1,4 @@
+import logging
 import random
 from abc import ABC, abstractmethod
 from math import ceil
@@ -23,11 +24,15 @@ class CombatController(ABC):
         crit = False
         hit_dice_count = 2 if advantage.lower() == "yes" else 1
         hit_results = []
+        # This needs to be fixed, sometimes it doesn't get the armor. I need to check if the armor is None and if it is, set it to 0
+        logging.info(chosen_character['armor'])
         armor_mod = CombatSystem().get_armor_by_id(chosen_character['armor'])
+        logging.info(armor_mod)
         hitmod = 0
         hitmod += chosen_weapon['hitmodifier']
         hitmod += hitchance_modifier
         hitmod += armor_mod['hitchance'] if armor_mod is not None else 0
+        logging.info(hitmod)
         hit_mod = ceil(chosen_character['perception'] / 2)
         if weapon.endswith('spell'):
             hit_mod = ceil(chosen_character['charisma'] / 2)
