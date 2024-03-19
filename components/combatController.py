@@ -25,18 +25,18 @@ class CombatController(ABC):
         hit_dice_count = 2 if advantage.lower() == "yes" else 1
         hit_results = []
         # This needs to be fixed, sometimes it doesn't get the armor. I need to check if the armor is None and if it is, set it to 0
-        logging.info(chosen_character['armor'])
+        print(chosen_character['armor'])
         armor_mod = CombatSystem().get_armor_by_id(chosen_character['armor'])
-        logging.info(armor_mod)
+        print(armor_mod)
         hitmod = 0
         hitmod += chosen_weapon['hitmodifier']
         hitmod += hitchance_modifier
         hitmod += armor_mod['hitchance'] if armor_mod is not None else 0
-        logging.info("Armor Success" if armor_mod is not None else "Armor fail")
-        logging.info(hitmod)
-        hit_mod = ceil(chosen_character['perception'] / 2)
+        print("Armor Success" if armor_mod is not None else "Armor fail")
+        print(hitmod)
+        hitmod += ceil(chosen_character['perception'] / 2)
         if weapon.endswith('spell'):
-            hit_mod = ceil(chosen_character['charisma'] / 2)
+            hitmod += ceil(chosen_character['charisma'] / 2)
         while hit_dice_count > 0:
             hit_dice_count -= 1
             temp_result = random.randint(1, 20)
@@ -44,8 +44,8 @@ class CombatController(ABC):
                 crit = True
             hit_results.append(temp_result)
         hit_result = max(hit_results)
-        print(hit_mod)
-        final_hit = hit_result + hit_mod
+        print(hitmod)
+        final_hit = hit_result + hitmod
         if final_hit < enemy_ac:
-            return False, None, final_hit, None
-        return final_hit, crit, hit_result, hit_mod
+            return False, final_hit, hit_result,  hitmod
+        return final_hit, crit, hit_result, hitmod

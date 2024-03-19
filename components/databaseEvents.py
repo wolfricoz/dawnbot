@@ -287,14 +287,15 @@ class CombatSystem(ABC):
         :return None:
         """
         character = self.session.scalars(select(db.Characters).where(db.Characters.uid == user.id).where(db.Characters.name == name)).first()
-        character.armor = self.armor[armor]["id"]
-        character.strength = strength
-        character.perception = perception
-        character.endurance = endurance
-        character.charisma = charisma
-        character.intelligence = intelligence
-        character.agility = agility
-        character.prestige = prestige
+
+        character.armor = self.armor[armor]["id"] if armor is not None else character.armor
+        character.strength = strength if strength is not None else character.strength
+        character.perception = perception if perception is not None else character.perception
+        character.endurance = endurance if endurance is not None else character.endurance
+        character.charisma = charisma if charisma is not None else character.charisma
+        character.intelligence = intelligence if intelligence is not None else character.intelligence
+        character.agility = agility if agility is not None else character.agility
+        character.prestige = prestige if prestige is not None else character.prestige
         TransactionController.commit(self.session)
         self.load_characters()
         return None

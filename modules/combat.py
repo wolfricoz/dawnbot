@@ -40,7 +40,7 @@ class Combat(commands.GroupCog):
         final_hit, crit, hit_result, hit_mod = CombatController.calculate_hit(chosen_character, weapon, chosen_weapon, hitchance_modifier, advantage, enemy_ac)
         if final_hit is False:
             embed.description = f"**{character}** missed the attack"
-            embed.set_footer(text=f"Hit roll: {hit_result} vs {enemy_ac}")
+            embed.set_footer(text=f"Hit roll: {crit} ({hit_result} + {hit_mod}) vs {enemy_ac}")
             await interaction.followup.send(embed=embed)
             return
         # damage dice
