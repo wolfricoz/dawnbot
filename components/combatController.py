@@ -27,6 +27,8 @@ class CombatController(ABC):
         # This needs to be fixed, sometimes it doesn't get the armor. I need to check if the armor is None and if it is, set it to 0
         print(chosen_character['armor'])
         armor_mod = CombatSystem().get_armor_by_id(chosen_character['armor'])
+        if armor_mod is None:
+            raise ValueError("Armor not found")
         print(armor_mod)
         hitmod = 0
         hitmod += chosen_weapon['hitmodifier']
