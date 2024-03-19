@@ -32,6 +32,7 @@ class CombatController(ABC):
         hitmod += chosen_weapon['hitmodifier']
         hitmod += hitchance_modifier
         hitmod += armor_mod['hitchance'] if armor_mod is not None else 0
+        logging.info("Armor Success" if armor_mod is not None else "Armor fail")
         logging.info(hitmod)
         hit_mod = ceil(chosen_character['perception'] / 2)
         if weapon.endswith('spell'):
