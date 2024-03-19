@@ -1,3 +1,5 @@
+import json
+import os
 from abc import ABC, abstractmethod
 
 from sqlalchemy import select
@@ -105,7 +107,14 @@ class CombatSystem(ABC):
         self.load_armor()
         self.load_weapons()
         self.load_characters()
-        print("loaded all")
+        if os.path.exists("debug") is False:
+            os.mkdir("debug")
+        with open("debug/characters.json", "w") as f:
+            json.dump(self.characters, f, indent=4)
+        with open("debug/armor.json", "w") as f:
+            json.dump(self.armor, f, indent=4)
+        with open("debug/weapons.json", "w") as f:
+            json.dump(self.weapons, f, indent=4)
 
     def load_armor(self):
         self.armor.clear()
@@ -116,7 +125,6 @@ class CombatSystem(ABC):
             self.armor[x.name]["ac"] = x.ac
             self.armor[x.name]["hitchance"] = x.hitchance
             self.armor[x.name]["modifier"] = x.modifier
-        print(self.armor)
         return self.armor
 
     def load_weapons(self):
@@ -126,7 +134,6 @@ class CombatSystem(ABC):
             self.weapons[x.name]["dice"] = x.dice
             self.weapons[x.name]["modifier"] = x.modifier
             self.weapons[x.name]["hitmodifier"] = x.hitmodifier
-        print(self.weapons)
         return self.weapons
 
     def load_characters(self):
@@ -144,7 +151,6 @@ class CombatSystem(ABC):
             self.characters[x.uid][x.name]["agility"] = x.agility
 
             self.characters[x.uid][x.name]["armor"] = x.armor
-        print(self.characters)
         return self.characters
 
     def create_character(self, user, name, armor, strength, perception, endurance, charisma, intelligence, agility, prestige):
