@@ -1,3 +1,4 @@
+import logging
 import random
 
 import discord
@@ -68,6 +69,8 @@ class Combat(commands.GroupCog):
             total_damage = (dice_size * dice_number) + (damage_mod * 2)
         embed.description = f"**{character}** hit the attack for **{total_damage}** damage with **{weapon}**!"
         embed.set_footer(text=f"Debug: Hit roll: {final_hit} ({hit_result} + {hit_mod}) vs {enemy_ac}, Damage roll: {results} + {damage_mod} = {total_damage} (crit: {crit}) (advantage: {advantage})")
+        logging.info(f"{character} hit the attack for {total_damage} damage with {weapon}!")
+        logging.debug(f"Debug: Hit roll: {final_hit} ({hit_result} + {hit_mod}) vs {enemy_ac}, Damage roll: {results} + {damage_mod} = {total_damage} (crit: {crit}) (advantage: {advantage})")
         await interaction.followup.send(embed=embed)
 
 

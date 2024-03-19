@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -24,6 +26,7 @@ class weapon(commands.GroupCog):
             await interaction.followup.send(f"Weapon {name} already exists")
             return
         CombatSystem().create_weapon(name, dice, modifier, hitmodifier)
+        logging.info(f"Weapon {name} created by {interaction.user.name}")
         await interaction.followup.send(f"Weapon {name} created")
 
     @app_commands.command(name="delete", description="deletes a weapon type")
@@ -37,6 +40,7 @@ class weapon(commands.GroupCog):
             await interaction.followup.send(f"Weapon {name} does not exist")
             return
         CombatSystem().remove_weapon(name)
+        logging.info(f"Weapon {name} deleted by {interaction.user.name}")
         await interaction.followup.send(f"Weapon {name} deleted")
 
     @app_commands.command(name="list", description="lists all weapon types")
@@ -68,6 +72,7 @@ class weapon(commands.GroupCog):
         if hitmodifier is not None:
             weapons[name]['hitmodifier'] = hitmodifier
         CombatSystem().update_weapon(name, weapons[name]['dice'], weapons[name]['modifier'], weapons[name]['hitmodifier'])
+        logging.info(f"Weapon {name} updated by {interaction.user.name}")
         await interaction.followup.send(f"Weapon {name} updated")
 
 async def setup(bot):

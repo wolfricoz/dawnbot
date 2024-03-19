@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -27,6 +29,7 @@ class armor(commands.GroupCog):
             await interaction.response.send_message(f"Armor set {name} already exists")
             return
         CombatSystem().create_armor(name, hp, ac, hitchance, modifier)
+        logging.info(f"Armor set {name} created by {interaction.user.name}")
         await interaction.response.send_message(f"Armor set {name} created")
 
     @app_commands.command(name="delete", description="deletes an armor set")
@@ -43,6 +46,7 @@ class armor(commands.GroupCog):
             await interaction.response.send_message(f"Armor set {name} does not exist")
             return
         CombatSystem().remove_armor(name)
+        logging.info(f"Armor set {name} deleted by {interaction.user.name}")
         await interaction.response.send_message(f"Armor set {name} deleted")
 
     @app_commands.command(name="list", description="lists all armor sets")
@@ -86,6 +90,7 @@ class armor(commands.GroupCog):
         if modifier is not None:
             armors[name]['modifier'] = modifier
         CombatSystem().update_armor(name, armors[name]['hp'], armors[name]['ac'], armors[name]['hitchance'], armors[name]['modifier'])
+        logging.info(f"Armor set {name} edited by {interaction.user.name}")
         await interaction.response.send_message(f"Armor set {name} edited")
 
 

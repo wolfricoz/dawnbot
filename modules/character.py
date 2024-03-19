@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -31,6 +33,7 @@ class Character(commands.GroupCog):
             await interaction.followup.send(f"You have too many points allocated, you are allowed a maximum of {max_points} points but you allocated {allocated_points}!")
             return
         CombatSystem().create_character(interaction.user, name.lower(), armor, strength, perception, endurance, charisma, intelligence, agility, extra_points)
+        logging.info(f"Character {name} created by {interaction.user.name} with stats: {armor}, {strength}, {perception}, {endurance}, {charisma}, {intelligence}, {agility}, {extra_points}")
         await interaction.followup.send(f"Character {name} created")
 
     @app_commands.command(name="delete", description="deletes a character")
@@ -41,6 +44,7 @@ class Character(commands.GroupCog):
             await interaction.followup.send(f"Character {name} does not exist")
             return
         CombatSystem().remove_character(interaction.user, name)
+        logging.info(f"Character {name} deleted by {interaction.user.name}")
         await interaction.followup.send(f"Character {name} deleted")
 
     @app_commands.command(name="list", description="lists all characters")
@@ -93,6 +97,7 @@ class Character(commands.GroupCog):
         if extra_points is not None:
             characters[name]['prestige'] = extra_points
         CombatSystem().update_character(interaction.user, name, armor, strength, perception, endurance, charisma, intelligence, agility, extra_points)
+        logging.info(f"Character {name} edited by {interaction.user.name}")
         await interaction.followup.send(f"Character {name} edited")
 
     @app_commands.command(name="profile", description="shows the profile of a character")

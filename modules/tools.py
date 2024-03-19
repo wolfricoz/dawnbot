@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import random
 
 import discord
@@ -32,6 +33,7 @@ class Tools(commands.Cog):
     @app_commands.choices(modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)])
     async def dice(self, interaction: discord.Interaction, dicetype: int, modifier: Choice[int] = 0, title: str = "No goal given.",
                    amount: int = 1, ):
+        logging.debug(f"{interaction.user.name} rolled dicetype: {dicetype}, modifier: {modifier}, title: {title}, amount: {amount}")
         if isinstance(modifier, Choice):
             modifier = modifier.value
         await interaction.response.defer(thinking=False, ephemeral=True)
