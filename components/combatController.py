@@ -30,15 +30,12 @@ class CombatController(ABC):
             raise ValueError("Armor not found")
         hitmod = 0
         hitmod += chosen_weapon['hitmodifier']
-        print(hitmod)
         hitmod += hitchance_modifier
-        print(hitmod)
         hitmod += armor_mod['hitchance'] if armor_mod is not None else 0
-        print(hitmod)
-        hitmod += ceil(chosen_character['perception'] / 2)
-        print(hitmod)
         if weapon.endswith('spell'):
             hitmod += ceil(chosen_character['charisma'] / 2)
+        else:
+            hitmod += ceil(chosen_character['perception'] / 2)
         while hit_dice_count > 0:
             hit_dice_count -= 1
             temp_result = random.randint(1, 20)
