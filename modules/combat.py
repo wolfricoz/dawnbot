@@ -16,6 +16,7 @@ class Combat(commands.GroupCog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+
     @app_commands.command(name="attack", description="attacks a target. Only fill in modifier if you have extra bonuses that aren't from stats.")
     @app_commands.autocomplete(character=autocomplete().character,
                                weapon=autocomplete().weapon)
@@ -73,6 +74,12 @@ class Combat(commands.GroupCog):
         logging.debug(f"Debug: Hit roll: {final_hit} ({hit_result} + {hit_mod}) vs {enemy_ac}, Damage roll: {results} + {damage_mod} = {total_damage} (crit: {crit}) (advantage: {advantage})")
         await interaction.followup.send(embed=embed)
 
+    @app_commands.command(name="reload")
+    @commands.is_owner()
+    async def forcereload(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        CombatSystem().load_all()
+        await interaction.followup.send("Reloaded all data")
 
 async def setup(bot):
     await bot.add_cog(Combat(bot))
