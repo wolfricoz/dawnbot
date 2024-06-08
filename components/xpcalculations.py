@@ -1,6 +1,9 @@
 import os
 from abc import ABC, abstractmethod
 import json
+
+import discord
+
 from components.databaseEvents import TransactionController
 
 
@@ -23,3 +26,24 @@ class xpCalculations(ABC):
         session.commit()
         return role
 
+    @staticmethod
+    @abstractmethod
+    async def check_size(message: discord.Message):
+        if len(message.content) <= 50 and message.mentions:
+            return True
+
+        if len(message.content) <= 300 and message.author.guild_permissions.manage_messages is False:
+            return False
+        return True
+
+    @staticmethod
+    @abstractmethod
+    async def check_roles(message: discord.Message, session):
+        if len(message.content) <= 50:
+            return None, None
+        role = await xpCalculations.calculate(message, session)
+        new_rank = message.guild.get_role(role)
+        if new_rank in message.author.roles or new_rank is None:
+            return None, None
+        remroles = TransactionController.get_roles(session, message.guild)
+        return new_rank, remroles

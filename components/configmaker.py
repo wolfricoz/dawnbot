@@ -79,7 +79,7 @@ class guildconfiger(ABC):
 
     @staticmethod
     @abstractmethod
-    async def addthreads(guildid, interaction, channel: discord.ForumChannel, key, session):
+    async def addthreads(guildid, interaction, channel: discord.ForumChannel, key, session, checkhistory: bool = True):
         if not os.path.exists(f"jsons/{guildid}.json"):
             await guildconfiger.create(guildid, interaction.guild.name)
         with open(f"jsons/{guildid}.json") as f:
@@ -89,12 +89,30 @@ class guildconfiger(ABC):
                 if thread.id in data[key]:
                     continue
                 data[key].append(channel.id)
+                threads += 1
+                if not checkhistory:
+                    continue
                 async for message in thread.history():
                     await xpCalculations.calculate(message, session)
-                threads += 1
         with open(f"jsons/{guildid}.json", 'w') as f:
             json.dump(data, f, indent=4)
         await interaction.followup.send(f"added {threads} threads to config")
+
+    @staticmethod
+    @abstractmethod
+    async def addthread(guildid, thread: discord.Thread, key, session, checkhistory: bool = True):
+        if not os.path.exists(f"jsons/{guildid}.json"):
+            await guildconfiger.create(guildid, thread.guild.name)
+        with open(f"jsons/{guildid}.json") as f:
+            data = json.load(f)
+            if thread.id in data[key]:
+                return
+            data[key].append(thread.id)
+            if checkhistory:
+                async for message in thread.history():
+                    await xpCalculations.calculate(message, session)
+        with open(f"jsons/{guildid}.json", 'w') as f:
+            json.dump(data, f, indent=4)
 
     @staticmethod
     @abstractmethod
