@@ -44,7 +44,11 @@ class xpCalculations(ABC):
         role = await xpCalculations.calculate(message, session)
         new_rank = message.guild.get_role(role)
         remroles = TransactionController.get_roles(session, message.guild)
-
-        if new_rank in message.author.roles or new_rank is None and remroles not in message.author.roles:
+        for remrole in remroles:
+            if remrole is role:
+                continue
+            if remrole not in message.author.roles:
+                remroles.remove(remrole)
+        if new_rank in message.author.roles and remroles is None or new_rank is None and remroles is None:
             return None, None
         return new_rank, remroles
