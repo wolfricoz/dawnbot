@@ -97,8 +97,12 @@ class config(commands.GroupCog):
         key = "channels"
         channels = []
         for channel in category.channels:
-            await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
-            channels.append(channel.name)
+            if isinstance(channel, discord.TextChannel):
+                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
+                channels.append(channel.name)
+            if isinstance(channel, discord.ForumChannel):
+                await guildconfiger.addforum(interaction.guild.id, interaction, channel, key, session)
+                channels.append(channel.name)
         await interaction.followup.send(f"Channels added: {', '.join(channels)}")
         session.commit()
 
