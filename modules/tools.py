@@ -80,6 +80,14 @@ class Tools(commands.Cog):
         else:
             await interaction.channel.send(f"Tails!")
 
+
+    @app_commands.command(name="purge", description="purges inactive users")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def purge(self, interaction: discord.Interaction):
+        role = interaction.guild.get_role(1248728538920652860)
+        for member in interaction.guild.members:
+            if role in member.roles:
+                await interaction.channel.send(f"[TEST] {member.mention} has the purge role")
     @tasks.loop(hours=72)
     async def unarchiver(self):
         "makes all posts active again"
