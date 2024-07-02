@@ -85,9 +85,17 @@ class Tools(commands.Cog):
     @app_commands.checks.has_permissions(manage_guild=True)
     async def purge(self, interaction: discord.Interaction):
         role = interaction.guild.get_role(1248728538920652860)
+        count = 0
         for member in interaction.guild.members:
             if role in member.roles:
-                await interaction.channel.send(f"[TEST] {member.mention} has the purge role")
+                invite = await interaction.channel.create_invite(max_age=86400, max_uses=1)
+                await asyncio.sleep(1)
+                await member.send("You have been purged from the server due to inactivity. If you wish to rejoin, please use the invite link."
+                                  f"{invite.url}")
+                await member.kick(reason="purged due to inactivity")
+                count += 1
+        await interaction.followup.send(f"{count} members have been purged.")
+
     @tasks.loop(hours=72)
     async def unarchiver(self):
         "makes all posts active again"
