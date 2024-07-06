@@ -1,0 +1,17 @@
+{
+    "heavy melee": {
+        "dice": "4d9",
+        "modifier": "damage:strength",
+        "hitmodifier": -3
+    },
+    "medium melee": {
+        "dice": "4d6",
+        "modifier": "damage:strength",
+        "hitmodifier": 0
+    },
+    "unarmed": {
+        "dice": "5d4",
+        "modifier": "dice:agility",
+        "hitmodifier": 0
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "unarmoured": {
+        "id": 2,
+        "hp": 75,
+        "ac": 13,
+        "hitchance": 1,
+        "modifier": "endurance"
+    }
+}
