@@ -5,7 +5,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from components import database
 from sqlalchemy.orm import Session
-from components.configmaker import guildconfiger
+from components.configMaker import guildconfiger
 from components.databaseEvents import CombatSystem
 
 database.database().create()

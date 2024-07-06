@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 import discord
 
-from components.xpcalculations import xpCalculations
+from components.xpCalculations import xpCalculations
 
 
 class guildconfiger(ABC):

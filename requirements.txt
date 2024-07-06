@@ -1,6 +1,7 @@
 discord>=2.3.2
-python-dotenv==1.0.1
-SQLAlchemy==2.0.28
+python-dotenv>=1.0.1
+SQLAlchemy>=2.0.28
 PyMySQL>=1.0.2
-pytz==2024.1
+pytz>=2024.1
 sqlalchemy_utils
+alembic

@@ -6,7 +6,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
-from components.autocomplete import autocomplete
+from components.autoComplete import autocomplete
 from components.combatController import CombatController
 from components.databaseEvents import CombatSystem
 from math import ceil

@@ -3,7 +3,7 @@ from discord.ext import commands
 from sqlalchemy.orm import Session
 
 import components.database as db
-from components.configmaker import guildconfiger
+from components.configMaker import guildconfiger
 
 session = Session(bind=db.engine)
 

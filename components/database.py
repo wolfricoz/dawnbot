@@ -28,6 +28,7 @@ class Users(Base):
     uid: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
     messages: Mapped[int] = mapped_column(BigInteger, default=0)
     xp: Mapped[int] = mapped_column(BigInteger, default=0)
+    currency: Mapped[int] = mapped_column(BigInteger, default=0)
 
 
 class Levels(Base):

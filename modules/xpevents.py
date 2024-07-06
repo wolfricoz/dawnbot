@@ -5,9 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import components.database as db
-from components.configmaker import guildconfiger
+from components.configMaker import guildconfiger
 from components.databaseEvents import TransactionController
-from components.xpcalculations import xpCalculations
+from components.xpCalculations import xpCalculations
 
 session = Session(bind=db.engine)
 
@@ -126,6 +126,18 @@ class xpEvents(commands.Cog):
         await lvlch.send(f"Congratulations {message.author.mention}, you've leveled up to {new_rank}")
         await message.author.add_roles(new_rank)
 
+    @commands.Cog.listener("on_message")
+    async def on_message_currency(self, message: discord.Message):
+        if message.channel.type != discord.ChannelType.text:
+            return
+        if message.author.bot:
+            return
+        channels = await guildconfiger.get(message.guild.id, "channels")
+        if message.channel.id not in channels:
+            return
+        if await xpCalculations.check_size(message) is False:
+            return
+        await xpCalculations.check_currency(message, session)
 
 
 async def setup(bot):

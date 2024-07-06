@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from components.autocomplete import autocomplete
+from components.autoComplete import autocomplete
 from components.databaseEvents import CombatSystem
 
 
