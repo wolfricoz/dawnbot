@@ -16,7 +16,7 @@ class currencyCalculations(ABC):
                 data = json.load(f)
                 currency_gain = data.get('currency_gain', 30)
         # Checks if user is in database, if not; user is added.
-        user = TransactionController.get_user(message.author.id)
+        user = TransactionController.get_user(message.author.id, message.guild.id)
         # Checks message length and converts it into XP
         currency_gained = round(len(message.content) / currency_gain)
         currencyTransactions.add_currency(message.author.id, currency_gained)

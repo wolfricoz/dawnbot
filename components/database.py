@@ -29,6 +29,7 @@ class Users(Base):
     messages: Mapped[int] = mapped_column(BigInteger, default=0)
     xp: Mapped[int] = mapped_column(BigInteger, default=0)
     currency: Mapped[int] = mapped_column(BigInteger, default=0)
+    guildid: Mapped[int] = mapped_column(BigInteger, default=559139888356917259)
 
 
 class Levels(Base):

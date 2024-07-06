@@ -42,18 +42,29 @@ class TransactionController(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_user(id):
+    def get_user(id, guildid):
         """
 
         :param id:
         :return:
         """
         session.close()
-        user = session.scalars(select(db.Users).where(db.Users.uid == id)).first()
+        user = session.scalars(select(db.Users).where(db.Users.uid == id, db.Users.guildid == guildid)).first()
         if user is None:
-            user = db.Users(uid=id)
-            session.add(user)
-            TransactionController.commit(session)
+            return TransactionController.add_user(id, guildid)
+        return user
+
+    @staticmethod
+    @abstractmethod
+    def add_user(id, guildid):
+        """
+
+        :param id:
+        :return:
+        """
+        user = db.Users(uid=id, guildid=guildid)
+        session.add(user)
+        TransactionController.commit(session)
         return user
 
     @staticmethod
@@ -104,51 +115,51 @@ class currencyTransactions(ABC):
     @staticmethod
     @abstractmethod
     def add_currency(message, currency_gained):
-        user = TransactionController.get_user(message.author.id)
+        user = TransactionController.get_user(message.author.id, message.guild.id)
         user.currency += currency_gained
         TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
     def remove_currency(message, currency):
-        user = TransactionController.get_user(message.author.id)
+        user = TransactionController.get_user(message.author.id, message.guild.id)
         user.currency -= currency
         TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
     def set_currency(message, currency):
-        user = TransactionController.get_user(message.author.id)
+        user = TransactionController.get_user(message.author.id, message.guild.id)
         user.currency = currency
         TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
     def get_currency(message):
-        user = TransactionController.get_user(message.author.id)
+        user = TransactionController.get_user(message.author.id, message.guild.id)
         return user.currency
 
 
 class xpTransactions(ABC):
     @staticmethod
     @abstractmethod
-    def add_xp(userid, gained_xp):
-        user = TransactionController.get_user(userid)
+    def add_xp(userid, guildid, gained_xp):
+        user = TransactionController.get_user(userid, guildid)
         user.xp += gained_xp
         user.messages += 1
         TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
-    def remove_xp(userid, xp):
-        user = TransactionController.get_user(userid)
+    def remove_xp(userid, guildid, xp):
+        user = TransactionController.get_user(userid, guildid)
         user.xp -= xp
         TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
-    def set_xp(userid, xp):
-        user = TransactionController.get_user(userid)
+    def set_xp(userid, guildid, xp):
+        user = TransactionController.get_user(userid, guildid)
         user.xp = xp
         TransactionController.commit(session)
 

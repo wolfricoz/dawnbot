@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from components import database
 from sqlalchemy.orm import Session
 from components.configMaker import guildconfiger
-from components.databaseEvents import CombatSystem
+from components.databaseEvents import CombatSystem, TransactionController
 
 database.database().create()
 session = Session(database.engine)
@@ -30,12 +30,10 @@ async def on_ready():
         await guildconfiger.create(guild.id, guild.name)
         await guildconfiger.updateconfig(guild.id)
         for member in guild.members:
-            query = session.query(database.Users).filter_by(uid=member.id).first()
+            query = TransactionController.get_user(member.id, guild.id)
             if query is not None:
                 continue
-            user = database.Users(uid=member.id)
-            session.add(user)
-            session.commit()
+            TransactionController.add_user(member.id, guild.id)
     CombatSystem().load_all()
     await bot.tree.sync()
     print("Commands synced, start up _done_")

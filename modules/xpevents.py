@@ -18,7 +18,7 @@ class xpEvents(commands.Cog):
     @app_commands.checks.has_permissions()
     async def checkxp(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        user = TransactionController.get_user(interaction.user.id)
+        user = TransactionController.get_user(interaction.user.id, guildid=interaction.guild.id)
         roleid, rankinfo = TransactionController.get_lowest_role(interaction.guild, user)
         role = interaction.guild.get_role(roleid)
         if rankinfo is None:
@@ -33,21 +33,21 @@ class xpEvents(commands.Cog):
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setxp(self, interaction: discord.Interaction, member: discord.Member, xp: int):
         await interaction.response.defer(ephemeral=True)
-        xpTransactions.set_xp(member.id, xp)
+        xpTransactions.set_xp(member.id, interaction.guild.id, xp)
         await interaction.followup.send(f"xp of {member.mention} set to {xp}")
 
     @app_commands.command(name="addxp")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def addxp(self, interaction: discord.Interaction, member: discord.Member, xp: int):
         await interaction.response.defer(ephemeral=True)
-        xpTransactions.add_xp(member.id, xp)
+        xpTransactions.add_xp(member.id, interaction.guild.id, xp)
         await interaction.followup.send(f"added {xp} to {member.mention}")
 
     @app_commands.command(name="removexp")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def removexp(self, interaction: discord.Interaction, member: discord.Member, xp: int):
         await interaction.response.defer(ephemeral=True)
-        xpTransactions.remove_xp(member.id, xp)
+        xpTransactions.remove_xp(member.id, interaction.guild.id, xp)
         await interaction.followup.send(f"added {xp} to {member.mention}")
 
     # textchannels
@@ -90,7 +90,7 @@ class xpEvents(commands.Cog):
         if message.channel.id not in channels:
             if message.channel.parent_id not in channels:
                 return
-            await guildconfiger.addthread(message.guild.id, message.channel, "channels", session)
+            await guildconfiger.addthread(message.guild.id, message.channel, "channels")
         if await xpCalculations.check_size(message) is False:
             try:
                 await message.author.send(f"Your message is too short, please make it longer than 300 characters. No XP has been awarded and your post has been removed.\n {message.content}")
@@ -100,7 +100,7 @@ class xpEvents(commands.Cog):
             await message.delete()
             return
         announcement = await guildconfiger.get(message.guild.id, "announcement")
-        new_rank, remroles = await xpCalculations.check_roles(message, session)
+        new_rank, remroles = await xpCalculations.check_roles(message)
         if new_rank is None or remroles is None:
             return
         await message.author.remove_roles(*remroles)

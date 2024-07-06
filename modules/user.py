@@ -14,7 +14,7 @@ class User(commands.GroupCog):
     @app_commands.command(name="stats")
     async def stats(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        user = TransactionController.get_user(interaction.user.id)
+        user = TransactionController.get_user(interaction.user.id, interaction.guild.id)
         roleid, rankinfo = TransactionController.get_lowest_role(interaction.guild, user)
         role = interaction.guild.get_role(roleid)
         currency_name = await guildconfiger.get(interaction.guild.id, "currency_name")

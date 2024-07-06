@@ -18,7 +18,7 @@ class currencyEvents(commands.Cog):
     @app_commands.checks.has_permissions()
     async def checkcurrency(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        user = TransactionController.get_user(interaction.user.id)
+        user = TransactionController.get_user(interaction.user.id, interaction.guild.id)
         currency = user.currency  # Assuming the user object has a 'currency' attribute
 
         embed = discord.Embed(title=f"{interaction.user.name}'s currency",

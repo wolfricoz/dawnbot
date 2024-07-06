@@ -20,7 +20,7 @@ class xpCalculations(ABC):
         # Checks message length and converts it into XP
         gained_xp = round(len(message.content) / xp_gain)
         print(f"{message.author} has gained experience: {gained_xp}")
-        xpTransactions.add_xp(message.author.id, gained_xp)
+        xpTransactions.add_xp(message.author.id, message.guild.id, gained_xp)
         role = TransactionController.get_highest_role(message.guild, user)
         return role
 
