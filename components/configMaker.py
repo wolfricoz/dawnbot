@@ -138,13 +138,15 @@ class guildconfiger(ABC):
         with open(f'jsons/{guildid}.json', 'r+') as file:
             data = json.load(file)
             newdictionary = {
-                "Name"        : data.get('Name', None),
-                "channels"    : data.get('channels', []),
-                "announcement": data.get("announcement", None),
-                "xp_gain"     : data.get("xp_gain", 1),
-                "timeline"    : data.get("timeline", ""),
-                "character"   : data.get("character", ""),
-                "modlog"      : data.get("modlog", ""),
+                "Name"         : data.get('Name', None),
+                "channels"     : data.get('channels', []),
+                "announcement" : data.get("announcement", None),
+                "xp_gain"      : data.get("xp_gain", 5),
+                "currency_gain": data.get("currency_gain", 30),
+                "currency_name": data.get("currency_name", "currency"),
+                "timeline"     : data.get("timeline", ""),
+                "character"    : data.get("character", ""),
+                "modlog"       : data.get("modlog", ""),
             }
         with open(f'jsons/{guildid}.json', 'w') as f:
             json.dump(newdictionary, f, indent=4)

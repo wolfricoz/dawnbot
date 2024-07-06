@@ -11,7 +11,7 @@ pymysql.install_as_MySQLdb()
 
 load_dotenv('.env')
 dblink = os.getenv('DB')
-engine = create_engine(dblink, poolclass=NullPool)
+engine = create_engine(dblink, poolclass=NullPool, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 if not database_exists(engine.url):
     create_database(engine.url)

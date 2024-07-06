@@ -3,10 +3,12 @@ import os
 from abc import ABC, abstractmethod
 
 from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 from sqlalchemy.orm import Session
 
 import components.database as db
+
+session = Session(bind=db.engine)
 
 
 class CommitError(Exception):
@@ -32,15 +34,17 @@ class TransactionController(ABC):
             print(e)
             session.rollback()
             raise CommitError()
+        except DBAPIError as e:
+            if e.connection_invalidated:
+                db.engine.connect()
         finally:
             session.close()
 
     @staticmethod
     @abstractmethod
-    def get_user(session, id):
+    def get_user(id):
         """
 
-        :param session:
         :param id:
         :return:
         """
@@ -49,15 +53,14 @@ class TransactionController(ABC):
         if user is None:
             user = db.Users(uid=id)
             session.add(user)
-            session.commit()
+            TransactionController.commit(session)
         return user
 
     @staticmethod
     @abstractmethod
-    def get_roles(session, guild):
+    def get_roles(guild):
         """
 
-        :param session:
         :param guild:
         :return:
         """
@@ -70,7 +73,7 @@ class TransactionController(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_highest_role(session, guild, user):
+    def get_highest_role(guild, user):
         query = session.scalars(select(db.Levels).where(db.Levels.guildid == guild.id)).all()
         possible_ranks = {}
         for q in query:
@@ -82,7 +85,7 @@ class TransactionController(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_lowest_role(session, guild, user):
+    def get_lowest_role(guild, user):
         query = session.scalars(select(db.Levels).where(db.Levels.guildid == guild.id)).all()
         possible_ranks = {}
         for q in query:
@@ -95,6 +98,59 @@ class TransactionController(ABC):
         role.append(query[-1].role_id)
         rankinfo = possible_ranks.get(role[0])
         return role[0], rankinfo
+
+
+class currencyTransactions(ABC):
+    @staticmethod
+    @abstractmethod
+    def add_currency(message, currency_gained):
+        user = TransactionController.get_user(message.author.id)
+        user.currency += currency_gained
+        TransactionController.commit(session)
+
+    @staticmethod
+    @abstractmethod
+    def remove_currency(message, currency):
+        user = TransactionController.get_user(message.author.id)
+        user.currency -= currency
+        TransactionController.commit(session)
+
+    @staticmethod
+    @abstractmethod
+    def set_currency(message, currency):
+        user = TransactionController.get_user(message.author.id)
+        user.currency = currency
+        TransactionController.commit(session)
+
+    @staticmethod
+    @abstractmethod
+    def get_currency(message):
+        user = TransactionController.get_user(message.author.id)
+        return user.currency
+
+
+class xpTransactions(ABC):
+    @staticmethod
+    @abstractmethod
+    def add_xp(userid, gained_xp):
+        user = TransactionController.get_user(userid)
+        user.xp += gained_xp
+        user.messages += 1
+        TransactionController.commit(session)
+
+    @staticmethod
+    @abstractmethod
+    def remove_xp(userid, xp):
+        user = TransactionController.get_user(userid)
+        user.xp -= xp
+        TransactionController.commit(session)
+
+    @staticmethod
+    @abstractmethod
+    def set_xp(userid, xp):
+        user = TransactionController.get_user(userid)
+        user.xp = xp
+        TransactionController.commit(session)
 
 
 class CombatSystem(ABC):

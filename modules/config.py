@@ -64,6 +64,20 @@ class config(commands.GroupCog):
         await guildconfiger.edit_value(interaction.guild.id, amount_of_characters, "xp_gain")
         await interaction.followup.send(f"xp_per_character set to {amount_of_characters}")
 
+    @app_commands.command(name='currency_gain')
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def currency_per_character(self, interaction: Interaction, amount_of_characters: int):
+        await interaction.response.defer(ephemeral=True)
+        await guildconfiger.edit_value(interaction.guild.id, amount_of_characters, "currency_gain")
+        await interaction.followup.send(f"currency_per_character set to {amount_of_characters}")
+
+    @app_commands.command(name='currency_name')
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def currency_name(self, interaction: Interaction, name: str):
+        await interaction.response.defer(ephemeral=True)
+        await guildconfiger.edit_value(interaction.guild.id, name, "currency_name")
+        await interaction.followup.send(f"currency name set to {name}")
+
     @app_commands.command(name='channel')
     @app_commands.choices(option=[
         Choice(name="add", value="add"),
