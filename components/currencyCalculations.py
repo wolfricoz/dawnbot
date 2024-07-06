@@ -19,7 +19,7 @@ class currencyCalculations(ABC):
         user = TransactionController.get_user(message.author.id, message.guild.id)
         # Checks message length and converts it into XP
         currency_gained = round(len(message.content) / currency_gain)
-        currencyTransactions.add_currency(message.author.id, currency_gained)
+        currencyTransactions.add_currency(message.author.id, message.guild.id, currency_gained)
         print(f"{message.author} has gained currency: {currency_gained}")
 
 

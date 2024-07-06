@@ -10,18 +10,17 @@ from components.databaseEvents import TransactionController, xpTransactions
 class xpCalculations(ABC):
     @staticmethod
     @abstractmethod
-    async def calculate(message):
+    async def calculate(message: discord.Message):
         if os.path.exists(f"jsons/{message.guild.id}.json"):
             with open(f"jsons/{message.guild.id}.json") as f:
                 data = json.load(f)
                 xp_gain = data.get("xp_gain", 5)
         # Checks if user is in database, if not; user is added.
-        user = TransactionController.get_user(message.author.id, message.guild.id)
         # Checks message length and converts it into XP
         gained_xp = round(len(message.content) / xp_gain)
         print(f"{message.author} has gained experience: {gained_xp}")
         xpTransactions.add_xp(message.author.id, message.guild.id, gained_xp)
-        role = TransactionController.get_highest_role(message.guild, user)
+        role = TransactionController.get_highest_role(message.guild, message.author)
         return role
 
     @staticmethod

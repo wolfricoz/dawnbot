@@ -2,14 +2,13 @@ import json
 import os
 from abc import ABC, abstractmethod
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 from sqlalchemy.orm import Session
 
 import components.database as db
 
 session = Session(bind=db.engine)
-
 
 class CommitError(Exception):
     """the commit failed."""
@@ -49,7 +48,7 @@ class TransactionController(ABC):
         :return:
         """
         session.close()
-        user = session.scalars(select(db.Users).where(db.Users.uid == id, db.Users.guildid == guildid)).first()
+        user = session.scalar(select(db.Users).where(db.Users.uid == id, db.Users.guildid == guildid))
         if user is None:
             return TransactionController.add_user(id, guildid)
         return user
@@ -85,6 +84,7 @@ class TransactionController(ABC):
     @staticmethod
     @abstractmethod
     def get_highest_role(guild, user):
+        user = TransactionController.get_user(user.id, guild.id)
         query = session.scalars(select(db.Levels).where(db.Levels.guildid == guild.id)).all()
         possible_ranks = {}
         for q in query:
@@ -114,23 +114,38 @@ class TransactionController(ABC):
 class currencyTransactions(ABC):
     @staticmethod
     @abstractmethod
-    def add_currency(message, currency_gained):
-        user = TransactionController.get_user(message.author.id, message.guild.id)
-        user.currency += currency_gained
+    def add_currency(userid, guildid, currency_gained):
+        stmt = (
+            update(db.Users).
+            where(db.Users.uid == userid).
+            where(db.Users.guildid == guildid).
+            values(currency=db.Users.currency + currency_gained)
+        )
+        session.execute(stmt)
         TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
-    def remove_currency(message, currency):
-        user = TransactionController.get_user(message.author.id, message.guild.id)
-        user.currency -= currency
+    def remove_currency(userid, guildid, currency):
+        stmt = (
+            update(db.Users).
+            where(db.Users.uid == userid).
+            where(db.Users.guildid == guildid).
+            values(currency=db.Users.currency - currency)
+        )
+        session.execute(stmt)
         TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
-    def set_currency(message, currency):
-        user = TransactionController.get_user(message.author.id, message.guild.id)
-        user.currency = currency
+    def set_currency(userid, guildid, currency):
+        stmt = (
+            update(db.Users).
+            where(db.Users.uid == userid).
+            where(db.Users.guildid == guildid).
+            values(currency=currency)
+        )
+        session.execute(stmt)
         TransactionController.commit(session)
 
     @staticmethod
@@ -144,23 +159,37 @@ class xpTransactions(ABC):
     @staticmethod
     @abstractmethod
     def add_xp(userid, guildid, gained_xp):
-        user = TransactionController.get_user(userid, guildid)
-        user.xp += gained_xp
-        user.messages += 1
+        stmt = (
+            update(db.Users).
+            where(db.Users.uid == userid).
+            where(db.Users.guildid == guildid).
+            values(xp=db.Users.xp + gained_xp, messages=db.Users.messages + 1)
+        )
+        session.execute(stmt)
         TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
     def remove_xp(userid, guildid, xp):
-        user = TransactionController.get_user(userid, guildid)
-        user.xp -= xp
+        stmt = (
+            update(db.Users).
+            where(db.Users.uid == userid).
+            where(db.Users.guildid == guildid).
+            values(xp=db.Users.xp - xp, messages=db.Users.messages + 1)
+        )
+        session.execute(stmt)
         TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
     def set_xp(userid, guildid, xp):
-        user = TransactionController.get_user(userid, guildid)
-        user.xp = xp
+        stmt = (
+            update(db.Users).
+            where(db.Users.uid == userid).
+            where(db.Users.guildid == guildid).
+            values(xp=xp, messages=db.Users.messages + 1)
+        )
+        session.execute(stmt)
         TransactionController.commit(session)
 
 

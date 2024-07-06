@@ -48,7 +48,7 @@ class xpEvents(commands.Cog):
     async def removexp(self, interaction: discord.Interaction, member: discord.Member, xp: int):
         await interaction.response.defer(ephemeral=True)
         xpTransactions.remove_xp(member.id, interaction.guild.id, xp)
-        await interaction.followup.send(f"added {xp} to {member.mention}")
+        await interaction.followup.send(f"Removed {xp} from {member.mention}")
 
     # textchannels
     @commands.Cog.listener("on_message")
