@@ -16,7 +16,7 @@ class xpCalculations(ABC):
                 data = json.load(f)
                 xp_gain = data.get("xp_gain", 5)
         # Checks if user is in database, if not; user is added.
-        user = TransactionController.get_user(message.author.id)
+        user = TransactionController.get_user(message.author.id, message.guild.id)
         # Checks message length and converts it into XP
         gained_xp = round(len(message.content) / xp_gain)
         print(f"{message.author} has gained experience: {gained_xp}")
