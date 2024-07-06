@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # op.drop_constraint('users_pk', 'users', type_='primary')
+    op.drop_constraint('users_pk', 'users', type_='primary')
     op.create_primary_key('users_pk', 'users', ['guildid', 'uid'])
 
 
