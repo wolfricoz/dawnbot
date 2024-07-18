@@ -43,9 +43,17 @@ class guildconfiger(ABC):
 
     @staticmethod
     @abstractmethod
-    async def addchannel(guildid, interaction, channel: discord.TextChannel, key, session):
+    async def addchannel(guildid, interaction, channel: discord.TextChannel, key, only_calculate=False):
         if not os.path.exists(f"jsons/{guildid}.json"):
             await guildconfiger.create(guildid, interaction.guild.name)
+        if only_calculate:
+            async for message in channel.history():
+                await xpCalculations.calculate(message)
+                await currencyCalculations.calculate(message)
+            for thread in channel.threads:
+                async for m in thread.history():
+                    await xpCalculations.calculate(m)
+            return
         with open(f"jsons/{guildid}.json") as f:
             data = json.load(f)
             if channel.id in data[key]:
@@ -65,7 +73,10 @@ class guildconfiger(ABC):
 
     @staticmethod
     @abstractmethod
-    async def addforum(guildid, interaction, channel: discord.ForumChannel, key, session):
+    async def addforum(guildid, interaction, channel: discord.ForumChannel, key, only_calculate=False):
+        if only_calculate:
+            await guildconfiger.addthreads(guildid, interaction, channel, key, only_calculate=only_calculate)
+            return
         if not os.path.exists(f"jsons/{guildid}.json"):
             await guildconfiger.create(guildid, interaction.guild.name)
         with open(f"jsons/{guildid}.json") as f:
@@ -74,14 +85,22 @@ class guildconfiger(ABC):
                 await interaction.followup.send("Failed to add channel! forum already in config")
             data[key].append(channel.id)
             await interaction.followup.send(f"channel added to {key}")
-            await guildconfiger.addthreads(guildid, interaction, channel, key, session)
+            await guildconfiger.addthreads(guildid, interaction, channel, key, only_calculate=only_calculate)
 
         with open(f"jsons/{guildid}.json", 'w') as f:
             json.dump(data, f, indent=4)
 
     @staticmethod
     @abstractmethod
-    async def addthreads(guildid, interaction, channel: discord.ForumChannel, key, session, checkhistory: bool = True):
+    async def addthreads(guildid, interaction, channel: discord.ForumChannel, key, checkhistory: bool = True, only_calculate=False):
+        if only_calculate:
+            print('only calculating threads')
+            for thread in channel.threads:
+                async for message in thread.history():
+                    await xpCalculations.calculate(message)
+                    await currencyCalculations.calculate(message)
+            return
+        print("adding threads")
         if not os.path.exists(f"jsons/{guildid}.json"):
             await guildconfiger.create(guildid, interaction.guild.name)
         with open(f"jsons/{guildid}.json") as f:

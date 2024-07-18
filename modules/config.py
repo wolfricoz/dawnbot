@@ -7,8 +7,7 @@ from sqlalchemy.orm import Session
 
 import components.database as db
 from components.configMaker import guildconfiger
-
-session = Session(bind=db.engine)
+from components.databaseEvents import TransactionController
 
 
 class config(commands.GroupCog):
@@ -26,28 +25,17 @@ class config(commands.GroupCog):
         await interaction.response.defer(ephemeral=True)
         match option.value:
             case 'add':
-                if session.scalar(select(db.Levels).where(db.Levels.role_id == role.id)):
+                if TransactionController.add_role(role.id, interaction.guild.id, xp_required) is None:
                     await interaction.followup.send("Role already added")
                     return
-                level = db.Levels(guildid=interaction.guild.id, role_id=role.id, xp_required=xp_required)
-                session.add(level)
-                session.commit()
                 await interaction.followup.send(f"Added {role.mention} with required xp: {xp_required}")
             case 'remove':
-                if session.scalar(select(db.Levels).where(db.Levels.role_id == role.id)) is None:
+                if TransactionController.remove_role(role) is None:
                     await interaction.followup.send("Role does not exist")
                     return
-                level = session.scalar(select(db.Levels).where(db.Levels.role_id == role.id))
-                session.delete(level)
-                session.commit()
                 await interaction.followup.send(f"removed {role.mention}")
             case 'update':
-                if session.scalar(select(db.Levels).where(db.Levels.role_id == role.id)) is None:
-                    await interaction.followup.send("Role does not exist")
-                    return
-                level = session.scalar(select(db.Levels).where(db.Levels.role_id == role.id))
-                level.xp_required = xp_required
-                session.commit()
+
                 await interaction.followup.send(f"Updated {role.mention} with required xp: {xp_required}")
 
     @app_commands.command(name='announcement')
@@ -89,11 +77,10 @@ class config(commands.GroupCog):
         key = "channels"
         match option.value:
             case 'add':
-                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
+                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key)
             case 'remove':
                 await guildconfiger.remchannel(interaction.guild.id, channel.id, key)
                 await interaction.followup.send(f"channel removed from {key}")
-        session.commit()
 
     @app_commands.command()
     @app_commands.checks.has_permissions(manage_guild=True)
@@ -112,13 +99,12 @@ class config(commands.GroupCog):
         channels = []
         for channel in category.channels:
             if isinstance(channel, discord.TextChannel):
-                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, session)
+                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key)
                 channels.append(channel.name)
             if isinstance(channel, discord.ForumChannel):
-                await guildconfiger.addforum(interaction.guild.id, interaction, channel, key, session)
+                await guildconfiger.addforum(interaction.guild.id, interaction, channel, key)
                 channels.append(channel.name)
         await interaction.followup.send(f"Channels added: {', '.join(channels)}")
-        session.commit()
 
     @app_commands.command(name='forum')
     @app_commands.choices(option=[
@@ -131,11 +117,10 @@ class config(commands.GroupCog):
         key = "channels"
         match option.value:
             case 'add':
-                await guildconfiger.addforum(interaction.guild.id, interaction, channel, key, session)
+                await guildconfiger.addforum(interaction.guild.id, interaction, channel, key)
             case 'remove':
                 await guildconfiger.remchannel(interaction.guild.id, channel.id, key)
                 await interaction.followup.send(f"channel removed from {key}")
-        session.commit()
 
 
 async def setup(bot):

@@ -10,6 +10,7 @@ import components.database as db
 
 session = Session(bind=db.engine)
 
+
 class CommitError(Exception):
     """the commit failed."""
 
@@ -51,7 +52,6 @@ class TransactionController(ABC):
             session.execute(query)
             session.commit()
         except SQLAlchemyError as e:
-            print(e)
             session.rollback()
             TransactionController.execute(session, query)
             raise CommitError()
@@ -59,7 +59,6 @@ class TransactionController(ABC):
             if e.connection_invalidated:
                 db.engine.connect()
         finally:
-            print("transaction successful")
             session.close()
 
     @staticmethod
@@ -75,6 +74,18 @@ class TransactionController(ABC):
         if user is None:
             return TransactionController.add_user(id, guildid)
         return user
+
+    @staticmethod
+    @abstractmethod
+    def delete_user(id, guildid):
+        """
+
+        :param id:
+        :return:
+        """
+        session.query(db.Users).filter(db.Users.uid == id, db.Users.guildid == guildid).delete()
+        TransactionController.commit(session)
+        return True
 
     @staticmethod
     @abstractmethod
@@ -132,6 +143,34 @@ class TransactionController(ABC):
         role.append(query[-1].role_id)
         rankinfo = possible_ranks.get(role[0])
         return role[0], rankinfo
+
+    @staticmethod
+    @abstractmethod
+    def add_role(role, guild, xp_required):
+        if session.scalar(select(db.Levels).where(db.Levels.role_id == role.id)):
+            return
+        level = db.Levels(guildid=guild.id, role_id=role.id, xp_required=xp_required)
+        session.add(level)
+        TransactionController.commit(session)
+        return level
+
+    @staticmethod
+    @abstractmethod
+    def remove_role(role, ):
+        if level := session.scalar(select(db.Levels).where(db.Levels.role_id == role.id)) is None:
+            return
+        session.delete(level)
+        TransactionController.commit(session)
+        return True
+
+    @staticmethod
+    @abstractmethod
+    def update_role(role, xp_required):
+        if level := session.scalar(select(db.Levels).where(db.Levels.role_id == role.id)) is None:
+            return
+        level.xp_required = xp_required
+        TransactionController.commit(session)
+        return level
 
 
 class currencyTransactions(ABC):

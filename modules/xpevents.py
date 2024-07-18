@@ -15,18 +15,37 @@ class xpEvents(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="resetxpall")
+    @app_commands.command(name="recount")
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def resetxp(self, interaction: discord.Interaction):
+    async def recount(self, interaction: discord.Interaction):
+        key = "channels"
         if interaction.user.id != 188647277181665280:
             await interaction.response.send_message("You do not have permission to use this command")
             return
         await interaction.response.defer()
         count = 0
+        message = await interaction.channel.send(f"Resetting users")
         for user in interaction.guild.members:
-            xpTransactions.set_xp(user.id, interaction.guild.id, 0)
+            TransactionController.delete_user(user.id, interaction.guild.id)
+            TransactionController.add_user(user.id, interaction.guild.id)
             count += 1
-        await interaction.followup.send(f"Reset the XP for {count} users")
+        await message.edit(content=f"Reset {count} users, starting to calculate currency and xp now")
+        channelids = await guildconfiger.get(interaction.guild.id, "channels")
+        for channelid in channelids:
+            channel = interaction.guild.get_channel(channelid)
+
+            if channel is None:
+                print(f"channel {channelid} not found")
+                continue
+            await message.edit(content=f"Calculating {channel.mention}")
+            if isinstance(channel, discord.TextChannel):
+                await guildconfiger.addchannel(interaction.guild.id, interaction, channel, key, only_calculate=True)
+            if isinstance(channel, discord.ForumChannel):
+                await guildconfiger.addforum(interaction.guild.id, interaction, channel, key, only_calculate=True)
+            if isinstance(channel, discord.Thread):
+                continue
+            await interaction.channel.send(f"Finished calculating {channel.mention}", silent=True)
+        await interaction.channel.send("Finished recounting")
 
     @app_commands.command(name="checkxp")
     @app_commands.checks.has_permissions()
