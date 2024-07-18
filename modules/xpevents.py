@@ -25,7 +25,7 @@ class xpEvents(commands.Cog):
         for user in interaction.guild.members:
             xpTransactions.set_xp(user.id, interaction.guild.id, 0)
             count += 1
-        await interaction.response.send_message(f"Reset the XP for {count} users")
+        await interaction.followup.send(f"Reset the XP for {count} users")
 
     @app_commands.command(name="checkxp")
     @app_commands.checks.has_permissions()
