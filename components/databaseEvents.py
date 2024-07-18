@@ -41,6 +41,25 @@ class TransactionController(ABC):
 
     @staticmethod
     @abstractmethod
+    def execute(session, query):
+        """
+
+        :param session:
+        """
+        try:
+            session.execute(query)
+        except SQLAlchemyError as e:
+            print(e)
+            session.rollback()
+            raise CommitError()
+        except DBAPIError as e:
+            if e.connection_invalidated:
+                db.engine.connect()
+        finally:
+            session.close()
+
+    @staticmethod
+    @abstractmethod
     def get_user(id, guildid):
         """
 
@@ -121,7 +140,7 @@ class currencyTransactions(ABC):
             where(db.Users.guildid == guildid).
             values(currency=db.Users.currency + currency_gained)
         )
-        session.execute(stmt)
+        TransactionController.execute(session, stmt)
         TransactionController.commit(session)
 
     @staticmethod
@@ -133,7 +152,7 @@ class currencyTransactions(ABC):
             where(db.Users.guildid == guildid).
             values(currency=db.Users.currency - currency)
         )
-        session.execute(stmt)
+        TransactionController.execute(session, stmt)
         TransactionController.commit(session)
 
     @staticmethod
@@ -145,7 +164,7 @@ class currencyTransactions(ABC):
             where(db.Users.guildid == guildid).
             values(currency=currency)
         )
-        session.execute(stmt)
+        TransactionController.execute(session, stmt)
         TransactionController.commit(session)
 
     @staticmethod
