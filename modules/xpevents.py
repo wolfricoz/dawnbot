@@ -5,6 +5,7 @@ from sqlalchemy import select
 
 import components.database as db
 from components.configMaker import guildconfiger
+from components.currencyCalculations import currencyCalculations
 from components.databaseEvents import TransactionController, xpTransactions, currencyTransactions
 from components.xpCalculations import xpCalculations
 
@@ -16,7 +17,7 @@ class xpEvents(commands.Cog):
 
     @app_commands.command(name="resetxpall")
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def resetXP(self, interaction: discord.Interaction):
+    async def resetxp(self, interaction: discord.Interaction):
         if interaction.user.id != 188647277181665280:
             await interaction.response.send_message("You do not have permission to use this command")
             return
@@ -81,6 +82,7 @@ class xpEvents(commands.Cog):
                         f"{message.author.mention} Your message is too short, please make it longer than 300 characters. No XP has been awarded and your post has been removed. **The bot could not DM you, please open your dms.**\n {message.content}")
             await message.delete()
             return
+        await currencyCalculations.calculate(message)
         announcement = await guildconfiger.get(message.guild.id, "announcement")
         new_rank, remroles = await xpCalculations.check_roles(message)
         if new_rank is None or remroles is None:

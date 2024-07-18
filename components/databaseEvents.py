@@ -32,6 +32,7 @@ class TransactionController(ABC):
         except SQLAlchemyError as e:
             print(e)
             session.rollback()
+            TransactionController.commit(session)
             raise CommitError()
         except DBAPIError as e:
             if e.connection_invalidated:
@@ -48,14 +49,17 @@ class TransactionController(ABC):
         """
         try:
             session.execute(query)
+            session.commit()
         except SQLAlchemyError as e:
             print(e)
             session.rollback()
+            TransactionController.execute(session, query)
             raise CommitError()
         except DBAPIError as e:
             if e.connection_invalidated:
                 db.engine.connect()
         finally:
+            print("transaction successful")
             session.close()
 
     @staticmethod
@@ -141,7 +145,6 @@ class currencyTransactions(ABC):
             values(currency=db.Users.currency + currency_gained)
         )
         TransactionController.execute(session, stmt)
-        TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
@@ -153,7 +156,6 @@ class currencyTransactions(ABC):
             values(currency=db.Users.currency - currency)
         )
         TransactionController.execute(session, stmt)
-        TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
@@ -165,7 +167,6 @@ class currencyTransactions(ABC):
             values(currency=currency)
         )
         TransactionController.execute(session, stmt)
-        TransactionController.commit(session)
 
     @staticmethod
     @abstractmethod
