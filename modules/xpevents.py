@@ -14,6 +14,16 @@ class xpEvents(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    @app_commands.command(name="resetxpall")
+    @app_commands.checks.has_permissions()
+    async def checkxp(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        count = 0
+        for user in interaction.guild.members:
+            xpTransactions.set_xp(user.id, interaction.guild.id, 0)
+            count += 1
+        await interaction.response.send_message(f"Reset the XP for {count} users")
+
     @app_commands.command(name="checkxp")
     @app_commands.checks.has_permissions()
     async def checkxp(self, interaction: discord.Interaction):
