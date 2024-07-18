@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 
 import discord
 
+from components.currencyCalculations import currencyCalculations
 from components.xpCalculations import xpCalculations
 
 
@@ -54,6 +55,7 @@ class guildconfiger(ABC):
                 await interaction.followup.send(f"Channel added to {key}")
                 async for message in channel.history():
                     await xpCalculations.calculate(message)
+                    await currencyCalculations.calculate(message)
                 for thread in channel.threads:
                     async for m in thread.history():
                         await xpCalculations.calculate(m)
@@ -94,6 +96,7 @@ class guildconfiger(ABC):
                     continue
                 async for message in thread.history():
                     await xpCalculations.calculate(message)
+                    await currencyCalculations.calculate(message)
         with open(f"jsons/{guildid}.json", 'w') as f:
             json.dump(data, f, indent=4)
         await interaction.followup.send(f"added {threads} threads to config")
@@ -111,6 +114,7 @@ class guildconfiger(ABC):
             if checkhistory:
                 async for message in thread.history():
                     await xpCalculations.calculate(message)
+                    await currencyCalculations.calculate(message)
         with open(f"jsons/{guildid}.json", 'w') as f:
             json.dump(data, f, indent=4)
 
