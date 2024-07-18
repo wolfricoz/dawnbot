@@ -15,8 +15,11 @@ class xpEvents(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="resetxpall")
-    @app_commands.checks.has_permissions()
-    async def checkxp(self, interaction: discord.Interaction):
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def resetXP(self, interaction: discord.Interaction):
+        if interaction.user.id != 1258714441021653134:
+            await interaction.response.send_message("You do not have permission to use this command")
+            return
         await interaction.response.defer()
         count = 0
         for user in interaction.guild.members:
