@@ -38,6 +38,10 @@ class TransactionController(ABC):
         except DBAPIError as e:
             if e.connection_invalidated:
                 db.engine.connect()
+                TransactionController.commit(session)
+        except ConnectionResetError:
+            db.engine.connect()
+            TransactionController.commit(session)
         finally:
             session.close()
 
@@ -47,6 +51,7 @@ class TransactionController(ABC):
         """
 
         :param session:
+        :param query:
         """
         try:
             session.execute(query)
@@ -58,8 +63,18 @@ class TransactionController(ABC):
         except DBAPIError as e:
             if e.connection_invalidated:
                 db.engine.connect()
+                TransactionController.execute(session, query)
+        except ConnectionResetError:
+            db.engine.connect()
+            TransactionController.execute(session, query)
         finally:
             session.close()
+
+
+    @staticmethod
+    @abstractmethod
+    def keep_alive():
+        session.scalars(select(db.Users)).all()
 
     @staticmethod
     @abstractmethod
