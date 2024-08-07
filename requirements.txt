@@ -5,3 +5,4 @@ PyMySQL>=1.0.2
 pytz>=2024.1
 sqlalchemy_utils
 alembic
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
