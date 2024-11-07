@@ -161,10 +161,10 @@ class TransactionController(ABC):
 
     @staticmethod
     @abstractmethod
-    def add_role(role_id, guild, xp_required):
-        if session.scalar(select(db.Levels).where(db.Levels.role_id == role_id)):
+    def add_role(role, guild, xp_required):
+        if session.scalar(select(db.Levels).where(db.Levels.role_id == role.id)):
             return
-        level = db.Levels(guildid=guild.id, role_id=role_id, xp_required=xp_required)
+        level = db.Levels(guildid=guild.id, role_id=role.id, xp_required=xp_required)
         session.add(level)
         TransactionController.commit(session)
         return level

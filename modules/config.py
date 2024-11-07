@@ -25,7 +25,7 @@ class config(commands.GroupCog):
         await interaction.response.defer(ephemeral=True)
         match option.value:
             case 'add':
-                if TransactionController.add_role(role.id, interaction.guild.id, xp_required) is None:
+                if TransactionController.add_role(role, interaction.guild, xp_required) is None:
                     await interaction.followup.send("Role already added")
                     return
                 await interaction.followup.send(f"Added {role.mention} with required xp: {xp_required}")
