@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 import components.database as db
 
-session = Session(bind=db.engine)
+session = Session(bind=db.engine, expire_on_commit=False)
 
 
 class CommitError(Exception):
