@@ -80,7 +80,7 @@ class Weapons(Base):
 
 class Npcs(Base):
     __tablename__ = "npcs"
-    id: Mapped[id] = mapped_column(BigInteger,primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(BigInteger,primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255))
     hp: Mapped[int] = mapped_column(BigInteger)
     ac: Mapped[int] = mapped_column(BigInteger)
