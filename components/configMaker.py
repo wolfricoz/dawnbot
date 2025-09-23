@@ -54,7 +54,9 @@ class guildconfiger(ABC) :
 				async for m in thread.history() :
 					await xpCalculations.calculate(m)
 			async for athread in channel.archived_threads() :
-				await athread.send("Recount: Unarchiving and counting")
+				msg = await athread.send("Recount: Unarchiving and counting")
+				await msg.delete()
+
 				async for m in athread.history() :
 					await xpCalculations.calculate(m)
 			return
@@ -71,7 +73,11 @@ class guildconfiger(ABC) :
 				for thread in channel.threads :
 					async for m in thread.history() :
 						await xpCalculations.calculate(m)
-
+				async for athread in channel.archived_threads() :
+					msg = await athread.send("channel added")
+					await msg.delete()
+					async for m in athread.history() :
+						await xpCalculations.calculate(m)
 		with open(f"jsons/{guildid}.json", 'w') as f :
 			json.dump(data, f, indent=4)
 
@@ -102,6 +108,12 @@ class guildconfiger(ABC) :
 			print('only calculating threads')
 			for thread in channel.threads :
 				async for message in thread.history() :
+					await xpCalculations.calculate(message)
+					await currencyCalculations.calculate(message)
+			async for athread in channel.archived_threads() :
+				async for message in athread.history() :
+					msg = await athread.send("calculating...")
+					await msg.delete()
 					await xpCalculations.calculate(message)
 					await currencyCalculations.calculate(message)
 			return
