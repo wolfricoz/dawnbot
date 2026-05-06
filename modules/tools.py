@@ -13,10 +13,11 @@ from components.configMaker import guildconfiger
 class Tools(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.unarchiver.start()
+        # self.unarchiver.start()
 
     def cog_unload(self):
-        self.unarchiver.cancel()
+        # self.unarchiver.cancel()
+        pass
 
     @app_commands.command(name="endscene", description="ends the scene")
     async def endscene(self, interaction: discord.Interaction, rpenddate: str, title: str = None):
