@@ -125,7 +125,8 @@ class xpEvents(commands.Cog):
             if message.channel.parent_id not in channels:
                 return
             await guildconfiger.addthread(message.guild.id, message.channel, "channels")
-        if await xpCalculations.check_size(message) is False:
+
+        if await xpCalculations.check_size(message) is False and message.id != message.channel.id:
             try:
                 await message.author.send(f"Your message is too short, please make it longer than 300 characters. No XP has been awarded and your post has been removed.\n {message.content}")
             except discord.Forbidden:
