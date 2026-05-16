@@ -7,3 +7,4 @@ sqlalchemy_utils
 alembic
 psycopg2-binary
 gunicorn
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
