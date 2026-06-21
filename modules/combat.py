@@ -14,6 +14,8 @@ from components.combatController import CombatController
 from components.databaseEvents import CombatSystem
 from math import ceil
 
+from views.buttons.CombatInitiatedButtons import CombatInitiatedButtons
+
 
 class Combat(commands.GroupCog):
     def __init__(self, bot: commands.Bot):
@@ -100,7 +102,7 @@ class Combat(commands.GroupCog):
         embed.set_footer(text=f"Instance guid: {instance.get_instance_guid()}")
 
 
-        await send_response(interaction, f" ", embed=embed, ephemeral=False)
+        await send_response(interaction, f" ", embed=embed, view=CombatInitiatedButtons() ,ephemeral=False)
 
         return None
 

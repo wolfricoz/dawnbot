@@ -1,14 +1,15 @@
 {
     "188647277181665280": {
-        "troy": {
-            "prestige": 2,
-            "strength": 4,
-            "perception": 3,
-            "endurance": 3,
-            "charisma": 0,
-            "intelligence": 0,
-            "agility": 4,
-            "armor": 2
+        "test": {
+            "prestige": 0,
+            "strength": 1,
+            "perception": 1,
+            "endurance": 1,
+            "charisma": 1,
+            "intelligence": 1,
+            "agility": 1,
+            "luck": 0,
+            "armor": 1
         }
     }
 }

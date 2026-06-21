@@ -1,9 +1,9 @@
 {
-    "unarmoured": {
-        "id": 2,
+    "default armor": {
+        "id": 1,
         "hp": 75,
-        "ac": 13,
-        "hitchance": 1,
-        "modifier": "endurance"
+        "ac": 12,
+        "hitchance": 100,
+        "modifier": "100"
     }
 }

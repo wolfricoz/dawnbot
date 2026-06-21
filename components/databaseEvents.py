@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from abc import ABC, abstractmethod
 
@@ -74,7 +75,7 @@ class TransactionController(ABC):
     @staticmethod
     @abstractmethod
     def keep_alive():
-        session.scalars(select(db.Users)).all()
+        session.scalars(select(db.Experience)).all()
 
     @staticmethod
     @abstractmethod
@@ -85,7 +86,7 @@ class TransactionController(ABC):
         :return:
         """
         session.close()
-        user = session.scalar(select(db.Users).where(db.Users.uid == id, db.Users.guildid == guildid))
+        user = session.scalar(select(db.Experience).where(db.Experience.uid == id, db.Experience.guildid == guildid))
         if user is None:
             return TransactionController.add_user(id, guildid)
         return user
@@ -98,23 +99,40 @@ class TransactionController(ABC):
         :param id:
         :return:
         """
-        session.query(db.Users).filter(db.Users.uid == id, db.Users.guildid == guildid).delete()
+        session.query(db.Experience).filter(db.Experience.uid == id, db.Experience.guildid == guildid).delete()
         TransactionController.commit(session)
         return True
 
     @staticmethod
     @abstractmethod
-    def add_user(id, guildid):
-        """
+    def add_user(user_id: int, guild_id: int) :
+        try :
+            # Check if the user has an entry in the global global Users registry first
+            global_user = session.query(db.Users).filter_by(uid=user_id).first()
 
-        :param id:
-        :return:
-        """
-        user = db.Users(uid=id, guildid=guildid)
-        session.add(user)
-        TransactionController.commit(session)
-        return user
+            # If they don't exist globally, register them to the users table
+            if not global_user :
+                new_global = db.Users(uid=user_id)
+                session.add(new_global)
+                # Flush here to push the user record to PostgreSQL before creating dependencies
+                session.flush()
 
+                # Now check if an experience row exists for this specific guild
+            exp_record = session.query(db.Experience).filter_by(uid=user_id, guildid=guild_id).first()
+
+            if not exp_record :
+                # Safely create their localized progression record
+                new_exp = db.Experience(uid=user_id, guildid=guild_id)
+                session.add(new_exp)
+
+            session.commit()
+
+            # Return the newly created progression record
+            return session.query(db.Experience).filter_by(uid=user_id, guildid=guild_id).first()
+        except Exception as e :
+            session.rollback()
+            print(f"Error registering user: {e}")
+            raise CommitError()
     @staticmethod
     @abstractmethod
     def get_roles(guild):
@@ -193,10 +211,10 @@ class currencyTransactions(ABC):
     @abstractmethod
     def add_currency(userid, guildid, currency_gained):
         stmt = (
-            update(db.Users).
-            where(db.Users.uid == userid).
-            where(db.Users.guildid == guildid).
-            values(currency=db.Users.currency + currency_gained)
+            update(db.Experience).
+            where(db.Experience.uid == userid).
+            where(db.Experience.guildid == guildid).
+            values(currency=db.Experience.currency + currency_gained)
         )
         TransactionController.execute(session, stmt)
 
@@ -204,10 +222,10 @@ class currencyTransactions(ABC):
     @abstractmethod
     def remove_currency(userid, guildid, currency):
         stmt = (
-            update(db.Users).
-            where(db.Users.uid == userid).
-            where(db.Users.guildid == guildid).
-            values(currency=db.Users.currency - currency)
+            update(db.Experience).
+            where(db.Experience.uid == userid).
+            where(db.Experience.guildid == guildid).
+            values(currency=db.Experience.currency - currency)
         )
         TransactionController.execute(session, stmt)
 
@@ -215,9 +233,9 @@ class currencyTransactions(ABC):
     @abstractmethod
     def set_currency(userid, guildid, currency):
         stmt = (
-            update(db.Users).
-            where(db.Users.uid == userid).
-            where(db.Users.guildid == guildid).
+            update(db.Experience).
+            where(db.Experience.uid == userid).
+            where(db.Experience.guildid == guildid).
             values(currency=currency)
         )
         TransactionController.execute(session, stmt)
@@ -234,10 +252,10 @@ class xpTransactions(ABC):
     @abstractmethod
     def add_xp(userid, guildid, gained_xp):
         stmt = (
-            update(db.Users).
-            where(db.Users.uid == userid).
-            where(db.Users.guildid == guildid).
-            values(xp=db.Users.xp + gained_xp, messages=db.Users.messages + 1)
+            update(db.Experience).
+            where(db.Experience.uid == userid).
+            where(db.Experience.guildid == guildid).
+            values(xp=db.Experience.xp + gained_xp, messages=db.Experience.messages + 1)
         )
         session.execute(stmt)
         TransactionController.commit(session)
@@ -246,10 +264,10 @@ class xpTransactions(ABC):
     @abstractmethod
     def remove_xp(userid, guildid, xp):
         stmt = (
-            update(db.Users).
-            where(db.Users.uid == userid).
-            where(db.Users.guildid == guildid).
-            values(xp=db.Users.xp - xp, messages=db.Users.messages + 1)
+            update(db.Experience).
+            where(db.Experience.uid == userid).
+            where(db.Experience.guildid == guildid).
+            values(xp=db.Experience.xp - xp, messages=db.Experience.messages + 1)
         )
         session.execute(stmt)
         TransactionController.commit(session)
@@ -258,16 +276,16 @@ class xpTransactions(ABC):
     @abstractmethod
     def set_xp(userid, guildid, xp):
         stmt = (
-            update(db.Users).
-            where(db.Users.uid == userid).
-            where(db.Users.guildid == guildid).
-            values(xp=xp, messages=db.Users.messages + 1)
+            update(db.Experience).
+            where(db.Experience.uid == userid).
+            where(db.Experience.guildid == guildid).
+            values(xp=xp, messages=db.Experience.messages + 1)
         )
         session.execute(stmt)
         TransactionController.commit(session)
 
 
-class CombatSystem(ABC):
+class CombatSystem():
     session = Session(db.engine)
     armor = {}
     weapons = {}
@@ -289,12 +307,12 @@ class CombatSystem(ABC):
     def load_armor(self):
         self.armor.clear()
         for x in self.session.scalars(select(db.Armors)).all():
-            self.armor[x.name] = {}
-            self.armor[x.name]["id"] = x.id
-            self.armor[x.name]["hp"] = x.hp
-            self.armor[x.name]["ac"] = x.ac
-            self.armor[x.name]["hitchance"] = x.hitchance
-            self.armor[x.name]["modifier"] = x.modifier
+            self.armor[x.name.lower()] = {}
+            self.armor[x.name.lower()]["id"] = x.id
+            self.armor[x.name.lower()]["hp"] = x.hp
+            self.armor[x.name.lower()]["ac"] = x.ac
+            self.armor[x.name.lower()]["hitchance"] = x.hitchance
+            self.armor[x.name.lower()]["modifier"] = x.modifier
         return self.armor
 
     def load_weapons(self):
@@ -319,16 +337,18 @@ class CombatSystem(ABC):
             self.characters[x.uid][x.name]["charisma"] = x.charisma
             self.characters[x.uid][x.name]["intelligence"] = x.intelligence
             self.characters[x.uid][x.name]["agility"] = x.agility
+            self.characters[x.uid][x.name]["luck"] = x.luck
 
             self.characters[x.uid][x.name]["armor"] = x.armor
         return self.characters
 
-    def create_character(self, user, name, armor, strength, perception, endurance, charisma, intelligence, agility, prestige):
+    def create_character(self, user, name, armor, strength, perception, endurance, charisma, intelligence, agility, prestige, guild_id):
+        logging.info(self.armor)
         armor = self.armor[armor]["id"]
 
         character = db.Characters(uid=user.id, name=name, armor=armor, strength=strength, perception=perception,
                                   endurance=endurance, charisma=charisma, intelligence=intelligence, agility=agility,
-                                  prestige=prestige)
+                                  prestige=prestige, guild_id=guild_id)
         self.session.add(character)
         TransactionController.commit(self.session)
         self.load_characters()

@@ -32,7 +32,7 @@ class Character(commands.GroupCog):
         if allocated_points > max_points:
             await interaction.followup.send(f"You have too many points allocated, you are allowed a maximum of {max_points} points but you allocated {allocated_points}!")
             return
-        CombatSystem().create_character(interaction.user, name.lower(), armor, strength, perception, endurance, charisma, intelligence, agility, extra_points)
+        CombatSystem().create_character(interaction.user, name.lower(), armor, strength, perception, endurance, charisma, intelligence, agility, extra_points, guild_id=interaction.guild_id)
         logging.info(f"Character {name} created by {interaction.user.name} with stats: {armor}, {strength}, {perception}, {endurance}, {charisma}, {intelligence}, {agility}, {extra_points}")
         await interaction.followup.send(f"Character {name} created")
 

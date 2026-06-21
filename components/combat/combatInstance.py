@@ -20,7 +20,7 @@ class CombatInstance():
 	def get_instance_guid(self):
 		return self.instance_data.guid
 
-	def add_entity(self, entity_type: Literal['character', 'npc', 'enemy']):
+	def add_entity(self, entity_id, entity_type: Literal['character', 'npc', 'enemy']):
 		pass
 
 

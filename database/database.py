@@ -37,11 +37,29 @@ class Timestamps :
 
 class Users(Timestamps, Base) :
 	__tablename__ = "users"
-	uid: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+
+	# Core unique reference point. A user only ever has ONE row here globally.
+	uid: Mapped[int] = mapped_column(BigInteger, unique=True)
+
+
+class Experience(Timestamps, Base) :
+	__tablename__ = "experience"
+
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+
+	# Linked to the global users table
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.uid', ondelete="CASCADE"))
+
 	messages: Mapped[int] = mapped_column(BigInteger, default=0)
 	xp: Mapped[int] = mapped_column(BigInteger, default=0)
 	currency: Mapped[int] = mapped_column(BigInteger, default=0)
-	guildid: Mapped[int] = mapped_column(BigInteger, default=559139888356917259, primary_key=True)
+	guildid: Mapped[int] = mapped_column(BigInteger, default=559139888356917259)
+
+	# Allows the same UID to exist across multiple guilds, but only once per guild.
+	__table_args__ = (
+		UniqueConstraint('uid', 'guildid', name='uq_experience_uid_guildid'),
+	)
 
 
 class Levels(Timestamps, Base) :
@@ -62,7 +80,10 @@ class Channels(Timestamps, Base) :
 class Characters(Timestamps, Base) :
 	__tablename__ = "characters"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-	uid: Mapped[int] = mapped_column(BigInteger, )
+
+	# Linked to the global users table
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.uid', ondelete="CASCADE"))
+
 	guild_id: Mapped[int] = mapped_column(BigInteger)
 	name: Mapped[str] = mapped_column(String(255))
 	prestige: Mapped[int] = mapped_column(BigInteger, default=0)
@@ -72,7 +93,11 @@ class Characters(Timestamps, Base) :
 	charisma: Mapped[int] = mapped_column(BigInteger, default=0)
 	intelligence: Mapped[int] = mapped_column(BigInteger, default=0)
 	agility: Mapped[int] = mapped_column(BigInteger, default=0)
+	luck: Mapped[int] = mapped_column(BigInteger, default=0)
+
 	armor = mapped_column(BigInteger, ForeignKey('armors.id'))
+	armor_data = relationship("Armors", back_populates="characters", lazy="joined")
+
 	__table_args__ = (
 		UniqueConstraint('uid', 'name', name='uq_character_uid_name'),
 	)
@@ -83,10 +108,11 @@ class Armors(Timestamps, Base) :
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	name: Mapped[str] = mapped_column(String(255))
 	hp: Mapped[int] = mapped_column(BigInteger, default=75)
-	ap: Mapped[int] = mapped_column(BigInteger, default=0)
+	ap: Mapped[int] = mapped_column(BigInteger, default=25)
 	ac: Mapped[int] = mapped_column(BigInteger, default=12)
 	hitchance: Mapped[int] = mapped_column(BigInteger, default=0)
 	modifier: Mapped[str] = mapped_column(String(255), nullable=True)
+	characters: Mapped[List["Characters"]] = relationship("Characters", back_populates="armor_data")
 
 
 class Weapons(Timestamps, Base) :
@@ -96,29 +122,31 @@ class Weapons(Timestamps, Base) :
 	modifier: Mapped[str] = mapped_column(String(255))
 	hitmodifier = mapped_column(BigInteger, default=0)
 
-class EntityStats:
+
+class EntityStats :
 	hp: Mapped[int] = mapped_column(BigInteger)
 	ac: Mapped[int] = mapped_column(BigInteger)
 	attack: Mapped[str] = mapped_column(String(1024), default="1d20")
 	damage: Mapped[str] = mapped_column(String(1024), default="1d12")
+
 
 class Npcs(EntityStats, Timestamps, Base) :
 	__tablename__ = "npcs"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	name: Mapped[str] = mapped_column(String(255))
 
+
 class Monsters(EntityStats, Timestamps, Base) :
 	__tablename__ = "monsters"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	name: Mapped[str] = mapped_column(String(255))
 
+
 class CombatInstances(Timestamps, Base) :
 	__tablename__ = "combat_instances"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-	guid: Mapped[str] = mapped_column(String(255),
-	                                  server_default=text("gen_random_uuid()"))  # this will be shown to the front-end
-	channel_id: Mapped[int] = mapped_column(BigInteger,
-	                                        nullable=True)  # only one instance can be active per channel; threads act as their own channel.
+	guid: Mapped[str] = mapped_column(String(255), server_default=text("gen_random_uuid()"))
+	channel_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
 	description: Mapped[str] = mapped_column(Text, nullable=True)
 	round: Mapped[int] = mapped_column(BigInteger, default=1)
 	combat_type: Mapped[str] = mapped_column(String(255), nullable=True, default="encounter")
@@ -126,7 +154,7 @@ class CombatInstances(Timestamps, Base) :
 	entities: Mapped[List["CombatInstanceEntities"]] = relationship(
 		"CombatInstanceEntities",
 		back_populates="combat_instance",
-		cascade="all, delete-orphan",  # Automatically wipes out entities if the instance is deleted
+		cascade="all, delete-orphan",
 		lazy="joined"
 	)
 
@@ -135,32 +163,28 @@ class CombatInstanceEntities(Timestamps, Base) :
 	__tablename__ = "combat_instance_entities"
 
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-
-	# Connects it to the main instance
 	instance_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instances.id", ondelete="CASCADE"),
 	                                         nullable=False)
 
-	# Foreign keys to character data
+	# Linked to the global users table
+	user_uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), nullable=True)
+
 	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"),
 	                                                 nullable=True)
 	monster_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("monsters.id", ondelete="CASCADE"),
 	                                               nullable=True)
 	npc_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("npcs.id", ondelete="CASCADE"), nullable=True)
 
-	# Stats
 	current_hp: Mapped[int] = mapped_column(BigInteger, default=0)
-	armor: Mapped[int] = mapped_column(BigInteger, default=0)
+	current_ap: Mapped[int] = mapped_column(BigInteger, default=0)
+	ac: Mapped[int] = mapped_column(BigInteger, default=0)
 
-	# System Data
 	entity_type: Mapped[str] = mapped_column(String(255), nullable=True)
 	remaining_attacks: Mapped[int] = mapped_column(BigInteger, default=1)
 	alive: Mapped[bool] = mapped_column(Boolean, default=True)
 	stunned: Mapped[bool] = mapped_column(Boolean, default=False)
 
-	combat_instance: Mapped["CombatInstances"] = relationship(
-		"CombatInstances",
-		back_populates="entities"
-	)
+	combat_instance: Mapped["CombatInstances"] = relationship("CombatInstances", back_populates="entities")
 
 	__table_args__ = (
 		CheckConstraint(
@@ -177,12 +201,9 @@ class CombatInstanceEntities(Timestamps, Base) :
 class CombatInstanceLogs(Timestamps, Base) :
 	__tablename__ = "combat_instance_log"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-
-	# Connects it to the main instance
 	instance_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instances.id", ondelete="CASCADE"),
 	                                         nullable=False)
-
-	attacker_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"), )
+	attacker_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"))
 	defender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"))
 	damage: Mapped[int] = mapped_column(BigInteger, default=0)
 
