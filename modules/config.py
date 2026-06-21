@@ -5,7 +5,7 @@ from discord.ext import commands
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import components.database as db
+import database.database as db
 from components.configMaker import guildconfiger
 from components.databaseEvents import TransactionController
 

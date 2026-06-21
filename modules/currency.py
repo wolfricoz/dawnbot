@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 from sqlalchemy import select
 
-import components.database as db
+import database.database as db
 from components.configMaker import guildconfiger
 from components.databaseEvents import TransactionController, xpTransactions, currencyTransactions
 from components.xpCalculations import xpCalculations

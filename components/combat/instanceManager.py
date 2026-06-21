@@ -11,8 +11,9 @@ class InstanceManager(metaclass=Singleton):
 	"""
 
 	"""
+	instances: dict[int, CombatInstance] = {}  # channel:instance
 	def __init__(self):
-		self.instances = {} # channel:instance
+
 		self.load_active_instances()
 
 	def load_active_instances(self):
@@ -21,12 +22,13 @@ class InstanceManager(metaclass=Singleton):
 		for instance in instances:
 			if not instance.channel_id:
 				continue
-			self.instances[instance.channel_id] = instance
+			self.instances[instance.channel_id] = CombatInstance(channel_id=instance.channel_id)
 		logging.info(f"[Instance Manager] Loaded {len(instances)} active instances")
 
 
-	def create(self, channel: discord.TextChannel):
-		self.instances[channel.id] = CombatInstance(channel, new=True)
+	def create(self, channel: discord.TextChannel) -> CombatInstance | None:
+		self.instances[channel.id] = CombatInstance(channel.id, new=True)
+		return self.load(channel)
 
-	def load(self, channel: discord.TextChannel):
-		return self.instances[channel.id]
+	def load(self, channel: discord.TextChannel) -> CombatInstance | None :
+		return self.instances.get(channel.id, None)

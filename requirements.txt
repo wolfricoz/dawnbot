@@ -7,3 +7,4 @@ sqlalchemy_utils
 alembic
 psycopg2-binary
 gunicorn
+discord_py_utilities

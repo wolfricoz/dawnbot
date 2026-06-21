@@ -14,8 +14,8 @@ class CombatInstanceTransactions(DatabaseTransactions):
 	def get_all(self, active_only=True):
 		with self.createsession() as session:
 			if active_only:
-				return session.scalars(select(CombatInstances).where(CombatInstances.active == True)).all()
-			return session.scalars(select(CombatInstances)).all()
+				return session.scalars(select(CombatInstances).where(CombatInstances.active == True)).unique().all()
+			return session.scalars(select(CombatInstances)).unique().all()
 
 	# Create instance
 	def create(self, channel_id: int = None, combat_type: str = "encounter"):
@@ -33,5 +33,10 @@ class CombatInstanceTransactions(DatabaseTransactions):
 	def setchannelinstance(self):
 		pass
 
-	def getchannelinstance(self):
-		pass
+	def get_channel_instance(self, channel_id: int) :
+		with self.createsession() as session :
+			instance = session.scalars(select(CombatInstances).where(
+				CombatInstances.channel_id == channel_id,
+				CombatInstances.active == True
+			)).first()
+			return instance

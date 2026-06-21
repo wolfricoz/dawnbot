@@ -5,9 +5,9 @@ from sqlalchemy import text
 from sqlalchemy.exc import InvalidRequestError, PendingRollbackError, SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
-from classes.singleton import Singleton
-from database.current import engine
-from database.exceptions.CommitError import CommitError
+from components.databaseEvents import CommitError
+from components.helpers.singleton import Singleton
+from database.database import engine
 
 
 class DatabaseTransactions(metaclass=Singleton) :

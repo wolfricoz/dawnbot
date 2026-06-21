@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod
 from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 from sqlalchemy.orm import Session
+import database.database as db
 
-import components.database as db
 
 session = Session(bind=db.engine, expire_on_commit=False)
 

@@ -4,7 +4,9 @@ from typing import List
 
 import pymysql
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, create_engine, func, \
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, \
+	UniqueConstraint, create_engine, \
+	func, \
 	text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
@@ -39,7 +41,7 @@ class Users(Timestamps, Base) :
 	messages: Mapped[int] = mapped_column(BigInteger, default=0)
 	xp: Mapped[int] = mapped_column(BigInteger, default=0)
 	currency: Mapped[int] = mapped_column(BigInteger, default=0)
-	guildid: Mapped[int] = mapped_column(BigInteger, default=559139888356917259)
+	guildid: Mapped[int] = mapped_column(BigInteger, default=559139888356917259, primary_key=True)
 
 
 class Levels(Timestamps, Base) :
@@ -59,9 +61,10 @@ class Channels(Timestamps, Base) :
 
 class Characters(Timestamps, Base) :
 	__tablename__ = "characters"
-	uid: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	uid: Mapped[int] = mapped_column(BigInteger, )
 	guild_id: Mapped[int] = mapped_column(BigInteger)
-	name: Mapped[str] = mapped_column(String(255), primary_key=True)
+	name: Mapped[str] = mapped_column(String(255))
 	prestige: Mapped[int] = mapped_column(BigInteger, default=0)
 	strength: Mapped[int] = mapped_column(BigInteger, default=0)
 	perception: Mapped[int] = mapped_column(BigInteger, default=0)
@@ -70,6 +73,9 @@ class Characters(Timestamps, Base) :
 	intelligence: Mapped[int] = mapped_column(BigInteger, default=0)
 	agility: Mapped[int] = mapped_column(BigInteger, default=0)
 	armor = mapped_column(BigInteger, ForeignKey('armors.id'))
+	__table_args__ = (
+		UniqueConstraint('uid', 'name', name='uq_character_uid_name'),
+	)
 
 
 class Armors(Timestamps, Base) :
@@ -90,30 +96,39 @@ class Weapons(Timestamps, Base) :
 	modifier: Mapped[str] = mapped_column(String(255))
 	hitmodifier = mapped_column(BigInteger, default=0)
 
-
-class Npcs(Timestamps, Base) :
-	__tablename__ = "npcs"
-	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-	name: Mapped[str] = mapped_column(String(255))
+class EntityStats:
 	hp: Mapped[int] = mapped_column(BigInteger)
 	ac: Mapped[int] = mapped_column(BigInteger)
 	attack: Mapped[str] = mapped_column(String(1024), default="1d20")
 	damage: Mapped[str] = mapped_column(String(1024), default="1d12")
 
+class Npcs(EntityStats, Timestamps, Base) :
+	__tablename__ = "npcs"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	name: Mapped[str] = mapped_column(String(255))
+
+class Monsters(EntityStats, Timestamps, Base) :
+	__tablename__ = "monsters"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	name: Mapped[str] = mapped_column(String(255))
+
 class CombatInstances(Timestamps, Base) :
 	__tablename__ = "combat_instances"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-	guid: Mapped[str] = mapped_column(String(255), server_default=text("gen_random_uuid()")) # this will be shown to the front-end
-	channel_id: Mapped[int] = mapped_column(BigInteger, nullable=True) # only one instance can be active per channel; threads act as their own channel.
-	entities: Mapped[List["CombatInstanceEntities"]] = relationship(
-	        "CombatInstanceEntities",
-	        back_populates="combat_instance",
-	        cascade="all, delete-orphan", # Automatically wipes out entities if the instance is deleted
-					lazy = "joined"
-	    )
+	guid: Mapped[str] = mapped_column(String(255),
+	                                  server_default=text("gen_random_uuid()"))  # this will be shown to the front-end
+	channel_id: Mapped[int] = mapped_column(BigInteger,
+	                                        nullable=True)  # only one instance can be active per channel; threads act as their own channel.
+	description: Mapped[str] = mapped_column(Text, nullable=True)
 	round: Mapped[int] = mapped_column(BigInteger, default=1)
 	combat_type: Mapped[str] = mapped_column(String(255), nullable=True, default="encounter")
 	active: Mapped[bool] = mapped_column(Boolean, default=True)
+	entities: Mapped[List["CombatInstanceEntities"]] = relationship(
+		"CombatInstanceEntities",
+		back_populates="combat_instance",
+		cascade="all, delete-orphan",  # Automatically wipes out entities if the instance is deleted
+		lazy="joined"
+	)
 
 
 class CombatInstanceEntities(Timestamps, Base) :
@@ -139,6 +154,8 @@ class CombatInstanceEntities(Timestamps, Base) :
 	# System Data
 	entity_type: Mapped[str] = mapped_column(String(255), nullable=True)
 	remaining_attacks: Mapped[int] = mapped_column(BigInteger, default=1)
+	alive: Mapped[bool] = mapped_column(Boolean, default=True)
+	stunned: Mapped[bool] = mapped_column(Boolean, default=False)
 
 	combat_instance: Mapped["CombatInstances"] = relationship(
 		"CombatInstances",
@@ -156,6 +173,7 @@ class CombatInstanceEntities(Timestamps, Base) :
 		),
 	)
 
+
 class CombatInstanceLogs(Timestamps, Base) :
 	__tablename__ = "combat_instance_log"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -164,13 +182,9 @@ class CombatInstanceLogs(Timestamps, Base) :
 	instance_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instances.id", ondelete="CASCADE"),
 	                                         nullable=False)
 
-	attacker_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"),)
+	attacker_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"), )
 	defender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"))
 	damage: Mapped[int] = mapped_column(BigInteger, default=0)
-
-
-
-
 
 
 class database :

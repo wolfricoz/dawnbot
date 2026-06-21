@@ -5,8 +5,11 @@ import discord
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
+from discord_py_utilities.messages import send_response
 
 from components.autoComplete import autocomplete
+from components.combat.combatInstance import CombatInstance
+from components.combat.instanceManager import InstanceManager
 from components.combatController import CombatController
 from components.databaseEvents import CombatSystem
 from math import ceil
@@ -73,6 +76,36 @@ class Combat(commands.GroupCog):
         logging.info(f"{character} hit the attack for {total_damage} damage with {weapon}!")
         logging.debug(f"Debug: Hit roll: {final_hit} ({hit_result} + {hit_mod}) vs {enemy_ac}, Damage roll: {results} + {damage_mod} = {total_damage} (crit: {crit}) (advantage: {advantage})")
         await interaction.followup.send(embed=embed)
+
+    @app_commands.command(name="start", description="Creates a new instance, only one can be active per channel")
+    async def start(self, interaction: discord.Interaction):
+        # check if instance exists in this channel
+        instance_manager = InstanceManager()
+        existing = instance_manager.load(interaction.channel)
+
+        # prevent a second instance on the same channel
+        if existing:
+            return await send_response(interaction, f"This channel already has an active instance! Active instance: {existing.get_instance_guid()}", ephemeral=True)
+
+        # create instance
+        instance = instance_manager.create(interaction.channel)
+        if not isinstance(instance, CombatInstance):
+            return await send_response(interaction, f"Failed to create instance.", ephemeral=True)
+        # inform the user
+        # TODO: Ease of access: Add buttons for people to add their characters.
+        embed = discord.Embed(
+            title="New combat instance created!",
+            description=f"You have successfully created a new instance! You can add your character by clicking the button below or do /combat join in this channel!"
+        )
+        embed.set_footer(text=f"Instance guid: {instance.get_instance_guid()}")
+
+
+        await send_response(interaction, f" ", embed=embed, ephemeral=False)
+
+        return None
+
+
+
 
     @app_commands.command(name="reload")
     @commands.is_owner()

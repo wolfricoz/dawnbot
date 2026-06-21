@@ -3,13 +3,13 @@ import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-from components import database
-from sqlalchemy.orm import Session
+
+from components.combat.instanceManager import InstanceManager
 from components.configMaker import guildconfiger
 from components.databaseEvents import CombatSystem, TransactionController
+from database.database import database
 
-database.database().create()
-session = Session(database.engine)
+database().create()
 load_dotenv('.env')
 token = os.getenv('TOKEN')
 PREFIX = os.getenv('PREFIX')
@@ -35,6 +35,9 @@ async def on_ready():
                 continue
             TransactionController.add_user(member.id, guild.id)
     CombatSystem().load_all()
+
+    # Add InstanceManager to the bot.
+    bot.combat_instance_manager = InstanceManager()
     await bot.tree.sync()
     print("Commands synced, start up _done_")
 
