@@ -40,10 +40,13 @@ class InterviewListener(commands.Cog) :
 	@commands.Cog.listener("on_raw_thread_update")
 	async def on_raw_thread_update(self, payload: discord.RawThreadUpdateEvent) :
 		"""Stores the tags of a species' post, which decide who may pick the species."""
+		# An update that does not mention the tags (a rename, archiving) must not clear them.
+		if "applied_tags" not in payload.data :
+			return
 		species = SpeciesTransactions().get_by_thread(payload.thread_id)
 		if species is None :
 			return
-		tag_ids = sorted(int(tag_id) for tag_id in payload.data.get("applied_tags", []))
+		tag_ids = sorted(int(tag_id) for tag_id in payload.data["applied_tags"])
 		if tag_ids != sorted(species.tag_ids or []) :
 			SpeciesTransactions().update(species.id, tag_ids=tag_ids)
 

@@ -1,4 +1,7 @@
-"""XP, currency and level roles earned by posting in the configured XP channels."""
+"""XP and level roles earned by posting in the configured XP channels.
+
+Members earn XP only; currency belongs to characters and is earned by posting as one (see classes/proxy/Proxy.py).
+"""
 import logging
 from typing import Awaitable, Callable
 
@@ -13,7 +16,7 @@ from database.transactions.ProxyTransactions import ProxyTransactions
 from database.transactions.UserTransactions import UserTransactions
 from resources.configs.ConfigMapping import ConfigMapping, defaults
 
-# Messages up to this length earn no XP (currency is still awarded).
+# Messages up to this length earn no XP.
 XP_MINIMUM_LENGTH = 50
 # Messages up to this length are removed from XP channels, unless the author can manage messages.
 MINIMUM_POST_LENGTH = 300
@@ -68,18 +71,17 @@ class Progression :
 	# ============================================================
 	@staticmethod
 	def currency_for(guild_id: int, content: str) -> int :
+		"""The currency a character earns for a post of this text (used by the proxy)."""
 		return round(len(content) / Progression._gain(guild_id, ConfigMapping.CURRENCY_GAIN))
 
 	# ============================================================
 	@staticmethod
 	def award(message: discord.Message) -> Experience :
-		"""Awards XP and currency for one message and returns the user's updated progression."""
+		"""Awards XP for one message and returns the user's updated progression."""
 		guild_id = message.guild.id
 		xp = Progression.xp_for(guild_id, message.content)
-		currency = Progression.currency_for(guild_id, message.content)
-		ExperienceTransactions().add_currency(message.author.id, guild_id, currency)
 		record = ExperienceTransactions().add_xp(message.author.id, guild_id, xp, count_message=xp > 0)
-		logging.debug(f"{message.author} gained {xp} xp and {currency} currency in {message.guild.name}")
+		logging.debug(f"{message.author} gained {xp} xp in {message.guild.name}")
 		return record
 
 	# ============================================================
@@ -126,7 +128,7 @@ class Progression :
 	# ============================================================
 	@staticmethod
 	async def count_history(channel: discord.TextChannel | discord.ForumChannel | discord.Thread) -> int :
-		"""Awards XP and currency for every past message in the channel, its threads and archived threads.
+		"""Awards XP for every past message in the channel, its threads and archived threads.
 
 		@return: the number of messages counted.
 		"""
@@ -171,7 +173,7 @@ class Progression :
 		for uid in members :
 			UserTransactions().delete(uid, guild.id)
 		UserTransactions().sync_guild(guild.id, members)
-		await progress(f"Reset {len(members)} users, starting to calculate currency and xp now")
+		await progress(f"Reset {len(members)} users, starting to calculate xp now")
 
 		total = 0
 		for channel_id in ConfigData().get_list(guild.id, ConfigMapping.XP_CHANNELS) :

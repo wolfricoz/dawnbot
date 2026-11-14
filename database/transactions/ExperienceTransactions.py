@@ -6,7 +6,7 @@ from database.transactions.UserTransactions import UserTransactions
 
 
 class ExperienceTransactions(DatabaseTransactions) :
-	"""XP, message counts and currency, per user per guild. Every write registers the user first, so members who
+	"""XP and message counts, per user per guild. Every write registers the user first, so members who
 	joined after start-up are never silently skipped."""
 
 	# ============================================================
@@ -39,17 +39,3 @@ class ExperienceTransactions(DatabaseTransactions) :
 	# ============================================================
 	def set_xp(self, uid: int, guild_id: int, amount: int) -> Experience :
 		return self._update(uid, guild_id, xp=amount)
-
-	# == Currency ==
-
-	# ============================================================
-	def add_currency(self, uid: int, guild_id: int, amount: int) -> Experience :
-		return self._update(uid, guild_id, currency=Experience.currency + amount)
-
-	# ============================================================
-	def remove_currency(self, uid: int, guild_id: int, amount: int) -> Experience :
-		return self._update(uid, guild_id, currency=Experience.currency - amount)
-
-	# ============================================================
-	def set_currency(self, uid: int, guild_id: int, amount: int) -> Experience :
-		return self._update(uid, guild_id, currency=amount)

@@ -85,11 +85,13 @@ class TestProgression(DatabaseTestCase) :
 
 	def test_award(self) :
 		record = Progression.award(fake_message("x" * 600))
-		self.assertEqual((record.xp, record.currency, record.messages), (120, 20, 1))
-		# Short messages earn currency but no XP, and are not counted.
+		self.assertEqual((record.xp, record.messages), (120, 1))
+		# Members earn no currency; it belongs to characters.
+		self.assertFalse(hasattr(record, "currency"))
+		# Short messages earn no XP and are not counted.
 		Progression.award(fake_message("x" * 30))
 		record = ExperienceTransactions().get(USER_ID, GUILD_ID)
-		self.assertEqual((record.xp, record.currency, record.messages), (120, 21, 1))
+		self.assertEqual((record.xp, record.messages), (120, 1))
 
 
 class TestAccessControl(DatabaseTestCase) :

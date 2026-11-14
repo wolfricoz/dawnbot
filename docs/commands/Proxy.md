@@ -2,7 +2,7 @@
 layout: default
 title: Proxy
 parent: Commands
-nav_order: 11
+nav_order: 14
 ---
 
 <h1>Proxy</h1>

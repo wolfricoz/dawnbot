@@ -2,14 +2,14 @@
 layout: default
 title: Config
 parent: Commands
-nav_order: 5
+nav_order: 6
 ---
 
 <h1>Config</h1>
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-Server settings: XP channels, level roles, currency and the channels the bot posts in.
+Server settings: XP (roleplay) channels, level roles, characters, currency and the channels the bot posts in.
 
 
 ### `roles`
@@ -49,7 +49,7 @@ Server settings: XP channels, level roles, currency and the channels the bot pos
 
 **Usage:** `/config currency_gain <amount_of_characters>`
 
-> Sets how many characters a message needs per unit of currency.
+> Sets how many characters a post made as a character needs per unit of currency for that character.
 
 **Permissions:**
 - `Manage Server`
@@ -71,7 +71,8 @@ Server settings: XP channels, level roles, currency and the channels the bot pos
 
 **Usage:** `/config channel <option> <channel>`
 
-> Adds or removes a text channel where messages earn XP and currency.
+> Adds or removes a text channel where messages earn XP (a roleplay channel). Posts made as a character there
+also earn the character currency.
 
 **Permissions:**
 - `Manage Server`
@@ -82,7 +83,7 @@ Server settings: XP channels, level roles, currency and the channels the bot pos
 
 **Usage:** `/config singlechannels <option> <channel>`
 
-> Sets the character, character review, species forum, timeline or modlog channel. Approved characters and
+> Sets the character, character review, species forum, gear forum, timeline or modlog channel. Approved characters and
 species are posted in the character channel and the species forum (a forum gives each its own thread); new and
 edited characters and species wait for staff in the character review channel.
 
@@ -139,6 +140,18 @@ XP and have no minimum length. Off by default.
 
 ---
 
+### `economy`
+
+**Usage:** `/config economy <mode>`
+
+> Sets whether gear costs currency: economy (characters buy gear and sell it for 30% of what they paid) or
+free (all gear costs nothing and selling returns nothing).
+
+**Permissions:**
+- `Manage Server`
+
+---
+
 ### `reapproval`
 
 **Usage:** `/config reapproval <mode>`
@@ -166,7 +179,8 @@ answers) or all (also prefix, suffix and the member's own extra fields). A respe
 
 **Usage:** `/config forum <option> <channel>`
 
-> Adds or removes a forum whose posts earn XP and currency.
+> Adds or removes a forum whose posts earn XP (a roleplay forum). Posts made as a character there also earn
+the character currency.
 
 **Permissions:**
 - `Manage Server`

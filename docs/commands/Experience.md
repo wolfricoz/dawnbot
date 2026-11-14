@@ -2,7 +2,7 @@
 layout: default
 title: Experience
 parent: Commands
-nav_order: 7
+nav_order: 8
 ---
 
 <h1>Experience</h1>
@@ -16,7 +16,7 @@ XP commands. Members earn XP by posting in the XP channels set with /config chan
 
 **Usage:** `/recount`
 
-> Resets everyone's XP and currency in this server and counts every XP channel again.
+> Resets everyone's XP in this server and counts every XP channel again.
 
 **Permissions:**
 - `Developer`

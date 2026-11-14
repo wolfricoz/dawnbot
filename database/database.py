@@ -120,7 +120,6 @@ class Experience(Timestamps, Base) :
 
 	messages: Mapped[int] = mapped_column(BigInteger, default=0)
 	xp: Mapped[int] = mapped_column(BigInteger, default=0)
-	currency: Mapped[int] = mapped_column(BigInteger, default=0)
 	guildid: Mapped[int] = mapped_column(BigInteger)
 
 	# Allows the same UID to exist across multiple guilds, but only once per guild.

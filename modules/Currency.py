@@ -1,86 +1,121 @@
+"""Characters' currency: balances and the history of every change.
+
+Currency belongs to characters, not members. A character starts with the server's starting amount and earns more by
+roleplaying as that character; GMs can give or take it with /gm currency.
+"""
 import discord
 from discord import app_commands
 from discord.ext import commands
 
+from classes.characters.CharacterFlow import CharacterFlow
+from classes.combat.AutoComplete import AutoComplete
+from classes.gear.Gear import Gear
 from classes.kernel.ConfigData import ConfigData
-from database.transactions.ExperienceTransactions import ExperienceTransactions
+from database.database import Characters
+from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
+from database.transactions.CurrencyTransactions import BUY, CurrencyTransactions, GM_GIVE, GM_TAKE, ROLEPLAY, SELL, \
+	START
 from resources.configs.ConfigMapping import ConfigMapping
 
+HISTORY_LENGTH = 15
+FREE_NOTE = "Gear is free on this server right now, so currency isn't spent."
 
-class Currency(commands.Cog) :
-	"""Currency commands. Members earn currency by posting in the XP channels."""
+
+# ============================================================
+def currency_name(guild_id: int) -> str :
+	return str(ConfigData().get_key(guild_id, ConfigMapping.CURRENCY_NAME))
+
+
+# ============================================================
+def balance_text(guild_id: int, amount: int) -> str :
+	"""`1400 caps`, using the server's currency name."""
+	return f"{amount} {currency_name(guild_id)}"
+
+
+# ============================================================
+def ledger_line(row, name: str) -> str :
+	"""One ledger row as text, like `+13 caps · roleplay · 2 hours ago`."""
+	reasons = {
+		START    : "starting amount",
+		ROLEPLAY : "roleplay",
+		BUY      : f"bought {row.note}" if row.note else "bought gear",
+		SELL     : f"sold {row.note}" if row.note else "sold gear",
+		GM_GIVE  : f"given by <@{row.actor_uid}>" if row.actor_uid else "given by staff",
+		GM_TAKE  : f"taken by <@{row.actor_uid}>" if row.actor_uid else "taken by staff",
+	}
+	reason = reasons.get(row.reason, row.reason)
+	if row.reason in (GM_GIVE, GM_TAKE) and row.note :
+		reason += f": {row.note}"
+	parts = [f"`{row.amount:+}` {name}", reason]
+	if row.created_at is not None :
+		parts.append(discord.utils.format_dt(row.created_at, "R"))
+	return " · ".join(parts)
+
+
+# ============================================================
+async def find_own_character(interaction: discord.Interaction, name: str,
+                             approved: bool = False) -> Characters | None :
+	"""The member's character with that name on this server; tells them when there is none (or it is not approved)."""
+	character = CharacterTransactions().get(interaction.user.id, interaction.guild_id, name)
+	if character is None :
+		await CharacterFlow.respond(interaction, f"You have no character called {name} on this server.")
+		return None
+	if approved and character.state != APPROVED :
+		await CharacterFlow.respond(interaction, f"{character.name} needs to be approved by staff first.")
+		return None
+	return character
+
+
+@app_commands.guild_only()
+class Currency(commands.GroupCog, name="Currency", group_name="currency") :
+	"""Your characters' currency. Each character has its own: it starts with the server's starting amount and earns
+	more when you post as it in the roleplay channels. You can't move currency between your characters; staff can
+	give or take it."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 
 	# ============================================================
-	@app_commands.command(name="checkcurrency")
-	async def checkcurrency(self, interaction: discord.Interaction) :
+	@app_commands.command(name="balance")
+	@app_commands.autocomplete(character=AutoComplete().character)
+	async def balance(self, interaction: discord.Interaction, character: str = None) :
 		"""
-		Shows how much currency you have.
+		Shows how much currency your characters have. Leave out `character` to see all of them.
 		"""
-		await interaction.response.defer()
-		user = ExperienceTransactions().get(interaction.user.id, interaction.guild.id)
-		embed = discord.Embed(title=f"{interaction.user.name}'s currency",
-		                      description=f"You currently have {user.currency} currency.")
-		embed.set_footer(text=f"Current currency: {user.currency}.")
-		await interaction.followup.send(embed=embed)
+		if character is not None :
+			if (record := await find_own_character(interaction, character)) is None :
+				return
+			characters = [record]
+		else :
+			characters = CharacterTransactions().get_all(interaction.user.id, interaction.guild_id)
+			if not characters :
+				return await CharacterFlow.respond(interaction, "You have no characters on this server.")
+		guild_id = interaction.guild_id
+		lines = [f"**{record.name}**: {balance_text(guild_id, record.currency)}" for record in characters]
+		embed = discord.Embed(title=currency_name(guild_id).capitalize(), description="\n".join(lines)[:4000],
+		                      color=discord.Color.dark_gold())
+		if not Gear.economy(guild_id) :
+			embed.set_footer(text=FREE_NOTE)
+		await interaction.response.send_message(embed=embed, ephemeral=True)
 
 	# ============================================================
-	@app_commands.command(name="getcurrency")
-	async def getcurrency(self, interaction: discord.Interaction) :
+	@app_commands.command(name="history")
+	@app_commands.autocomplete(character=AutoComplete().character)
+	async def history(self, interaction: discord.Interaction, character: str) :
 		"""
-		Shows how much currency you have, using the server's currency name.
+		Shows the last changes to one of your characters' currency: roleplay earnings, purchases, sales and what
+		staff gave or took.
 		"""
-		await interaction.response.defer()
-		user = ExperienceTransactions().get(interaction.user.id, interaction.guild.id)
-		currency_name = ConfigData().get_key(interaction.guild.id, ConfigMapping.CURRENCY_NAME)
-		embed = discord.Embed(title=f"{interaction.user.name}'s currency",
-		                      description=f"You currently have {user.currency} {currency_name}.")
-		embed.set_footer(text=f"Current currency: {user.currency}.")
-		await interaction.followup.send(embed=embed)
-
-	# ============================================================
-	@app_commands.command(name="setcurrency")
-	@app_commands.checks.has_permissions(manage_guild=True)
-	async def setcurrency(self, interaction: discord.Interaction, member: discord.Member, currency: int) :
-		"""
-		Sets a member's currency.
-
-		**Permissions:**
-		- `Manage Server`
-		"""
-		await interaction.response.defer(ephemeral=True)
-		ExperienceTransactions().set_currency(member.id, interaction.guild.id, currency)
-		await interaction.followup.send(f"Currency of {member.mention} set to {currency}")
-
-	# ============================================================
-	@app_commands.command(name="addcurrency")
-	@app_commands.checks.has_permissions(manage_guild=True)
-	async def addcurrency(self, interaction: discord.Interaction, member: discord.Member, currency: int) :
-		"""
-		Adds currency to a member.
-
-		**Permissions:**
-		- `Manage Server`
-		"""
-		await interaction.response.defer(ephemeral=True)
-		ExperienceTransactions().add_currency(member.id, interaction.guild.id, currency)
-		await interaction.followup.send(f"Added {currency} to {member.mention}")
-
-	# ============================================================
-	@app_commands.command(name="removecurrency")
-	@app_commands.checks.has_permissions(manage_guild=True)
-	async def removecurrency(self, interaction: discord.Interaction, member: discord.Member, currency: int) :
-		"""
-		Removes currency from a member.
-
-		**Permissions:**
-		- `Manage Server`
-		"""
-		await interaction.response.defer(ephemeral=True)
-		ExperienceTransactions().remove_currency(member.id, interaction.guild.id, currency)
-		await interaction.followup.send(f"Removed {currency} from {member.mention}")
+		if (record := await find_own_character(interaction, character)) is None :
+			return
+		guild_id = interaction.guild_id
+		name = currency_name(guild_id)
+		rows = CurrencyTransactions().get_all(record.id, limit=HISTORY_LENGTH)
+		lines = [ledger_line(row, name) for row in rows] or ["No changes yet."]
+		embed = discord.Embed(title=f"{record.name}'s {name}", description="\n".join(lines)[:4000],
+		                      color=discord.Color.dark_gold())
+		embed.set_footer(text=f"Now: {balance_text(guild_id, record.currency)}")
+		await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def setup(bot) :

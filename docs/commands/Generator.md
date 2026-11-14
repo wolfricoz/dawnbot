@@ -2,7 +2,7 @@
 layout: default
 title: Generator
 parent: Commands
-nav_order: 9
+nav_order: 11
 ---
 
 <h1>Generator</h1>

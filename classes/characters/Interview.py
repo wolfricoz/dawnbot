@@ -9,6 +9,7 @@ A draft walks through its queue of steps:
   species, occupation            when the server has more than one species or has occupations
   field:<id>                     one per question on the server's sheet
   stat_method, stats             how the SPECIAL stats are set, and their values
+  gear                           starting gear from the server's catalog, when it has items the member can see
   summary                        the answers so far; from here the player changes answers or submits
 """
 from dataclasses import dataclass, field
@@ -22,11 +23,15 @@ from classes.characters.ImageStorage import ImageError, ImageStorage
 from classes.characters.Sheet import INFO, Sheet
 from classes.characters.SpeciesRules import SpeciesRules
 from classes.characters.Special import POINT_BUY, ROLLED, STATS, Special
+from classes.gear.Gear import ARMOR, CREATION, Gear, ShopItem
+from classes.gear.GearCard import GearCard
 from classes.kernel.ConfigData import ConfigData
-from database.database import Characters, Drafts
+from database.database import Characters, Drafts, GearItems
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
 from database.transactions.CharacterTransactions import CharacterTransactions, PENDING
+from database.transactions.CurrencyTransactions import CurrencyTransactions, START
 from database.transactions.DraftTransactions import DraftTransactions
+from database.transactions.GearItemTransactions import GearItemTransactions
 from database.transactions.OccupationTransactions import OccupationTransactions
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
 from database.transactions.SpeciesTransactions import APPROVED as SPECIES_APPROVED, SpeciesTransactions
@@ -145,7 +150,10 @@ class Interview :
 		steps += [f"field:{sheet_field.id}" for sheet_field in Sheet.questions(guild_id)]
 		if len(Special.rules(guild_id).methods) > 1 :
 			steps.append("stat_method")
-		return steps + ["stats", "summary"]
+		steps.append("stats")
+		if Gear.shop_items(guild_id, Access.from_dict(answers["access"])) :
+			steps.append("gear")
+		return steps + ["summary"]
 
 	# == asking ==
 
@@ -192,6 +200,8 @@ class Interview :
 			        f"Type **buy** or **roll**.")
 		if step == "stats" :
 			return Interview._stats_prompt(draft)
+		if step == "gear" :
+			return Interview._gear_prompt(draft)
 		return Interview._summary(draft)
 
 	# ============================================================
@@ -338,6 +348,74 @@ class Interview :
 
 	# ============================================================
 	@staticmethod
+	def _shop(draft: Drafts) -> list[ShopItem] :
+		"""The catalog as the member sees it, numbered in this order in the gear prompt."""
+		return Gear.shop_items(draft.guild_id, Access.from_dict(draft.answers.get("access")))
+
+	# ============================================================
+	@staticmethod
+	def _starting_currency(guild_id: int) -> int :
+		return ConfigData().get_int(guild_id, ConfigMapping.STARTING_CURRENCY) or 0
+
+	# ============================================================
+	@staticmethod
+	def _basket(draft: Drafts) -> list[GearItems] :
+		"""The picked starting gear that is still in the server's catalog, in the order it was picked."""
+		items = []
+		for item_id in draft.answers.get("gear") or [] :
+			item = GearItemTransactions().get(item_id)
+			if item is not None and item.guild_id == draft.guild_id :
+				items.append(item)
+		return items
+
+	# ============================================================
+	@staticmethod
+	def _basket_text(draft: Drafts, basket: list[GearItems]) -> str :
+		"""`Sword, Leather (300 of 3000 caps)`, `Sword (free)`, or `none`."""
+		if not basket :
+			return "none"
+		names = Interview._shorten(", ".join(item.name for item in basket), 110)
+		if not Gear.economy(draft.guild_id) :
+			return f"{names} (free)"
+		currency = ConfigData().get_key(draft.guild_id, ConfigMapping.CURRENCY_NAME)
+		total = sum(Gear.price(item) for item in basket)
+		return f"{names} ({total} of {Interview._starting_currency(draft.guild_id)} {currency})"
+
+	# ============================================================
+	@staticmethod
+	def _money_left(draft: Drafts, basket: list[GearItems]) -> int :
+		"""The starting currency minus the price of the picked gear."""
+		return Interview._starting_currency(draft.guild_id) - sum(Gear.price(item) for item in basket)
+
+	# ============================================================
+	@staticmethod
+	def _gear_prompt(draft: Drafts) -> str :
+		"""The catalog with numbers, the money left and what is in the bag; one line per item."""
+		shop = Interview._shop(draft)
+		basket = Interview._basket(draft)
+		picked = {item.id for item in basket}
+		lines = ["**Pick your starting gear.**"]
+		if Gear.economy(draft.guild_id) :
+			currency = ConfigData().get_key(draft.guild_id, ConfigMapping.CURRENCY_NAME)
+			lines.append(f"You start with {Interview._starting_currency(draft.guild_id)} {currency}; what you don't "
+			             f"spend is kept. Left to spend: **{Interview._money_left(draft, basket)} {currency}**.")
+		else :
+			lines.append("Gear is free on this server, so take what your character carries.")
+		if not shop :
+			lines.append("There is no gear to pick right now. Type **done** to continue.")
+			return "\n".join(lines)
+		for number, entry in enumerate(shop, start=1) :
+			line = f"{number}. {GearCard.line(entry.item, entry.locked)}"
+			if entry.item.id in picked :
+				line += " · in your bag"
+			lines.append(line)
+		lines.append(f"In your bag: {Interview._basket_text(draft, basket) if basket else 'nothing yet'}")
+		lines.append("Send a number or name to add an item (one of each), **remove** and a number or name to take one "
+		             "out, and **done** when you are finished.")
+		return "\n".join(lines)
+
+	# ============================================================
+	@staticmethod
 	def _shorten(value: str, limit: int = SUMMARY_VALUE_LIMIT) -> str :
 		value = " ".join(str(value).split())
 		return value if len(value) <= limit else f"{value[:limit - 1]}…"
@@ -372,6 +450,11 @@ class Interview :
 					value += f" (rolled, {draft.rerolls} rerolls)"
 			first = "stat_method" if "stat_method" in answers.get("queue", []) else "stats"
 			items.append((first, "SPECIAL", value))
+		if draft.kind == CREATE :
+			# Shown while the catalog has something to pick, or something was picked before it emptied.
+			basket = Interview._basket(draft)
+			if basket or Interview._shop(draft) :
+				items.append(("gear", "Starting gear", Interview._basket_text(draft, basket)))
 		return items
 
 	# ============================================================
@@ -441,7 +524,7 @@ class Interview :
 			answers["occupation_id"] = None
 			Interview._advance(draft)
 			return Reply(Interview.prompt(draft))
-		if command == "skip" and not step.startswith("field:") :
+		if command == "skip" and not step.startswith("field:") and step != "gear" :
 			return Reply("This one cannot be skipped. Type **back** to return to the previous question."
 			             if step != "summary" else "Type the number of an answer to change it, **submit**, or **cancel**.")
 		if step == "summary" :
@@ -482,6 +565,8 @@ class Interview :
 				DraftTransactions().save(draft)
 				return Reply(Interview.prompt(draft))
 			problem = Interview._answer_stats(draft, text)
+		elif step == "gear" :
+			return Interview._answer_gear(draft, text, command)
 
 		if problem :
 			return Reply(problem)
@@ -725,6 +810,51 @@ class Interview :
 			draft.answers["stats"] = stats
 		return problem
 
+	# ============================================================
+	@staticmethod
+	def _answer_gear(draft: Drafts, text: str, command: str) -> Reply :
+		"""Adds an item to the bag, takes one out (`remove <number or name>`), or moves on (`done` or `skip`).
+
+		The bag holds one of each item: a character starts with a kit, not a stock to trade. An item has to be
+		unlocked for the member and, unless gear is free, fit in what is left of the starting currency.
+		"""
+		answers = draft.answers
+		basket = Interview._basket(draft)
+		# Items removed from the catalog in the meantime silently leave the bag.
+		answers["gear"] = [item.id for item in basket]
+		if command in ("done", "skip") :
+			Interview._advance(draft)
+			return Reply(Interview.prompt(draft))
+		shop = Interview._shop(draft)
+		removing = command == "remove" or command.startswith("remove ")
+		wanted = text[len("remove") :].strip() if removing else text
+		entry = Interview._pick(shop, wanted, lambda option : option.item.name)
+		if removing :
+			item = entry.item if entry else next(
+				(picked for picked in basket if picked.name.lower() == wanted.lower()), None)
+			if item is None or item.id not in answers["gear"] :
+				return Reply("That is not in your bag. Type **remove** with the number or name of an item in it.")
+			answers["gear"].remove(item.id)
+			message = f"Took **{item.name}** out of your bag."
+		else :
+			if entry is None :
+				return Reply("Please pick an item by its number or name, or type **done** to move on.")
+			item = entry.item
+			if entry.locked :
+				return Reply(f"{item.name} {entry.locked}, so it cannot be picked.")
+			if item.id in answers["gear"] :
+				return Reply(f"{item.name} is already in your bag; you can take one of each item.")
+			left = Interview._money_left(draft, basket)
+			if Gear.economy(draft.guild_id) and entry.price > left :
+				currency = ConfigData().get_key(draft.guild_id, ConfigMapping.CURRENCY_NAME)
+				return Reply(f"{item.name} costs {GearCard.price_text(draft.guild_id, entry.price)}, but you only have "
+				             f"{left} {currency} left. Take something out first, or pick something cheaper.")
+			answers["gear"].append(item.id)
+			message = f"Added **{item.name}** to your bag."
+		DraftTransactions().save(draft)
+		return Reply(f"{message}\nIn your bag: {Interview._basket_text(draft, Interview._basket(draft))}\n"
+		             f"Add another item, **remove** one, or type **done**.")
+
 	# == submitting ==
 
 	# ============================================================
@@ -803,6 +933,17 @@ class Interview :
 			problem = "That occupation filled up in the meantime. Please pick another."
 		if problem :
 			return Reply(f"{problem}\n\n{Interview.prompt(draft)}")
+		basket, not_bought = Interview._check_basket(draft, access)
+		starting = Interview._starting_currency(draft.guild_id)
+		total = sum(Gear.price(item) for item in basket)
+		if Gear.economy(draft.guild_id) and total > starting :
+			currency = ConfigData().get_key(draft.guild_id, ConfigMapping.CURRENCY_NAME)
+			draft.step = "gear"
+			answers["returning"] = True
+			DraftTransactions().save(draft)
+			return Reply(" ".join(not_bought + [
+				f"Your starting gear now costs {total} {currency}, more than the {starting} {currency} you start "
+				f"with. Please take something out."]) + f"\n\n{Interview.prompt(draft)}")
 
 		stats = answers["stats"]
 		leftover = Interview._budget(draft) - sum(stats.values()) if answers.get("stat_method") == POINT_BUY else 0
@@ -811,14 +952,66 @@ class Interview :
 			suffix=answers.get("suffix"), avatar_id=answers.get("avatar_id"), species_id=answers.get("species_id"),
 			occupation_id=answers.get("occupation_id"), stat_method=answers.get("stat_method"),
 			rerolls=draft.rerolls if answers.get("stat_method") == ROLLED else 0, unspent_points=max(0, leftover),
-			currency=ConfigData().get_int(draft.guild_id, ConfigMapping.STARTING_CURRENCY) or 0, **stats)
+			currency=starting, **stats)
 		if character is None :
 			return Reply(f"Something went wrong while saving {answers['name']}. Please type **submit** again.")
+		if starting :
+			CurrencyTransactions().log(character.id, draft.guild_id, starting, START, None)
 		labels = {str(sheet_field.id) : sheet_field.label for sheet_field in Sheet.questions(draft.guild_id)}
 		for field_id, value in answers["fields"].items() :
 			if field_id in labels and value :
 				CharacterInfoTransactions().set_answer(character.id, int(field_id), labels[field_id], value)
+		not_bought += Interview._buy_starting_gear(character, basket, access, draft.uid)
+		# Buying changed the currency, so the review card needs the character as it is now.
+		character = CharacterTransactions().get_by_id(character.id) or character
 		DraftTransactions().delete(draft.uid)
-		return Reply(f"**{character.name}** was sent to the staff of {answers.get('guild_name', 'the server')} for "
-		             f"review. I'll message you when they have looked at it.",
-		             finished=True, outcome=CREATED, character=character)
+		text = (f"**{character.name}** was sent to the staff of {answers.get('guild_name', 'the server')} for review. "
+		        f"I'll message you when they have looked at it.")
+		if not_bought :
+			text += "\n\nNot all of your starting gear could be bought: " + " ".join(not_bought)
+		return Reply(text, finished=True, outcome=CREATED, character=character)
+
+	# ============================================================
+	@staticmethod
+	def _check_basket(draft: Drafts, access: Access) -> tuple[list[GearItems], list[str]] :
+		"""Takes items out of the bag that left the catalog or became locked since they were picked.
+
+		@return: the items still in the bag, and a sentence for each item taken out.
+		"""
+		picked = draft.answers.get("gear") or []
+		basket = Interview._basket(draft)
+		dropped = []
+		if len(basket) < len(picked) :
+			gone = len(picked) - len(basket)
+			dropped.append(f"{gone} item{'s' if gone > 1 else ''} in your bag {'are' if gone > 1 else 'is'} no "
+			               f"longer sold.")
+		kept = []
+		for item in basket :
+			locked = Gear.lock_reason(item, access)
+			if locked :
+				dropped.append(f"{item.name} {locked}.")
+			else :
+				kept.append(item)
+		if len(kept) != len(picked) :
+			draft.answers["gear"] = [item.id for item in kept]
+			DraftTransactions().save(draft)
+		return kept, dropped
+
+	# ============================================================
+	@staticmethod
+	def _buy_starting_gear(character: Characters, basket: list[GearItems], access: Access, uid: int) -> list[str] :
+		"""Buys the bag for a new character and has it wear the most expensive armor bought.
+
+		@return: why items could not be bought, one sentence each.
+		"""
+		problems, armor = [], []
+		for item in basket :
+			entry, problem = Gear.buy(character, item, access, uid, source=CREATION)
+			if entry is None :
+				problems.append(problem)
+			elif item.kind == ARMOR :
+				armor.append((item.price, entry))
+		if armor :
+			# The catalog price decides, so free mode picks the same armor as economy mode would.
+			Gear.equip(max(armor, key=lambda pair : pair[0])[1])
+		return problems

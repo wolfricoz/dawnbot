@@ -2,7 +2,7 @@
 layout: default
 title: Character
 parent: Commands
-nav_order: 3
+nav_order: 4
 ---
 
 <h1>Character</h1>

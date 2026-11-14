@@ -2,7 +2,7 @@
 layout: default
 title: Tools
 parent: Commands
-nav_order: 16
+nav_order: 20
 ---
 
 <h1>Tools</h1>

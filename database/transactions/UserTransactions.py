@@ -36,7 +36,7 @@ class UserTransactions(DatabaseTransactions) :
 				session.flush()
 			record = session.scalar(Select(Experience).where(Experience.uid == uid, Experience.guildid == guild_id))
 			if record is None :
-				record = Experience(uid=uid, guildid=guild_id, xp=0, currency=0, messages=0)
+				record = Experience(uid=uid, guildid=guild_id, xp=0, messages=0)
 				session.add(record)
 			self.commit(session)
 			return record
@@ -67,7 +67,7 @@ class UserTransactions(DatabaseTransactions) :
 			session.flush()
 			missing_experience = [uid for uid in uids if uid not in known_experience]
 			session.add_all(
-				[Experience(uid=uid, guildid=guild_id, xp=0, currency=0, messages=0) for uid in missing_experience])
+				[Experience(uid=uid, guildid=guild_id, xp=0, messages=0) for uid in missing_experience])
 			self.commit(session)
 		if missing_experience :
 			logging.info(f"Registered {len(missing_experience)} users in {guild_id}")

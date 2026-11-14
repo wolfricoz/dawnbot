@@ -15,7 +15,7 @@ from resources.configs.ConfigMapping import ConfigMapping, channels, choice_sett
 
 
 class Config(commands.GroupCog, name="Config", group_name="config") :
-	"""Server settings: XP channels, level roles, currency and the channels the bot posts in."""
+	"""Server settings: XP (roleplay) channels, level roles, characters, currency and the channels the bot posts in."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -110,7 +110,7 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	async def currency_per_character(self, interaction: Interaction,
 	                                 amount_of_characters: app_commands.Range[int, 1]) :
 		"""
-		Sets how many characters a message needs per unit of currency.
+		Sets how many characters a post made as a character needs per unit of currency for that character.
 
 		**Permissions:**
 		- `Manage Server`
@@ -144,7 +144,8 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def channel(self, interaction: Interaction, option: Choice[str], channel: discord.TextChannel) :
 		"""
-		Adds or removes a text channel where messages earn XP and currency.
+		Adds or removes a text channel where messages earn XP (a roleplay channel). Posts made as a character there
+		also earn the character currency.
 
 		**Permissions:**
 		- `Manage Server`
@@ -324,7 +325,8 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def forum(self, interaction: Interaction, option: Choice[str], channel: discord.ForumChannel) :
 		"""
-		Adds or removes a forum whose posts earn XP and currency.
+		Adds or removes a forum whose posts earn XP (a roleplay forum). Posts made as a character there also earn
+		the character currency.
 
 		**Permissions:**
 		- `Manage Server`

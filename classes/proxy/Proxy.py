@@ -13,6 +13,7 @@ from classes.proxy.Matcher import Match, Matcher
 from classes.proxy.WebhookManager import WebhookManager
 from classes.support.PermissionNotice import PermissionNotice
 from database.database import Characters
+from database.transactions.CurrencyTransactions import CurrencyTransactions, ROLEPLAY
 from database.transactions.ExperienceTransactions import ExperienceTransactions
 from database.transactions.ProxyTransactions import ProxyTransactions
 from resources.configs.ConfigMapping import ConfigMapping
@@ -176,6 +177,8 @@ class Proxy :
 		if not in_roleplay :
 			return
 		updated, gained = Special.add_xp(character, xp, currency)
+		if currency and updated is not None :
+			CurrencyTransactions().log(character.id, guild.id, currency, ROLEPLAY, message.author.id)
 		record = ExperienceTransactions().add_xp(message.author.id, guild.id, xp, count_message=xp > 0)
 		if isinstance(message.author, discord.Member) :
 			await Progression.announce_level(message.author, record.xp)

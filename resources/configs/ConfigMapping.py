@@ -126,9 +126,9 @@ legacy_json_keys = {
 
 docs = {
 	# == progression ==
-	ConfigMapping.XP_CHANNELS   : "Text channels and forums where messages earn XP and currency. Threads count when their parent channel is listed. Messages shorter than 300 characters are removed there.",
+	ConfigMapping.XP_CHANNELS   : "Text channels and forums where roleplay happens: messages earn XP there, and posts made as a character also earn that character currency. Threads count when their parent channel is listed. Messages shorter than 300 characters are removed there.",
 	ConfigMapping.XP_GAIN       : "How many characters a message needs per point of XP (default 5).",
-	ConfigMapping.CURRENCY_GAIN : "How many characters a message needs per unit of currency (default 30).",
+	ConfigMapping.CURRENCY_GAIN : "How many characters a post made as a character needs per unit of currency for that character (default 30).",
 	ConfigMapping.CURRENCY_NAME : "The name shown for the server's currency (default 'currency').",
 	ConfigMapping.ANNOUNCEMENT  : "The channel where level-up announcements are posted.",
 

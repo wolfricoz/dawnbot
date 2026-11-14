@@ -2,62 +2,32 @@
 layout: default
 title: Currency
 parent: Commands
-nav_order: 6
+nav_order: 7
 ---
 
 <h1>Currency</h1>
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-Currency commands. Members earn currency by posting in the XP channels.
+Your characters' currency. Each character has its own: it starts with the server's starting amount and earns
+more when you post as it in the roleplay channels. You can't move currency between your characters; staff can
+give or take it.
 
 
-### `checkcurrency`
+### `balance`
 
-**Usage:** `/checkcurrency`
+**Usage:** `/currency balance <character>`
 
-> Shows how much currency you have.
-
----
-
-### `getcurrency`
-
-**Usage:** `/getcurrency`
-
-> Shows how much currency you have, using the server's currency name.
+> Shows how much currency your characters have. Leave out `character` to see all of them.
 
 ---
 
-### `setcurrency`
+### `history`
 
-**Usage:** `/setcurrency <member> <currency>`
+**Usage:** `/currency history <character>`
 
-> Sets a member's currency.
-
-**Permissions:**
-- `Manage Server`
-
----
-
-### `addcurrency`
-
-**Usage:** `/addcurrency <member> <currency>`
-
-> Adds currency to a member.
-
-**Permissions:**
-- `Manage Server`
-
----
-
-### `removecurrency`
-
-**Usage:** `/removecurrency <member> <currency>`
-
-> Removes currency from a member.
-
-**Permissions:**
-- `Manage Server`
+> Shows the last changes to one of your characters' currency: roleplay earnings, purchases, sales and what
+staff gave or took.
 
 ---
 

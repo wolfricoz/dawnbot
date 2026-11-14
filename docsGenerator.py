@@ -110,6 +110,10 @@ nav_order: {nav}
         # @app_commands.command(name=...) can rename a command away from its
         # method name, and the registered name is what users actually type.
         command_name = func_obj.name
+        # A command inside a nested group (such as /gm gear grant) is named after its group too.
+        parent = getattr(func_obj, "parent", None)
+        if isinstance(parent, app_commands.Group):
+            command_name = f"{parent.name} {command_name}"
         docstring = ""
         # Check if it's a decorated command with a callback
         if hasattr(func_obj, 'callback'):
@@ -149,7 +153,8 @@ nav_order: {nav}
         # if domain not in self.command_cache :
         # 	self.command_cache[domain] = {}
         # self.command_cache[domain][function] = docstring
-        self.command_cache[function] = docstring
+        # Keyed by the full command path, so commands with the same name in different groups do not collide.
+        self.command_cache[f"{domain} {function}".strip()] = docstring
 
     def create_cache_File(self):
         print("===Creating command cache file===")

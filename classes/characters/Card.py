@@ -2,6 +2,7 @@
 import discord
 
 from classes.characters.Special import STATS, Special
+from classes.gear.Gear import ARMOR, Gear
 from classes.kernel.ConfigData import ConfigData
 from database.database import CharacterInfo, Characters, SheetFields
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
@@ -14,6 +15,7 @@ from resources.configs.ConfigMapping import ConfigMapping
 # An embed's description can hold 4096 characters and a whole embed 6000; this leaves room for the title and fields.
 DESCRIPTION_LIMIT = 4000
 MESSAGE_LIMIT = 2000
+FIELD_LIMIT = 1024
 # Answers longer than this get their own lines instead of sharing a line with their label.
 INLINE_ANSWER = 80
 
@@ -84,6 +86,33 @@ class Card :
 
 	# ============================================================
 	@staticmethod
+	def gear_text(character: Characters) -> str :
+		"""The gear the character carries, one item per line, worn and equipped items first.
+
+		Each line notes what is worn or equipped and the SPECIAL requirements the character does not meet, like
+		`Plate (worn; needs Strength 8)`. Lines that do not fit in one embed field become `…and 3 more`.
+		"""
+		stats = Gear.stats_of(character)
+		lines = []
+		for entry, item in sorted(Gear.inventory(character.id), key=lambda pair : not pair[0].equipped) :
+			notes = []
+			if entry.equipped :
+				notes.append("worn" if entry.kind == ARMOR else "equipped")
+			unmet = Gear.unmet_requirements(stats, item) if item is not None else []
+			if unmet :
+				notes.append(f"needs {', '.join(unmet)}")
+			lines.append(f"{entry.name} ({'; '.join(notes)})" if notes else entry.name)
+		shown = []
+		for number, line in enumerate(lines) :
+			rest = len(lines) - number - 1
+			more = f"\n…and {rest} more" if rest else ""
+			if len("\n".join(shown + [line]) + more) > FIELD_LIMIT :
+				return "\n".join(shown + [f"…and {len(lines) - number} more"])
+			shown.append(line)
+		return "\n".join(shown)
+
+	# ============================================================
+	@staticmethod
 	def embeds(character: Characters, avatar_url: str | None = None, show_state: bool = True,
 	           infos: list[CharacterInfo] | None = None) -> list[discord.Embed] :
 		"""The character as one or more embeds; a long sheet continues in further embeds, one per message."""
@@ -109,6 +138,9 @@ class Card :
 		if occupation is not None :
 			first.add_field(name="Occupation", value=occupation.name)
 		first.add_field(name="Speaks with", value=Card.trigger_text(character.prefix, character.suffix))
+		gear = Card.gear_text(character)
+		if gear :
+			first.add_field(name="Gear", value=gear, inline=False)
 		if show_state :
 			first.set_footer(text=STATE_LABELS.get(character.state, character.state))
 

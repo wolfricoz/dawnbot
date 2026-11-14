@@ -16,7 +16,7 @@ nav_order: 2
 <h2>Channel lists</h2>
 
 ### XP_CHANNELS
-Text channels and forums where messages earn XP and currency. Threads count when their parent channel is listed. Messages shorter than 300 characters are removed there.
+Text channels and forums where roleplay happens: messages earn XP there, and posts made as a character also earn that character currency. Threads count when their parent channel is listed. Messages shorter than 300 characters are removed there.
 <h2>Channels</h2>
 
 ### ANNOUNCEMENT
@@ -34,6 +34,9 @@ The staff channel where new and edited characters wait for approval. Characters 
 ### SPECIES_FORUM
 The forum (or channel) where approved species are posted. Tags on a species' post can restrict who may pick it; see /tagrule.
 
+### GEAR_FORUM
+Optional: the forum where the gear catalog is posted, one post per item. Tags on an item's post can restrict who may buy it; see /tagrule.
+
 ### MODLOG
 The staff channel for bot notices, such as missing permissions.
 <h2>Settings</h2>
@@ -42,7 +45,7 @@ The staff channel for bot notices, such as missing permissions.
 How many characters a message needs per point of XP (default 5).
 
 ### CURRENCY_GAIN
-How many characters a message needs per unit of currency (default 30).
+How many characters a post made as a character needs per unit of currency for that character (default 30).
 
 ### CURRENCY_NAME
 The name shown for the server's currency (default 'currency').
@@ -79,6 +82,9 @@ How much currency a new character starts with (default 3000).
 
 ### SPECIES_CREATION
 Who can create species with /species create: `everyone` (the default), `staff` (Manage Messages) or `off`.
+
+### ECONOMY
+`economy` (the default): characters buy gear with their currency and sell it for 30% of what they paid. `free`: all gear costs nothing and selling returns nothing.
 <h2>Toggles</h2>
 
 ### PROXY_OUTSIDE_RP
