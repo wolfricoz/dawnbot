@@ -1,27 +1,50 @@
+"""Database connection and every table the bot uses.
+
+The connection is built from the DB_* environment variables (see .env.example). When TEST is "true" every process
+gets its own throwaway database named dawnbot_<8 hex>_test, so parallel test runs never share tables; the test
+runner drops it again when it finishes.
+"""
+import logging
 import os
+import uuid
 from datetime import datetime
 from typing import List
 
-import pymysql
-from dotenv import load_dotenv
 from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, \
-	UniqueConstraint, create_engine, \
-	func, \
-	text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
+	URL, UniqueConstraint, create_engine, func, text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.pool import NullPool
 from sqlalchemy_utils import create_database, database_exists
 
-pymysql.install_as_MySQLdb()
+from data.env.loader import env, load_environment
 
-load_dotenv('.env')
-dblink = os.getenv('DB')
-engine = create_engine(dblink, poolclass=NullPool, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+load_environment()
+
+TEST_MODE = str(env('TEST', '')).lower() == "true"
+database_name = env('DB_NAME', 'dawnbot')
+if TEST_MODE :
+	# Every test run gets its own database, so parallel runs never collide.
+	os.environ.setdefault('TEST_DB_NAME', f"dawnbot_{uuid.uuid4().hex[:8]}_test")
+	database_name = os.environ['TEST_DB_NAME']
+
+# URL.create escapes special characters in the password, which an f-string URL would not.
+db_url = URL.create(
+	drivername=env('DB_TYPE', 'postgresql+psycopg2'),
+	username=env('DB_USER'),
+	password=env('DB_PASSWORD'),
+	host=env('DB_HOST', '127.0.0.1'),
+	port=int(env('DB_PORT', 5432)),
+	database=database_name,
+)
+
+if TEST_MODE :
+	# Opening a fresh connection per session is the slowest part of a test; a small pool keeps the suite fast.
+	engine = create_engine(db_url, pool_size=5, max_overflow=5, pool_pre_ping=True)
+else :
+	engine = create_engine(db_url, poolclass=NullPool, pool_pre_ping=True)
+
 if not database_exists(engine.url) :
 	create_database(engine.url)
-
-conn = engine.connect()
 
 
 class Base(DeclarativeBase) :
@@ -34,6 +57,50 @@ class Timestamps :
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 	status: Mapped[int] = mapped_column(Integer, default=1)
 
+
+# ============================================================
+# Shared tables (same shape as the other bots)
+# ============================================================
+
+class Servers(Base) :
+	__tablename__ = "servers"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+	owner: Mapped[str] = mapped_column(String(1024))
+	name: Mapped[str] = mapped_column(String(1024))
+	member_count: Mapped[int] = mapped_column(BigInteger)
+	hidden: Mapped[bool] = mapped_column(Boolean, default=False)
+	invite: Mapped[str] = mapped_column(String(256), default="")
+	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+	deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
+	active: Mapped[bool] = mapped_column(Boolean, default=True)
+	premium: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+	owner_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
+
+	def __int__(self) :
+		return self.id
+
+
+class Config(Base) :
+	__tablename__ = "config"
+	id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+	guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.id", ondelete="CASCADE"))
+	key: Mapped[str] = mapped_column(String(512))
+	value: Mapped[str] = mapped_column(String(1980))
+
+
+class Staff(Base) :
+	__tablename__ = "staff"
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uid: Mapped[int] = mapped_column(BigInteger)
+	role: Mapped[str] = mapped_column(String(128))
+
+	def __int__(self) :
+		return self.id
+
+
+# ============================================================
+# Progression
+# ============================================================
 
 class Users(Timestamps, Base) :
 	__tablename__ = "users"
@@ -54,7 +121,7 @@ class Experience(Timestamps, Base) :
 	messages: Mapped[int] = mapped_column(BigInteger, default=0)
 	xp: Mapped[int] = mapped_column(BigInteger, default=0)
 	currency: Mapped[int] = mapped_column(BigInteger, default=0)
-	guildid: Mapped[int] = mapped_column(BigInteger, default=559139888356917259)
+	guildid: Mapped[int] = mapped_column(BigInteger)
 
 	# Allows the same UID to exist across multiple guilds, but only once per guild.
 	__table_args__ = (
@@ -71,11 +138,16 @@ class Levels(Timestamps, Base) :
 
 
 class Channels(Timestamps, Base) :
+	"""Unused; kept so the live table is not dropped by a future autogenerate. Channel lists live in config."""
 	__tablename__ = "channels"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	guildid: Mapped[int] = mapped_column(BigInteger)
 	channelid: Mapped[int] = mapped_column(BigInteger)
 
+
+# ============================================================
+# Combat
+# ============================================================
 
 class Characters(Timestamps, Base) :
 	__tablename__ = "characters"
@@ -208,6 +280,34 @@ class CombatInstanceLogs(Timestamps, Base) :
 	damage: Mapped[int] = mapped_column(BigInteger, default=0)
 
 
+# ============================================================
+# Helpers
+# ============================================================
+
 class database :
-	def create(self) :
+	@staticmethod
+	def create() :
 		Base.metadata.create_all(engine)
+		logging.info("Database built")
+
+
+def create_bot_database() :
+	Base.metadata.create_all(engine)
+
+
+def _guard_production() :
+	if not TEST_MODE or env('TOKEN') is not None :
+		raise Exception("Refusing to change the database outside of test mode or while a bot TOKEN is set.")
+
+
+def drop_bot_database() :
+	_guard_production()
+	Base.metadata.drop_all(engine)
+
+
+def clear_bot_database() :
+	"""Empties every table; much faster than dropping and recreating them between tests."""
+	_guard_production()
+	tables = ", ".join(f'"{table.name}"' for table in Base.metadata.sorted_tables)
+	with engine.begin() as connection :
+		connection.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
