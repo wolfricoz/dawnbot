@@ -1,9 +1,5 @@
 import logging
 import discord
-from discord.ui import Select, Button, View
-
-# Setting up basic logging configuration
-logging.basicConfig(level=logging.INFO)
 
 
 class CharacterDropdownSelect(discord.ui.Select) :
@@ -65,7 +61,7 @@ class SelectCharacterView(discord.ui.View) :
 		if page_characters :
 			self.add_item(CharacterDropdownSelect(page_characters))
 
-		logging.info(f"Total pages: {self.total_pages}, Current page: {self.current_page}")
+		logging.debug(f"Total pages: {self.total_pages}, Current page: {self.current_page}")
 
 		# Inject navigation control row if records bridge across multiple pages
 		if self.total_pages > 1 :

@@ -1,0 +1,21 @@
+from typing import Literal
+
+from database.transactions.CombatInstanceTransactions import CombatInstanceTransactions
+
+
+class CombatInstance :
+	"""One combat encounter, bound to the channel it runs in."""
+
+	def __init__(self, channel_id: int, new=False) :
+		self.channel_id = channel_id
+		self.instance_controller = CombatInstanceTransactions()
+		if not new :
+			self.instance_data = self.instance_controller.get_channel_instance(self.channel_id)
+		else :
+			self.instance_data = self.instance_controller.create(channel_id=self.channel_id)
+
+	def get_instance_guid(self) :
+		return self.instance_data.guid
+
+	def add_entity(self, entity_id, entity_type: Literal['character', 'npc', 'enemy']) :
+		pass
