@@ -284,6 +284,8 @@ class Characters(Timestamps, Base) :
 	approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 	# The character this one was copied from on another server; a plain id, since the original can be deleted.
 	imported_from: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	# A global character's sheet can also be viewed on the small servers (fewer than 10 members) its player is in.
+	is_global: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
 	__table_args__ = (
 		Index('uq_character_uid_guild_name', 'uid', 'guild_id', text('lower(name)'), unique=True),
