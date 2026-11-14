@@ -9,6 +9,7 @@ from classes.characters.Card import Card, STATE_LABELS
 from classes.characters.CharacterFlow import CharacterFlow
 from classes.characters.Edits import APPLIED, Edits, REVIEW
 from classes.characters.ForumPost import ForumPost
+from classes.characters.GlobalCharacters import GlobalCharacters
 from classes.characters.ImageStorage import ImageStorage
 from classes.characters.Interview import CREATE, EDIT, IMPORT, RESPEC
 from classes.characters.Retirement import Retirement
@@ -47,9 +48,12 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		return character
 
 	# ============================================================
-	async def _send_card(self, interaction: discord.Interaction, character: Characters) -> None :
+	async def _send_card(self, interaction: discord.Interaction, character: Characters,
+	                     note: str | None = None) -> None :
 		avatar_url = await ImageStorage.url(self.bot, character.avatar_id)
 		embeds = Card.embeds(character, avatar_url)
+		if note :
+			embeds[0].set_footer(text=note)
 		await interaction.followup.send(embed=embeds[0])
 		for embed in embeds[1 :] :
 			await interaction.followup.send(embed=embed)
@@ -276,16 +280,23 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		"""
 		await interaction.response.defer(ephemeral=True)
 		characters = CharacterTransactions().get_all(interaction.user.id, interaction.guild_id)
-		if not characters :
+		elsewhere = GlobalCharacters.visible(interaction.guild, interaction.user.id)
+		if not characters and not elsewhere :
 			return await interaction.followup.send("You have no characters here yet. Make one with `/character create`.")
 		embed = discord.Embed(title="Your characters")
 		for character in characters[:25] :
 			state = STATE_LABELS.get(character.state, character.state)
 			if character.state == APPROVED and character.pending_changes :
 				state += ", changes waiting for review"
+			if character.is_global :
+				state += ", global"
 			embed.add_field(name=character.name[:256], inline=False,
 			                value=f"{state}\nLevel {character.level} · {Card.stats_text(character)}\n"
 			                      f"Speaks with {Card.trigger_text(character.prefix, character.suffix)}")
+		for character in elsewhere[:max(0, 25 - len(characters))] :
+			embed.add_field(name=character.name[:256], inline=False,
+			                value=f"Global, from {GlobalCharacters.home_name(self.bot, character)} (shown here only)\n"
+			                      f"Level {character.level} · {Card.stats_text(character)}")
 		await interaction.followup.send(embed=embed)
 
 	# ============================================================
@@ -296,25 +307,58 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		Shows one of your characters: its sheet, SPECIAL stats, level and how you speak as it.
 		"""
 		await interaction.response.defer()
+		character = CharacterTransactions().get(interaction.user.id, interaction.guild_id, name)
+		if character is None and (other := GlobalCharacters.find(interaction.guild, interaction.user.id, name)) :
+			return await self._send_card(interaction, other, self._global_note(other))
 		if (character := await self._own_character(interaction, name)) is None :
 			return
 		await self._send_card(interaction, character)
+
+	# ============================================================
+	def _global_note(self, character: Characters) -> str :
+		return (f"Global character from {GlobalCharacters.home_name(self.bot, character)}. It can only post and "
+		        f"grow there.")
 
 	# ============================================================
 	@app_commands.command(name="show", description="Shows another member's character")
 	async def show(self, interaction: discord.Interaction, member: discord.Member, name: str) :
 		"""
 		Shows another member's approved character. Staff (Manage Messages) can also see characters that are not
-		approved yet.
+		approved yet. On a small server (fewer than 10 members), this also finds the member's global characters from
+		their other servers.
 		"""
 		await interaction.response.defer()
 		character = CharacterTransactions().get(member.id, interaction.guild_id, name)
 		if character is not None and character.state != APPROVED \
 				and not interaction.user.guild_permissions.manage_messages :
 			character = None
+		if character is None and (other := GlobalCharacters.find(interaction.guild, member.id, name)) :
+			return await self._send_card(interaction, other, self._global_note(other))
 		if character is None :
 			return await interaction.followup.send(f"{member.display_name} has no approved character called {name}.")
 		await self._send_card(interaction, character)
+
+	# ============================================================
+	@app_commands.command(name="global", description="Lets a character's sheet be seen on your small servers")
+	@app_commands.autocomplete(name=AutoComplete().approved_character)
+	async def make_global(self, interaction: discord.Interaction, name: str, enabled: bool = True) :
+		"""
+		Makes one of your approved characters global, or stops it with `enabled` set to false. A global character's
+		sheet can be viewed with /character show and /character list on every small server you are in (fewer than 10
+		members, bots not counted). It still only posts, grows and is reviewed on this server.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		if (character := await self._own_character(interaction, name)) is None :
+			return
+		if character.state != APPROVED :
+			return await interaction.followup.send(f"{character.name} has to be approved by staff first.")
+		CharacterTransactions().update(character.id, is_global=enabled)
+		logging.info(f"{interaction.user.name} set character {character.id} global={enabled}")
+		if enabled :
+			return await interaction.followup.send(
+				f"{character.name} is now global: their sheet shows on your small servers (fewer than 10 members). "
+				f"They still only post and grow here.")
+		await interaction.followup.send(f"{character.name} is no longer global.")
 
 	# == the player's own extra fields ==
 

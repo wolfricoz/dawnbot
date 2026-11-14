@@ -121,7 +121,18 @@ starting with a backslash (\) is posted as yourself.
 **Usage:** `/character show <member> <name>`
 
 > Shows another member's approved character. Staff (Manage Messages) can also see characters that are not
-approved yet.
+approved yet. On a small server (fewer than 10 members), this also finds the member's global characters from
+their other servers.
+
+---
+
+### `global`
+
+**Usage:** `/character global <name> <enabled>`
+
+> Makes one of your approved characters global, or stops it with `enabled` set to false. A global character's
+sheet can be viewed with /character show and /character list on every small server you are in (fewer than 10
+members, bots not counted). It still only posts, grows and is reviewed on this server.
 
 ---
 
