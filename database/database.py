@@ -366,6 +366,76 @@ class Autoproxy(Base) :
 	)
 
 
+class GearItems(Timestamps, Base) :
+	"""A weapon or armor set in a server's catalog.
+
+	requirements holds {stat: lowest value} a character needs to use it well. effect_met and effect_unmet describe
+	what happens when a character does or does not meet them, effect what the item always does. combat holds the
+	numbers combat will use (weapons: dice, modifier, hitmodifier; armor: hp, ap, ac, hitchance). tag_ids are the
+	tags on its post in the gear forum, kept in step from thread updates; they decide who may buy it.
+	"""
+	__tablename__ = "gear_items"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	# weapon or armor
+	kind: Mapped[str] = mapped_column(String(16))
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	price: Mapped[int] = mapped_column(BigInteger, default=0)
+	requirements: Mapped[dict] = mapped_column(JSON, default=dict)
+	effect_met: Mapped[str | None] = mapped_column(Text, nullable=True)
+	effect_unmet: Mapped[str | None] = mapped_column(Text, nullable=True)
+	effect: Mapped[str | None] = mapped_column(Text, nullable=True)
+	combat: Mapped[dict] = mapped_column(JSON, default=dict)
+	tag_ids: Mapped[list] = mapped_column(JSON, default=list)
+	forum_thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	forum_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	# The genre pack the item was imported from, if any.
+	pack: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+	__table_args__ = (
+		Index('uq_gear_item_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+class CharacterGear(Base) :
+	"""A piece of gear a character owns, or owned: lost, broken and sold items stay as history.
+
+	name and kind are copied from the catalog, so the item keeps its name if the catalog entry is removed.
+	"""
+	__tablename__ = "character_gear"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	gear_item_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("gear_items.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	name: Mapped[str] = mapped_column(String(100))
+	kind: Mapped[str] = mapped_column(String(16))
+	equipped: Mapped[bool] = mapped_column(Boolean, default=False)
+	# owned, lost, broken or sold
+	status: Mapped[str] = mapped_column(String(16), default="owned")
+	# creation, shop or granted
+	source: Mapped[str] = mapped_column(String(16))
+	price_paid: Mapped[int] = mapped_column(BigInteger, default=0)
+	changed_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
+	                                             onupdate=func.now())
+
+
+class CurrencyTransactions(Base) :
+	"""Every change to a character's currency, for disputes and audits."""
+	__tablename__ = "currency_transactions"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	amount: Mapped[int] = mapped_column(BigInteger)
+	# start, roleplay, buy, sell, gm_give or gm_take
+	reason: Mapped[str] = mapped_column(String(16))
+	actor_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	note: Mapped[str | None] = mapped_column(Text, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Drafts(Base) :
 	"""The saved state of a DM interview, so it survives restarts. A user has at most one."""
 	__tablename__ = "drafts"

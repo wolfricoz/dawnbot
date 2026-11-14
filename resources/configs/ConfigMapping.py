@@ -30,6 +30,8 @@ class ConfigMapping(StrEnum) :
 	PROXY_OUTSIDE_RP = "PROXY_OUTSIDE_RP"
 	SPECIES_FORUM = "SPECIES_FORUM"
 	SPECIES_CREATION = "SPECIES_CREATION"
+	GEAR_FORUM = "GEAR_FORUM"
+	ECONOMY = "ECONOMY"
 
 	# === Moderation ===
 	MODLOG = "MODLOG"
@@ -46,6 +48,7 @@ channels = [
 	ConfigMapping.CHARACTER,
 	ConfigMapping.CHARACTER_REVIEW,
 	ConfigMapping.SPECIES_FORUM,
+	ConfigMapping.GEAR_FORUM,
 	ConfigMapping.MODLOG,
 ]
 
@@ -64,6 +67,7 @@ settings = [
 	ConfigMapping.POINTS_PER_LEVEL,
 	ConfigMapping.STARTING_CURRENCY,
 	ConfigMapping.SPECIES_CREATION,
+	ConfigMapping.ECONOMY,
 ]
 
 toggles = [
@@ -85,6 +89,7 @@ defaults = {
 	ConfigMapping.POINTS_PER_LEVEL   : 1,
 	ConfigMapping.STARTING_CURRENCY  : 3000,
 	ConfigMapping.SPECIES_CREATION   : "everyone",
+	ConfigMapping.ECONOMY            : "economy",
 }
 
 # Settings that are whole numbers, with the lowest and highest value /config accepts.
@@ -104,6 +109,7 @@ choice_settings = {
 	ConfigMapping.REAPPROVAL_ON_EDIT : ["none", "lore", "all"],
 	ConfigMapping.STAT_METHOD        : ["both", "point_buy", "rolled"],
 	ConfigMapping.SPECIES_CREATION   : ["everyone", "staff", "off"],
+	ConfigMapping.ECONOMY            : ["economy", "free"],
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -145,6 +151,8 @@ docs = {
 	ConfigMapping.PROXY_OUTSIDE_RP   : "Whether members can post as their characters outside the XP channels (default off). Posts there earn no XP and have no minimum length.",
 	ConfigMapping.SPECIES_FORUM      : "The forum (or channel) where approved species are posted. Tags on a species' post can restrict who may pick it; see /tagrule.",
 	ConfigMapping.SPECIES_CREATION   : "Who can create species with /species create: `everyone` (the default), `staff` (Manage Messages) or `off`.",
+	ConfigMapping.GEAR_FORUM         : "Optional: the forum where the gear catalog is posted, one post per item. Tags on an item's post can restrict who may buy it; see /tagrule.",
+	ConfigMapping.ECONOMY            : "`economy` (the default): characters buy gear with their currency and sell it for 30% of what they paid. `free`: all gear costs nothing and selling returns nothing.",
 
 	# == moderation ==
 	ConfigMapping.MODLOG        : "The staff channel for bot notices, such as missing permissions.",

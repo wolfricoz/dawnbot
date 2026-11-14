@@ -163,11 +163,11 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(option=[Choice(name=x.lower(), value=x.value) for x in
 	                              [ConfigMapping.CHARACTER, ConfigMapping.CHARACTER_REVIEW, ConfigMapping.SPECIES_FORUM,
-	                               ConfigMapping.TIMELINE, ConfigMapping.MODLOG]])
+	                               ConfigMapping.GEAR_FORUM, ConfigMapping.TIMELINE, ConfigMapping.MODLOG]])
 	async def singlechannels(self, interaction: Interaction, option: Choice[str],
 	                         channel: discord.TextChannel | discord.ForumChannel) :
 		"""
-		Sets the character, character review, species forum, timeline or modlog channel. Approved characters and
+		Sets the character, character review, species forum, gear forum, timeline or modlog channel. Approved characters and
 		species are posted in the character channel and the species forum (a forum gives each its own thread); new and
 		edited characters and species wait for staff in the character review channel.
 
@@ -262,6 +262,23 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 		self._prepare(interaction.guild)
 		ConfigData().add_key(interaction.guild.id, ConfigMapping.SPECIES_CREATION, who.value, overwrite=True)
 		await interaction.followup.send(f"species_creation set to {who.value}")
+
+	# ============================================================
+	@app_commands.command(name='economy')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.choices(mode=[Choice(name=x, value=x) for x in choice_settings[ConfigMapping.ECONOMY]])
+	async def economy(self, interaction: Interaction, mode: Choice[str]) :
+		"""
+		Sets whether gear costs currency: economy (characters buy gear and sell it for 30% of what they paid) or
+		free (all gear costs nothing and selling returns nothing).
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		self._prepare(interaction.guild)
+		ConfigData().add_key(interaction.guild.id, ConfigMapping.ECONOMY, mode.value, overwrite=True)
+		await interaction.followup.send(f"economy set to {mode.value}")
 
 	# ============================================================
 	@app_commands.command(name='reapproval')

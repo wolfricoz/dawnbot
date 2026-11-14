@@ -138,6 +138,26 @@ class CharacterTransactions(DatabaseTransactions) :
 			return character, gained
 
 	# ============================================================
+	def change_currency(self, character_id: int, amount: int,
+	                    allow_negative: bool = False) -> tuple[Characters | None, bool] :
+		"""Adds (or with a negative amount, takes) currency, holding a lock on the character's row.
+
+		@return: the character and whether the change was made; it is refused when it would leave the character
+		below 0, unless allow_negative.
+		"""
+		with self.createsession() as session :
+			character = session.scalars(
+				Select(Characters).where(Characters.id == character_id).with_for_update()).first()
+			if character is None :
+				return None, False
+			if character.currency + amount < 0 and not allow_negative :
+				# Closing the session releases the lock; a rollback would expire the character's attributes.
+				return character, False
+			character.currency = character.currency + amount
+			self.commit(session)
+			return character, True
+
+	# ============================================================
 	def approve(self, character_id: int, reviewer_id: int) -> Characters | None :
 		return self.update(character_id, state=APPROVED, approved_by=reviewer_id,
 		                   approved_at=datetime.now(timezone.utc), review_message_id=None)

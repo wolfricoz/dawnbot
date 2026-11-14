@@ -13,8 +13,7 @@ from database.database import Characters
 from database.transactions.ArmorTransactions import ArmorTransactions
 from database.transactions.WeaponTransactions import WeaponTransactions
 
-# What a character fights in while it has no armor equipped. Characters get their armor from their gear once the gear
-# catalog exists; until then every character uses this.
+# What a character fights in while it has no armor equipped, and the values an armor set's catalog entry leaves out.
 DEFAULT_ARMOR = {"id" : None, "name" : "unarmored", "hp" : 75, "ap" : 25, "ac" : 12, "hitchance" : 0,
                  "modifier" : None}
 
@@ -76,8 +75,21 @@ class CombatCache(metaclass=Singleton) :
 	# ============================================================
 	@staticmethod
 	def equipped_armor(character: Characters) -> dict :
-		"""The armor a character fights in."""
-		return copy.deepcopy(DEFAULT_ARMOR)
+		"""The armor a character fights in: its equipped armor set, with the numbers from the catalog's combat
+		values; anything the catalog leaves out (or no armor at all) uses the default armor."""
+		from classes.gear.Gear import Gear
+
+		armor = copy.deepcopy(DEFAULT_ARMOR)
+		worn = Gear.equipped_armor(character.id)
+		if worn is None :
+			return armor
+		entry, item = worn
+		armor["name"] = entry.name
+		if item is not None :
+			for key in ("hp", "ap", "ac", "hitchance") :
+				if isinstance((item.combat or {}).get(key), int) :
+					armor[key] = item.combat[key]
+		return armor
 
 	# ============================================================
 	@staticmethod

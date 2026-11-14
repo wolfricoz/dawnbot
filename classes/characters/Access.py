@@ -80,6 +80,12 @@ class Access :
 
 	# ============================================================
 	@staticmethod
+	def for_gear(item) -> list[Requirement] :
+		"""The requirements of a catalog item, from the tags on its post in the gear forum."""
+		return [Requirement(rule.kind, rule.value) for rule in TagRuleTransactions().for_tags(item.tag_ids or [])]
+
+	# ============================================================
+	@staticmethod
 	def for_occupation(occupation: Occupations) -> list[Requirement] :
 		requirements = []
 		if occupation.role_id :
