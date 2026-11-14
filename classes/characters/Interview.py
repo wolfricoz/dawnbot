@@ -40,6 +40,8 @@ from resources.configs.ConfigMapping import ConfigMapping
 CREATE = "create"
 EDIT = "edit"
 RESPEC = "respec"
+# A copy of a character from another server: a new character that starts from the copied answers.
+IMPORT = "import"
 
 # Outcomes of an answer that ends the interview; the outcomes of Edits.submit are used as well.
 CREATED = "created"
@@ -76,10 +78,12 @@ class Interview :
 	# ============================================================
 	@staticmethod
 	def start(uid: int, guild_id: int, guild_name: str, kind: str, character: Characters | None = None,
-	          access: Access | None = None) -> tuple[Drafts | None, str] :
+	          access: Access | None = None, avatar_id: int | None = None,
+	          source_guild_name: str | None = None) -> tuple[Drafts | None, str] :
 		"""Starts an interview and returns its draft with the first message to send.
 
-		access describes the member, for the species and occupations they may pick.
+		access describes the member, for the species and occupations they may pick. For an import, character is the
+		character being copied, avatar_id the copy of its picture, and source_guild_name the server it comes from.
 		Returns (None, why) when the user is already in an interview.
 		"""
 		existing = DraftTransactions().get(uid)
@@ -87,7 +91,9 @@ class Interview :
 			return None, Interview.busy_text(existing)
 
 		answers = {"guild_name" : guild_name, "fields" : {}, "access" : (access or Access()).to_dict()}
-		if character is not None :
+		if kind == IMPORT :
+			answers |= Interview._import_answers(guild_id, character, avatar_id, source_guild_name)
+		elif character is not None :
 			answers |= {
 				"name"          : character.name,
 				"prefix"        : character.prefix,
@@ -101,11 +107,16 @@ class Interview :
 		if kind == RESPEC :
 			answers["stat_method"] = POINT_BUY
 			answers["budget"] = sum(getattr(character, stat) for stat in STATS) + character.unspent_points
-		answers["queue"] = Interview._queue(guild_id, kind, answers)
+		answers["queue"] = Interview._queue(guild_id, kind, answers, uid)
 
 		draft = DraftTransactions().create(uid, guild_id, kind, answers["queue"][0],
-		                                   target_id=character.id if character else None, answers=answers)
+		                                   target_id=character.id if character and kind != IMPORT else None,
+		                                   answers=answers)
 		intro = {
+			IMPORT : f"**Bringing {character.name if character else ''} to {guild_name}**\n"
+			         f"I copied their name, how you speak as them, their picture and their written answers. Experience, "
+			         f"stats, gear and currency start fresh here. I'll ask what this server needs; there is no time "
+			         f"limit. Type **back** for the previous question or **cancel** to stop.",
 			CREATE : f"**Creating a character on {guild_name}**\n"
 			         f"I'll ask you some questions, one at a time. There is no time limit: every answer is saved, so "
 			         f"you can stop and come back later.\n"
@@ -121,14 +132,51 @@ class Interview :
 	@staticmethod
 	def busy_text(draft: Drafts) -> str :
 		answers = draft.answers or {}
-		what = {CREATE : "creating a character", EDIT : f"editing {answers.get('name', 'a character')}",
+		what = {CREATE : "creating a character", IMPORT : f"bringing {answers.get('name', 'a character')} over",
+		        EDIT : f"editing {answers.get('name', 'a character')}",
 		        RESPEC : f"changing the stats of {answers.get('name', 'a character')}"}.get(draft.kind, "an interview")
 		return (f"You are still {what} on {answers.get('guild_name', 'another server')}. Finish it in our DMs, or "
 		        f"type **cancel** there to stop it, before starting something new.")
 
 	# ============================================================
 	@staticmethod
-	def _queue(guild_id: int, kind: str, answers: dict) -> list[str] :
+	def _is_new(draft: Drafts) -> bool :
+		"""Whether the interview makes a new character (created here or copied from another server)."""
+		return draft.kind in (CREATE, IMPORT)
+
+	# ============================================================
+	@staticmethod
+	def _import_answers(guild_id: int, source: Characters, avatar_id: int | None, source_guild_name: str | None) -> dict :
+		"""The answers an import starts from: the character's name, prefix and suffix, the copy of its picture, its
+		answers to questions this server's sheet also asks (matched by name), and its other fields as extra fields."""
+		labels = {sheet_field.label.lower() : sheet_field.id for sheet_field in Sheet.questions(guild_id)}
+		fields, extras = {}, []
+		for info in CharacterInfoTransactions().get_all(source.id) :
+			field_id = labels.get(info.key.lower())
+			if field_id is not None :
+				fields[str(field_id)] = info.value
+			else :
+				extras.append({"key" : info.key, "value" : info.value})
+		return {"name" : source.name, "prefix" : source.prefix, "suffix" : source.suffix, "avatar_id" : avatar_id,
+		        "fields" : fields, "extras" : extras, "imported_from" : source.id,
+		        "source_guild" : source_guild_name or "another server"}
+
+	# ============================================================
+	@staticmethod
+	def _import_queue(guild_id: int, uid: int, answers: dict) -> list[str] :
+		"""An import asks only what the copy is missing or what clashes with this server."""
+		steps = []
+		if Interview.check_name(answers["name"], uid, guild_id) :
+			steps.append("name")
+		if CharacterTransactions().trigger_taken(uid, guild_id, answers.get("prefix"), answers.get("suffix")) :
+			steps.append("trigger")
+		if ImageStorage.configured() and not answers.get("avatar_id") :
+			steps.append("avatar")
+		return steps
+
+	# ============================================================
+	@staticmethod
+	def _queue(guild_id: int, kind: str, answers: dict, uid: int | None = None) -> list[str] :
 		"""The steps this interview walks through, decided once when it starts."""
 		if kind == RESPEC :
 			return ["stats", "summary"]
@@ -136,9 +184,12 @@ class Interview :
 			# Only questions that became required since the character was made are asked up front.
 			missing = Sheet.missing_required(guild_id, answers["fields"])
 			return [f"field:{sheet_field.id}" for sheet_field in missing] + ["summary"]
-		steps = ["name", "trigger"]
-		if ImageStorage.configured() :
-			steps.append("avatar")
+		if kind == IMPORT :
+			steps = Interview._import_queue(guild_id, uid, answers)
+		else :
+			steps = ["name", "trigger"]
+			if ImageStorage.configured() :
+				steps.append("avatar")
 		species = Choices.species(guild_id, Access.from_dict(answers["access"]))
 		if len(species) > 1 :
 			steps.append("species")
@@ -147,7 +198,11 @@ class Interview :
 			answers["species_id"] = species[0].id
 		if OccupationTransactions().get_all(guild_id) :
 			steps.append("occupation")
-		steps += [f"field:{sheet_field.id}" for sheet_field in Sheet.questions(guild_id)]
+		if kind == IMPORT :
+			# Questions the copy already answers are not asked again; they can be changed from the summary.
+			steps += [f"field:{sheet_field.id}" for sheet_field in Sheet.missing_required(guild_id, answers["fields"])]
+		else :
+			steps += [f"field:{sheet_field.id}" for sheet_field in Sheet.questions(guild_id)]
 		if len(Special.rules(guild_id).methods) > 1 :
 			steps.append("stat_method")
 		steps.append("stats")
@@ -245,7 +300,7 @@ class Interview :
 	@staticmethod
 	def _modifiers(draft: Drafts) -> dict :
 		"""A species changes the starting values only when the character is made."""
-		if draft.kind != CREATE :
+		if not Interview._is_new(draft) :
 			return {stat : 0 for stat in STATS}
 		return SpeciesRules.modifiers(Interview._species(draft))
 
@@ -321,7 +376,7 @@ class Interview :
 		budget = Interview._budget(draft)
 		limits = Interview._limits(draft)
 		starts = SpeciesRules.start_values(rules, limits, Interview._modifiers(draft))
-		if draft.kind != CREATE :
+		if not Interview._is_new(draft) :
 			intro = f"You have **{budget}** points to divide over your stats."
 		elif all(value == rules.base for value in starts.values()) :
 			intro = (f"Every stat starts at {rules.base} and you have {rules.bonus} extra points, so **{budget}** "
@@ -450,7 +505,7 @@ class Interview :
 					value += f" (rolled, {draft.rerolls} rerolls)"
 			first = "stat_method" if "stat_method" in answers.get("queue", []) else "stats"
 			items.append((first, "SPECIAL", value))
-		if draft.kind == CREATE :
+		if Interview._is_new(draft) :
 			# Shown while the catalog has something to pick, or something was picked before it emptied.
 			basket = Interview._basket(draft)
 			if basket or Interview._shop(draft) :
@@ -468,12 +523,12 @@ class Interview :
 				problems.append("a name")
 			if not answers.get("prefix") and not answers.get("suffix") :
 				problems.append("a prefix or suffix")
-			if draft.kind == CREATE and ImageStorage.configured() and not answers.get("avatar_id") :
+			if Interview._is_new(draft) and ImageStorage.configured() and not answers.get("avatar_id") :
 				problems.append("a picture")
 			if SpeciesTransactions().get_all(draft.guild_id, states=[SPECIES_APPROVED]) \
 					and Interview._species(draft) is None :
 				problems.append("a species")
-			if draft.kind == CREATE and answers.get("occupation_id") is None \
+			if Interview._is_new(draft) and answers.get("occupation_id") is None \
 					and any(choice.locked is None for choice in Interview._occupation_choices(draft)) :
 				problems.append("an occupation")
 			problems += [sheet_field.label for sheet_field in Sheet.missing_required(draft.guild_id, answers["fields"])]
@@ -748,7 +803,7 @@ class Interview :
 			return "Please pick one of the species, by its number or its name."
 		answers["species_id"] = species.id
 		limits = SpeciesRules.limits(species, Special.rules(draft.guild_id))
-		if draft.kind == CREATE :
+		if Interview._is_new(draft) :
 			# Stats chosen for another species may not fit this one.
 			stats = answers.get("stats")
 			if stats and (answers.get("stat_method") == ROLLED or Special.check_values(
@@ -864,7 +919,7 @@ class Interview :
 		if problems :
 			return Reply(f"Not everything is filled in yet. Still needed: {', '.join(problems)}.\n\n"
 			             + Interview.prompt(draft))
-		if draft.kind == CREATE :
+		if Interview._is_new(draft) :
 			return Interview._submit_create(draft)
 		character = CharacterTransactions().get_by_id(draft.target_id) if draft.target_id else None
 		if character is None :
@@ -955,6 +1010,10 @@ class Interview :
 			currency=starting, **stats)
 		if character is None :
 			return Reply(f"Something went wrong while saving {answers['name']}. Please type **submit** again.")
+		if answers.get("imported_from") :
+			character = CharacterTransactions().update(character.id, imported_from=answers["imported_from"])
+		if answers.get("extras") :
+			CharacterInfoTransactions().replace_extras(character.id, answers["extras"])
 		if starting :
 			CurrencyTransactions().log(character.id, draft.guild_id, starting, START, None)
 		labels = {str(sheet_field.id) : sheet_field.label for sheet_field in Sheet.questions(draft.guild_id)}

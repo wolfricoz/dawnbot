@@ -152,6 +152,18 @@ free (all gear costs nothing and selling returns nothing).
 
 ---
 
+### `retire_thread`
+
+**Usage:** `/config retire_thread <mode>`
+
+> Sets what happens to a retired character's post: lock (the forum thread is locked and archived, and opened
+again if the character returns) or delete.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
 ### `reapproval`
 
 **Usage:** `/config reapproval <mode>`

@@ -59,6 +59,37 @@ undone.
 
 ---
 
+### `retire`
+
+**Usage:** `/character retire <name>`
+
+> Retires one of your approved characters. It stops posting, no longer counts toward the server's character
+limit, and gives up its place in its occupation. Its sheet, experience, gear and currency are kept, and its
+post is locked or removed, depending on the server. Changes waiting for review are dropped. Bring it back with
+/character unretire.
+
+---
+
+### `unretire`
+
+**Usage:** `/character unretire <name>`
+
+> Brings one of your retired characters back. It counts toward the server's character limit again and goes
+back to staff for review before it can post.
+
+---
+
+### `import`
+
+**Usage:** `/character import <character>`
+
+> Copies one of your characters from another server to this one. Its name, prefix and suffix, picture and
+written answers come along; experience, stats, gear and currency start fresh. The bot asks in your DMs for
+what this server needs (species, occupation, missing sheet answers, stats and gear), then staff review it.
+The original stays as it is.
+
+---
+
 ### `autoproxy`
 
 **Usage:** `/character autoproxy <name>`

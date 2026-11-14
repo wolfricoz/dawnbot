@@ -32,6 +32,7 @@ class ConfigMapping(StrEnum) :
 	SPECIES_CREATION = "SPECIES_CREATION"
 	GEAR_FORUM = "GEAR_FORUM"
 	ECONOMY = "ECONOMY"
+	RETIRE_THREAD = "RETIRE_THREAD"
 
 	# === Moderation ===
 	MODLOG = "MODLOG"
@@ -68,6 +69,7 @@ settings = [
 	ConfigMapping.STARTING_CURRENCY,
 	ConfigMapping.SPECIES_CREATION,
 	ConfigMapping.ECONOMY,
+	ConfigMapping.RETIRE_THREAD,
 ]
 
 toggles = [
@@ -90,6 +92,7 @@ defaults = {
 	ConfigMapping.STARTING_CURRENCY  : 3000,
 	ConfigMapping.SPECIES_CREATION   : "everyone",
 	ConfigMapping.ECONOMY            : "economy",
+	ConfigMapping.RETIRE_THREAD      : "lock",
 }
 
 # Settings that are whole numbers, with the lowest and highest value /config accepts.
@@ -110,6 +113,7 @@ choice_settings = {
 	ConfigMapping.STAT_METHOD        : ["both", "point_buy", "rolled"],
 	ConfigMapping.SPECIES_CREATION   : ["everyone", "staff", "off"],
 	ConfigMapping.ECONOMY            : ["economy", "free"],
+	ConfigMapping.RETIRE_THREAD      : ["lock", "delete"],
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -152,6 +156,7 @@ docs = {
 	ConfigMapping.SPECIES_FORUM      : "The forum (or channel) where approved species are posted. Tags on a species' post can restrict who may pick it; see /tagrule.",
 	ConfigMapping.SPECIES_CREATION   : "Who can create species with /species create: `everyone` (the default), `staff` (Manage Messages) or `off`.",
 	ConfigMapping.GEAR_FORUM         : "Optional: the forum where the gear catalog is posted, one post per item. Tags on an item's post can restrict who may buy it; see /tagrule.",
+	ConfigMapping.RETIRE_THREAD      : "What happens to a retired character's post in the character channel: `lock` (the default; the forum thread is locked and archived, and opened again if the character returns) or `delete`.",
 	ConfigMapping.ECONOMY            : "`economy` (the default): characters buy gear with their currency and sell it for 30% of what they paid. `free`: all gear costs nothing and selling returns nothing.",
 
 	# == moderation ==

@@ -17,7 +17,7 @@ RETIRED = "retired"
 FIELDS = ["name", "state", "prefix", "suffix", "avatar_id", "species_id", "occupation_id", "strength", "perception",
           "endurance", "charisma", "intelligence", "agility", "luck", "stat_method", "rerolls", "unspent_points", "xp",
           "level", "currency", "forum_thread_id", "forum_message_ids", "review_message_id", "pending_changes",
-          "approved_by", "approved_at"]
+          "approved_by", "approved_at", "imported_from"]
 
 
 class CharacterTransactions(DatabaseTransactions) :
@@ -40,6 +40,14 @@ class CharacterTransactions(DatabaseTransactions) :
 			if user_id is not None :
 				query = query.where(Characters.uid == user_id)
 			return list(session.scalars(query.order_by(Characters.id)).all())
+
+	# ============================================================
+	def get_elsewhere(self, user_id: int, guild_id: int) -> List[Characters] :
+		"""The user's approved and retired characters on other servers, which can be copied to this one."""
+		with self.createsession() as session :
+			return list(session.scalars(
+				Select(Characters).where(Characters.uid == user_id, Characters.guild_id != guild_id,
+				                         Characters.state.in_([APPROVED, RETIRED])).order_by(Characters.id)).all())
 
 	# ============================================================
 	def get_every_character(self) -> List[Characters] :

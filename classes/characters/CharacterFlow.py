@@ -12,7 +12,7 @@ from classes.characters.Choices import Choices
 from classes.characters.Edits import APPLIED, Edits, RESUBMITTED, REVIEW
 from classes.characters.ForumPost import ForumPost
 from classes.characters.ImageStorage import ImageStorage
-from classes.characters.Interview import CREATED, Interview
+from classes.characters.Interview import CREATED, IMPORT, Interview
 from classes.characters.Review import CHANGES, Review
 from classes.kernel.ConfigData import ConfigData
 from database.database import Characters
@@ -58,13 +58,26 @@ class CharacterFlow :
 	# ============================================================
 	@staticmethod
 	async def begin(interaction: discord.Interaction, kind: str, character: Characters | None = None) -> None :
-		"""Starts an interview from a slash command and tells the user to continue in their DMs."""
+		"""Starts an interview from a slash command and tells the user to continue in their DMs.
+
+		For an import, character is the character on another server; its picture is copied first.
+		"""
+		avatar_id, source_guild = None, None
+		if kind == IMPORT :
+			busy = DraftTransactions().get(interaction.user.id)
+			if busy is not None :
+				return await CharacterFlow.respond(interaction, Interview.busy_text(busy))
+			avatar_id = await ImageStorage.copy(interaction.client, character.avatar_id)
+			guild = interaction.client.get_guild(character.guild_id)
+			source_guild = guild.name if guild else None
 		draft, text = Interview.start(interaction.user.id, interaction.guild.id, interaction.guild.name, kind,
-		                              character, Access.of(interaction.user))
+		                              character, Access.of(interaction.user), avatar_id, source_guild)
 		if draft is None :
+			await ImageStorage.delete(interaction.client, avatar_id)
 			return await CharacterFlow.respond(interaction, text)
 		if not await CharacterFlow.send_dm(interaction.user, text) :
 			DraftTransactions().delete(interaction.user.id)
+			await ImageStorage.delete(interaction.client, avatar_id)
 			return await CharacterFlow.respond(interaction, DMS_CLOSED)
 		await CharacterFlow.respond(interaction, "I sent you a DM, let's continue there.")
 
@@ -153,6 +166,12 @@ class CharacterFlow :
 				method = {"rolled" : f"rolled, {character.rerolls} rerolls", "point_buy" : "point-buy"}.get(
 					character.stat_method, "unknown")
 				header = f"<@{character.uid}> submitted **{character.name}** for review. Stats: {method}."
+				source = CharacterTransactions().get_by_id(character.imported_from) if character.imported_from else None
+				if character.imported_from :
+					source_guild = bot.get_guild(source.guild_id) if source else None
+					header += f" Copied from {source_guild.name if source_guild else 'another server'}."
+				elif character.approved_at is not None :
+					header += " They are coming back from retirement."
 			card = await channel.send(header, view=ReviewButtons(), allowed_mentions=discord.AllowedMentions.none())
 		except discord.HTTPException as e :
 			logging.warning(f"Could not post the review of character {character.id} in {guild.name}: {e}")

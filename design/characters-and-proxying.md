@@ -1,7 +1,13 @@
 # Characters, proxying, species and gear: design
 
-Status: draft from the design interview on 2026-11-14, to be reviewed before implementation.
+Status: designed in the interview on 2026-11-14; phases 1 to 5 are implemented (migrations 0004 to 0009).
 Combat is out of scope for this round. Characters come first, and combat gets its own round afterwards.
+
+Decisions made while building, beyond what is written below:
+- A member's server level is the number of level roles their XP has reached.
+- Species changes to the starting stats are each at most 5 up or down.
+- Starting gear allows one of each item; the most expensive armor bought is worn.
+- An imported character waits for review on its new server like a new one; the original is left as it is.
 
 ## 1. Scope
 

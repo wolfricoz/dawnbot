@@ -147,6 +147,23 @@ class ImageStorage :
 
 	# ============================================================
 	@staticmethod
+	async def copy(bot: discord.Client, image_id: int | None) -> int | None :
+		"""Stores a second copy of an image, so two characters never share one (each can change or lose its own).
+		Returns the new image's id, or None when there is nothing to copy or copying failed."""
+		file = await ImageStorage.file(bot, image_id)
+		if file is None :
+			return None
+		try :
+			channel = await ImageStorage._channel(bot)
+			message = await channel.send(file=file)
+		except (ImageError, discord.HTTPException) as e :
+			logging.warning(f"Copying stored image {image_id} failed: {e}")
+			return None
+		url = message.attachments[0].url
+		return StoredImageTransactions().add(channel.id, message.id, url, ImageStorage.expiry(url)).id
+
+	# ============================================================
+	@staticmethod
 	async def delete(bot: discord.Client, image_id: int | None) -> None :
 		"""Removes the image's storage message and its row. Missing images are ignored."""
 		if image_id is None :

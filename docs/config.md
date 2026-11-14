@@ -85,6 +85,9 @@ Who can create species with /species create: `everyone` (the default), `staff` (
 
 ### ECONOMY
 `economy` (the default): characters buy gear with their currency and sell it for 30% of what they paid. `free`: all gear costs nothing and selling returns nothing.
+
+### RETIRE_THREAD
+What happens to a retired character's post in the character channel: `lock` (the default; the forum thread is locked and archived, and opened again if the character returns) or `delete`.
 <h2>Toggles</h2>
 
 ### PROXY_OUTSIDE_RP

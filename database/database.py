@@ -282,6 +282,8 @@ class Characters(Timestamps, Base) :
 	pending_changes: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 	approved_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	# The character this one was copied from on another server; a plain id, since the original can be deleted.
+	imported_from: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
 	__table_args__ = (
 		Index('uq_character_uid_guild_name', 'uid', 'guild_id', text('lower(name)'), unique=True),

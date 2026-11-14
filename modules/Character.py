@@ -10,7 +10,8 @@ from classes.characters.CharacterFlow import CharacterFlow
 from classes.characters.Edits import APPLIED, Edits, REVIEW
 from classes.characters.ForumPost import ForumPost
 from classes.characters.ImageStorage import ImageStorage
-from classes.characters.Interview import CREATE, EDIT, RESPEC
+from classes.characters.Interview import CREATE, EDIT, IMPORT, RESPEC
+from classes.characters.Retirement import Retirement
 from classes.characters.Special import STATS, Special
 from classes.combat.AutoComplete import AutoComplete
 from classes.kernel.ConfigData import ConfigData
@@ -151,6 +152,90 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		CharacterTransactions().delete(character.id)
 		logging.info(f"Character {character.name} ({character.id}) deleted by {interaction.user.name}")
 		await interaction.followup.send(f"{character.name} was deleted.", ephemeral=True)
+
+	# ============================================================
+	@app_commands.command(name="retire", description="Puts a character aside; it can come back later")
+	@app_commands.autocomplete(name=AutoComplete().approved_character)
+	async def retire(self, interaction: discord.Interaction, name: str) :
+		"""
+		Retires one of your approved characters. It stops posting, no longer counts toward the server's character
+		limit, and gives up its place in its occupation. Its sheet, experience, gear and currency are kept, and its
+		post is locked or removed, depending on the server. Changes waiting for review are dropped. Bring it back with
+		/character unretire.
+		"""
+		if (character := await self._own_character(interaction, name)) is None :
+			return
+		if not await ask(interaction, f"Retire **{character.name}**? You can bring them back later.", "Retire") :
+			return
+		character = CharacterTransactions().get_by_id(character.id)
+		review_message_id = character.review_message_id if character else None
+		updated, unused, problem = Retirement.retire(character) if character else (None, [], "That character is gone.")
+		if updated is None :
+			return await interaction.followup.send(problem, ephemeral=True)
+		if review_message_id :
+			await CharacterFlow.withdraw_review(self.bot, character, "The character was retired.")
+		for image_id in unused :
+			await ImageStorage.delete(self.bot, image_id)
+		await ForumPost.retire(self.bot, updated)
+		logging.info(f"{interaction.user.name} retired character {updated.id}")
+		await interaction.followup.send(f"{updated.name} is retired.", ephemeral=True)
+
+	# ============================================================
+	@app_commands.command(name="unretire", description="Brings a retired character back; staff review it again")
+	@app_commands.autocomplete(name=AutoComplete().character)
+	async def unretire(self, interaction: discord.Interaction, name: str) :
+		"""
+		Brings one of your retired characters back. It counts toward the server's character limit again and goes
+		back to staff for review before it can post.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		if (character := await self._own_character(interaction, name)) is None :
+			return
+		if ConfigData().get_int(interaction.guild_id, ConfigMapping.CHARACTER_REVIEW) is None :
+			return await interaction.followup.send("This server has not set up character reviews yet.")
+		updated, note, problem = Retirement.unretire(character)
+		if updated is None :
+			return await interaction.followup.send(problem)
+		if not await CharacterFlow.post_review(self.bot, updated) :
+			note = (note + " " if note else "") + "I could not reach the review channel; please let staff know."
+		logging.info(f"{interaction.user.name} brought character {updated.id} back from retirement")
+		await interaction.followup.send(f"{updated.name} was sent to staff for review."
+		                                + (f"\n{note}" if note else ""))
+
+	# ============================================================
+	async def _elsewhere(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		"""The member's characters on other servers, labelled with their server."""
+		choices = []
+		for character in CharacterTransactions().get_elsewhere(interaction.user.id, interaction.guild_id) :
+			guild = self.bot.get_guild(character.guild_id)
+			label = f"{character.name} ({guild.name if guild else 'another server'})"
+			if current.lower() in label.lower() :
+				choices.append(Choice(name=label[:100], value=str(character.id)))
+		return choices[:25]
+
+	# ============================================================
+	@app_commands.command(name="import", description="Copies one of your characters from another server")
+	@app_commands.autocomplete(character=_elsewhere)
+	async def import_character(self, interaction: discord.Interaction, character: str) :
+		"""
+		Copies one of your characters from another server to this one. Its name, prefix and suffix, picture and
+		written answers come along; experience, stats, gear and currency start fresh. The bot asks in your DMs for
+		what this server needs (species, occupation, missing sheet answers, stats and gear), then staff review it.
+		The original stays as it is.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		source = CharacterTransactions().get_by_id(int(character)) if character.isdigit() else None
+		if source is None or source.uid != interaction.user.id or source.guild_id == interaction.guild_id :
+			return await interaction.followup.send("Pick one of your characters from another server from the list.")
+		if ConfigData().get_int(interaction.guild_id, ConfigMapping.CHARACTER_REVIEW) is None :
+			return await interaction.followup.send(
+				"This server has not set up character reviews yet. Staff can set the review channel with "
+				"`/config singlechannels` (option `character_review`).")
+		cap = ConfigData().get_int(interaction.guild_id, ConfigMapping.CHARACTER_CAP)
+		if CharacterTransactions().count_active(interaction.user.id, interaction.guild_id) >= cap :
+			return await interaction.followup.send(
+				f"You already have {cap} characters here, which is this server's limit. Delete one first.")
+		await CharacterFlow.begin(interaction, IMPORT, source)
 
 	# ============================================================
 	@app_commands.command(name="autoproxy", description="Posts everything you type in this channel as a character")

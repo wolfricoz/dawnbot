@@ -282,6 +282,23 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 		await interaction.followup.send(f"economy set to {mode.value}")
 
 	# ============================================================
+	@app_commands.command(name='retire_thread')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.choices(mode=[Choice(name=x, value=x) for x in choice_settings[ConfigMapping.RETIRE_THREAD]])
+	async def retire_thread(self, interaction: Interaction, mode: Choice[str]) :
+		"""
+		Sets what happens to a retired character's post: lock (the forum thread is locked and archived, and opened
+		again if the character returns) or delete.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		self._prepare(interaction.guild)
+		ConfigData().add_key(interaction.guild.id, ConfigMapping.RETIRE_THREAD, mode.value, overwrite=True)
+		await interaction.followup.send(f"retire_thread set to {mode.value}")
+
+	# ============================================================
 	@app_commands.command(name='reapproval')
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(mode=[Choice(name=x, value=x) for x in choice_settings[ConfigMapping.REAPPROVAL_ON_EDIT]])
