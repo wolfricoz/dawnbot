@@ -19,7 +19,7 @@ class Experience(commands.Cog) :
 	@AccessControl().check_access("dev")
 	async def recount(self, interaction: discord.Interaction) :
 		"""
-		Resets everyone's XP and currency in this server and counts every XP channel again.
+		Resets everyone's XP in this server and counts every XP channel again.
 
 		**Permissions:**
 		- `Developer`

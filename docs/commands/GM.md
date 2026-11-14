@@ -1,0 +1,86 @@
+---
+layout: default
+title: GM
+parent: Commands
+nav_order: 12
+---
+
+<h1>GM</h1>
+<h6>version: 1.0: Restructure</h6>
+<h6>Documentation automatically generated from docstrings.</h6>
+
+Game master tools for staff: grant, take, lose or break a character's gear (event and staff-only items too),
+and give or take a character's currency. Every change is logged, and currency changes show in the character's
+/currency history.
+
+
+### `gear grant`
+
+**Usage:** `/gm gear grant <member> <character> <item>`
+
+> Gives a member's character an item from the catalog for free, including event and staff-only items that
+aren't sold in the shop. Requirements like server level or roles don't apply.
+
+**Permissions:**
+- `Manage Messages`
+
+---
+
+### `gear take`
+
+**Usage:** `/gm gear take <member> <character> <item>`
+
+> Removes an item from a member's character entirely, as if it never had it, for fixing mistakes. Nothing is
+refunded. To take gear away in the story, use /gm gear lose or /gm gear break instead.
+
+**Permissions:**
+- `Manage Messages`
+
+---
+
+### `gear lose`
+
+**Usage:** `/gm gear lose <member> <character> <item>`
+
+> Marks an item of a member's character as lost. It leaves the inventory but stays in its history.
+
+**Permissions:**
+- `Manage Messages`
+
+---
+
+### `gear break`
+
+**Usage:** `/gm gear break <member> <character> <item>`
+
+> Marks an item of a member's character as broken. It leaves the inventory but stays in its history.
+
+**Permissions:**
+- `Manage Messages`
+
+---
+
+### `currency give`
+
+**Usage:** `/gm currency give <member> <character> <amount> <note>`
+
+> Gives a member's character currency, for example as an event reward. The optional `note` shows in the
+character's /currency history.
+
+**Permissions:**
+- `Manage Messages`
+
+---
+
+### `currency take`
+
+**Usage:** `/gm currency take <member> <character> <amount> <note>`
+
+> Takes currency from a member's character, for example as a fine. A character can't go below 0. The optional
+`note` shows in the character's /currency history.
+
+**Permissions:**
+- `Manage Messages`
+
+---
+

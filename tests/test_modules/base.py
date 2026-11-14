@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from classes.combat.CombatCache import CombatCache
 from classes.kernel.ConfigData import ConfigData
 from database.database import clear_bot_database, create_bot_database
+from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
 from database.transactions.ServerTransactions import ServerTransactions
 
 GUILD_ID = 1048433044253573120
@@ -25,6 +26,14 @@ class DatabaseTestCase(unittest.TestCase) :
 	@staticmethod
 	def add_server(guild_id: int = GUILD_ID) :
 		ServerTransactions().add(guild_id, "owner", "Test server", 10, "", owner_id=USER_ID)
+
+	@staticmethod
+	def add_character(name: str = "Ayla", state: str = APPROVED, user_id: int = USER_ID, guild_id: int = GUILD_ID,
+	                  **fields) :
+		"""A character with every stat at 5 unless fields say otherwise."""
+		values = dict(strength=5, perception=5, endurance=5, charisma=5, intelligence=5, agility=5, luck=5,
+		              prefix=f"{name.lower()}:", state=state) | fields
+		return CharacterTransactions().add(user_id, guild_id, name, **values)
 
 
 def fake_message(content: str, guild_id: int = GUILD_ID, author_id: int = USER_ID, manage_messages: bool = False,

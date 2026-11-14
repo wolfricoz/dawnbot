@@ -10,7 +10,7 @@ class TestUserTransactions(DatabaseTestCase) :
 
 	def test_get_registers_new_user(self) :
 		record = UserTransactions().get(USER_ID, GUILD_ID)
-		self.assertEqual((record.uid, record.guildid, record.xp, record.currency), (USER_ID, GUILD_ID, 0, 0))
+		self.assertEqual((record.uid, record.guildid, record.xp, record.messages), (USER_ID, GUILD_ID, 0, 0))
 
 	def test_add_is_idempotent(self) :
 		first = UserTransactions().add(USER_ID, GUILD_ID)
@@ -45,11 +45,10 @@ class TestExperienceTransactions(DatabaseTestCase) :
 		record = ExperienceTransactions().remove_xp(USER_ID, GUILD_ID, 40) if record else None
 		self.assertEqual((record.xp, record.messages), (60, 0))
 
-	def test_currency(self) :
-		ExperienceTransactions().add_currency(USER_ID, GUILD_ID, 30)
-		ExperienceTransactions().remove_currency(USER_ID, GUILD_ID, 5)
-		self.assertEqual(ExperienceTransactions().get(USER_ID, GUILD_ID).currency, 25)
-		self.assertEqual(ExperienceTransactions().set_currency(USER_ID, GUILD_ID, 7).currency, 7)
+	def test_members_have_no_currency(self) :
+		# Currency belongs to characters now.
+		self.assertFalse(hasattr(ExperienceTransactions(), "add_currency"))
+		self.assertFalse(hasattr(ExperienceTransactions().get(USER_ID, GUILD_ID), "currency"))
 
 
 class TestLevelTransactions(DatabaseTestCase) :

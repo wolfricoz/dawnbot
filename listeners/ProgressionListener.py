@@ -2,20 +2,20 @@ import logging
 
 import discord
 from discord.ext import commands
-from discord_py_utilities.messages import send_message
 
 from classes.kernel.ConfigData import ConfigData
 from classes.kernel.ServerSync import sync_server
+from classes.proxy.Matcher import Matcher
 from classes.progression.Progression import MINIMUM_POST_LENGTH, Progression
 from database.transactions.UserTransactions import UserTransactions
-from resources.configs.ConfigMapping import ConfigMapping
 
 TOO_SHORT = (f"Your message is too short, please make it longer than {MINIMUM_POST_LENGTH} characters. "
              f"No XP has been awarded and your post has been removed.")
 
 
 class ProgressionListener(commands.Cog) :
-	"""Awards XP and currency for posts in the XP channels and keeps members registered."""
+	"""Awards members XP for posts in the XP channels and keeps members registered. Currency belongs to characters
+	and is earned by posting as one (see the ProxyListener)."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -29,6 +29,9 @@ class ProgressionListener(commands.Cog) :
 			return
 		if not Progression.is_tracked(message.channel) :
 			return
+		# Posts written as a character are handled, and rewarded, by the ProxyListener.
+		if Matcher.find(message) is not None :
+			return
 
 		# A forum post's opening message has the same id as the thread; it is never removed for its length.
 		is_starter = message.id == message.channel.id
@@ -37,13 +40,7 @@ class ProgressionListener(commands.Cog) :
 			return
 
 		record = Progression.award(message)
-		new_rank = await Progression.update_level_roles(message.author, record.xp)
-		if new_rank is None :
-			return
-		channel = await ConfigData().get_channel(message.guild, ConfigMapping.ANNOUNCEMENT, optional=True)
-		if channel is not None :
-			await send_message(channel, f"Congratulations {message.author.mention}, you've leveled up to {new_rank}",
-			                   error_mode='ignore')
+		await Progression.announce_level(message.author, record.xp)
 
 	# ============================================================
 	@staticmethod

@@ -51,7 +51,10 @@ class CombatInstanceTransactions(DatabaseTransactions):
 			entity_type = None
 			if isinstance(entity, Characters) :
 				# build the stats here
-				calculations = CombatCalculations({"base_hp": entity.armor_data.hp})
+				# Imported here: the cache itself is built on the transactions.
+				from classes.combat.CombatCache import CombatCache
+				armor = CombatCache.equipped_armor(entity)
+				calculations = CombatCalculations({"base_hp": armor["hp"]})
 				entity_type = "character"
 
 				# create the entity
@@ -60,8 +63,8 @@ class CombatInstanceTransactions(DatabaseTransactions):
 					user_uid=entity.uid,
 					character_id=entity.id,
 					current_hp=calculations.calculate_hp(entity.endurance),
-					current_ap=entity.armor_data.ap,
-					ac=entity.armor_data.ac,
+					current_ap=armor["ap"],
+					ac=armor["ac"],
 					entity_type=entity_type
 				)
 				session.add(record)

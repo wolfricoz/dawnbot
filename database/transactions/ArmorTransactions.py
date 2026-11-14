@@ -1,6 +1,6 @@
 from sqlalchemy import Select
 
-from database.database import Armors, Characters
+from database.database import Armors
 from database.transactions.DatabaseTransactions import DatabaseTransactions
 
 
@@ -45,13 +45,9 @@ class ArmorTransactions(DatabaseTransactions) :
 
 	# ============================================================
 	def delete(self, name: str) -> bool :
-		"""Refuses (returns False) while characters still wear the armor; the ORM would otherwise silently clear their
-		armor, which breaks their attack rolls."""
 		with self.createsession() as session :
 			armor = session.scalar(Select(Armors).where(Armors.name == name.lower()))
 			if armor is None :
-				return False
-			if session.scalar(Select(Characters.id).where(Characters.armor == armor.id).limit(1)) is not None :
 				return False
 			session.delete(armor)
 			self.commit(session)

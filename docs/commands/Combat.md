@@ -2,7 +2,7 @@
 layout: default
 title: Combat
 parent: Commands
-nav_order: 4
+nav_order: 5
 ---
 
 <h1>Combat</h1>
@@ -32,7 +32,7 @@ Attack rolls and combat instances.
 
 **Usage:** `/combat reload`
 
-> Reloads armor, weapons and characters from the database.
+> Reloads armor and weapons from the database.
 
 **Permissions:**
 - `Developer`

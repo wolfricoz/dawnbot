@@ -2,14 +2,14 @@
 layout: default
 title: Config
 parent: Commands
-nav_order: 5
+nav_order: 6
 ---
 
 <h1>Config</h1>
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-Server settings: XP channels, level roles, currency and the channels the bot posts in.
+Server settings: XP (roleplay) channels, level roles, characters, currency and the channels the bot posts in.
 
 
 ### `roles`
@@ -49,7 +49,7 @@ Server settings: XP channels, level roles, currency and the channels the bot pos
 
 **Usage:** `/config currency_gain <amount_of_characters>`
 
-> Sets how many characters a message needs per unit of currency.
+> Sets how many characters a post made as a character needs per unit of currency for that character.
 
 **Permissions:**
 - `Manage Server`
@@ -71,7 +71,8 @@ Server settings: XP channels, level roles, currency and the channels the bot pos
 
 **Usage:** `/config channel <option> <channel>`
 
-> Adds or removes a text channel where messages earn XP and currency.
+> Adds or removes a text channel where messages earn XP (a roleplay channel). Posts made as a character there
+also earn the character currency.
 
 **Permissions:**
 - `Manage Server`
@@ -82,7 +83,93 @@ Server settings: XP channels, level roles, currency and the channels the bot pos
 
 **Usage:** `/config singlechannels <option> <channel>`
 
-> Sets the character, timeline or modlog channel.
+> Sets the character, character review, species forum, gear forum, timeline or modlog channel. Approved characters and
+species are posted in the character channel and the species forum (a forum gives each its own thread); new and
+edited characters and species wait for staff in the character review channel.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `characters`
+
+**Usage:** `/config characters <option> <value>`
+
+> Sets one of the numbers for characters: the character cap, the SPECIAL rules (stat_base, stat_bonus,
+stat_min, stat_max), how fast characters level (level_base, points_per_level) or the starting currency.
+Existing characters keep the stats they have.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `stat_method`
+
+**Usage:** `/config stat_method <method>`
+
+> Sets how members set their SPECIAL stats when creating a character: both (the member chooses), point_buy
+or rolled.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `proxy_outside_rp`
+
+**Usage:** `/config proxy_outside_rp <enabled>`
+
+> Sets whether members can post as their characters outside the XP (roleplay) channels. Posts there earn no
+XP and have no minimum length. Off by default.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `species_creation`
+
+**Usage:** `/config species_creation <who>`
+
+> Sets who can create species with /species create: everyone, staff (Manage Messages) or off.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `economy`
+
+**Usage:** `/config economy <mode>`
+
+> Sets whether gear costs currency: economy (characters buy gear and sell it for 30% of what they paid) or
+free (all gear costs nothing and selling returns nothing).
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `retire_thread`
+
+**Usage:** `/config retire_thread <mode>`
+
+> Sets what happens to a retired character's post: lock (the forum thread is locked and archived, and opened
+again if the character returns) or delete.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `reapproval`
+
+**Usage:** `/config reapproval <mode>`
+
+> Sets which edits to an approved character need a new staff review: none, lore (name, picture and sheet
+answers) or all (also prefix, suffix and the member's own extra fields). A respec is always reviewed.
 
 **Permissions:**
 - `Manage Server`
@@ -104,7 +191,8 @@ Server settings: XP channels, level roles, currency and the channels the bot pos
 
 **Usage:** `/config forum <option> <channel>`
 
-> Adds or removes a forum whose posts earn XP and currency.
+> Adds or removes a forum whose posts earn XP (a roleplay forum). Posts made as a character there also earn
+the character currency.
 
 **Permissions:**
 - `Manage Server`

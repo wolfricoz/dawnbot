@@ -2,7 +2,7 @@
 layout: default
 title: User
 parent: Commands
-nav_order: 12
+nav_order: 21
 ---
 
 <h1>User</h1>
@@ -16,7 +16,7 @@ Your progression in this server.
 
 **Usage:** `/user stats`
 
-> Shows your XP, currency, message count and the next level role.
+> Shows your XP, message count and the next level role. Currency belongs to characters; see /currency.
 
 ---
 
