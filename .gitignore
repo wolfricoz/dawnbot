@@ -1,4 +1,10 @@
+/.idea/
+/.venv/
+__pycache__/
 /logs/
 /jsons/
+/debug/
 /error.txt
 /.env
+tests/.env.test
+resources/data/commands_cache.json
