@@ -58,6 +58,8 @@ class CombatCache(metaclass=Singleton) :
 		characters = {}
 		for character in CharacterTransactions().get_every_character() :
 			characters.setdefault(character.uid, {})[character.name] = {
+				"id"           : character.id,
+				"prefix"       : character.prefix,
 				"prestige"     : character.prestige,
 				"strength"     : character.strength,
 				"perception"   : character.perception,

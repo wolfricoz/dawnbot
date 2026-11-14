@@ -6,7 +6,9 @@ from database.database import Characters
 from database.transactions.DatabaseTransactions import DatabaseTransactions
 from database.transactions.UserTransactions import UserTransactions
 
-STAT_FIELDS = ["strength", "perception", "endurance", "charisma", "intelligence", "agility", "prestige", "luck"]
+# Columns add() and update() accept as keyword arguments.
+STAT_FIELDS = ["strength", "perception", "endurance", "charisma", "intelligence", "agility", "prestige", "luck",
+               "prefix"]
 
 
 class CharacterTransactions(DatabaseTransactions) :

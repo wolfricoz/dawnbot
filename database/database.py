@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, \
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, JSON, String, Text, \
 	URL, UniqueConstraint, create_engine, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.pool import NullPool
@@ -166,12 +166,27 @@ class Characters(Timestamps, Base) :
 	intelligence: Mapped[int] = mapped_column(BigInteger, default=0)
 	agility: Mapped[int] = mapped_column(BigInteger, default=0)
 	luck: Mapped[int] = mapped_column(BigInteger, default=0)
+	prefix: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 	armor = mapped_column(BigInteger, ForeignKey('armors.id'))
 	armor_data = relationship("Armors", back_populates="characters", lazy="joined")
 
 	__table_args__ = (
 		UniqueConstraint('uid', 'name', name='uq_character_uid_name'),
+	)
+
+
+class CharacterInfo(Timestamps, Base) :
+	"""Free-form fields on a character sheet (appearance, backstory, ...), shown in the order of position."""
+	__tablename__ = "character_info"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+	key: Mapped[str] = mapped_column(String(255))
+	value: Mapped[str] = mapped_column(String(1024))
+	position: Mapped[int] = mapped_column(Integer, default=1)
+
+	__table_args__ = (
+		UniqueConstraint('character_id', 'key', name='uq_character_info_character_key'),
 	)
 
 
@@ -278,6 +293,41 @@ class CombatInstanceLogs(Timestamps, Base) :
 	attacker_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"))
 	defender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"))
 	damage: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+# ============================================================
+# Server setup
+# ============================================================
+
+class Templates(Timestamps, Base) :
+	"""A snapshot of a server's categories and channels, owned by the user who registered it."""
+	__tablename__ = "templates"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.uid', ondelete="CASCADE"))
+	name: Mapped[str] = mapped_column(String(255))
+	# {"categories": [{"name": str, "channels": [{"name": str, "type": int}]}]}
+	data: Mapped[dict] = mapped_column(JSON)
+
+	__table_args__ = (
+		UniqueConstraint('uid', 'name', name='uq_template_uid_name'),
+	)
+
+
+class ArchivedChannels(Base) :
+	"""Where an archived channel came from, so /archive restore can put it back exactly.
+
+	The category is also written at the start of the channel's name, so the origin stays visible (and restorable)
+	even without this row.
+	"""
+	__tablename__ = "archived_channels"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	channel_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+	channel_name: Mapped[str] = mapped_column(String(100))
+	category_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+	# The channel's own @everyone "View Channel" overwrite before archiving: True, False, or None (inherited).
+	everyone_view: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+	archived_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # ============================================================

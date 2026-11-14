@@ -6,13 +6,15 @@ import discord
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
+from translate import Translator
 
 from classes.kernel.ConfigData import ConfigData
+from data.languages import LANGUAGES
 from resources.configs.ConfigMapping import ConfigMapping
 
 
 class Tools(commands.Cog) :
-	"""Roleplay tools: dice, coin flips and scene endings."""
+	"""Roleplay tools: dice, coin flips, scene endings and translation."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -102,6 +104,28 @@ class Tools(commands.Cog) :
 			await member.kick(reason="purged due to inactivity")
 			count += 1
 		await message.edit(content=f"{count} members have been purged.")
+
+
+	# ============================================================
+	async def language_autocomplete(self, interaction: discord.Interaction, current: str) :
+		return [Choice(name=name, value=code) for code, name in LANGUAGES.items()
+		        if name.lower().startswith(current.lower())][:25]
+
+	# ============================================================
+	@app_commands.command(name="translate", description="translates a message to another language")
+	@app_commands.autocomplete(from_language=language_autocomplete, target_language=language_autocomplete)
+	async def translate(self, interaction: discord.Interaction, text: app_commands.Range[str, 1, 500],
+	                    from_language: str = "en", target_language: str = "en") :
+		"""
+		Translates text between languages using the MyMemory translation service.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		translator = Translator(from_lang=from_language.lower(), to_lang=target_language.lower())
+		# The translator makes a blocking web request.
+		translation = await asyncio.to_thread(translator.translate, text)
+		await interaction.followup.send(
+			f"Translated from {LANGUAGES.get(from_language, from_language)} to "
+			f"{LANGUAGES.get(target_language, target_language)} ```{translation}```", ephemeral=True)
 
 
 async def setup(bot) :

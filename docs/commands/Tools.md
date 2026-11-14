@@ -2,14 +2,14 @@
 layout: default
 title: Tools
 parent: Commands
-nav_order: 7
+nav_order: 11
 ---
 
 <h1>Tools</h1>
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-Roleplay tools: dice, coin flips and scene endings.
+Roleplay tools: dice, coin flips, scene endings and translation.
 
 
 ### `endscene`
@@ -44,6 +44,14 @@ Roleplay tools: dice, coin flips and scene endings.
 
 **Permissions:**
 - `Manage Server`
+
+---
+
+### `translate`
+
+**Usage:** `/translate <text> <from_language> <target_language>`
+
+> Translates text between languages using the MyMemory translation service.
 
 ---
 
