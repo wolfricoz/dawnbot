@@ -6,17 +6,16 @@ from discord.app_commands import Choice
 from discord.ext import commands
 from discord_py_utilities.messages import send_response
 
-from classes.setup.Safeguards import missing_permissions, owner_error
+from classes.setup.Safeguards import missing_permissions
 from classes.setup.ServerSetup import ServerSetup
 from classes.support.PermissionNotice import PermissionNotice
-from views.buttons.Confirm import double_confirm
 
 ALL_ARCHIVES = "all"
 
 
 class Archive(commands.GroupCog, name="Archive", group_name="archive") :
-	"""The archive holds channels set aside by /template apply. Archived channels are named
-	"<old category>・<channel>" and hidden from everyone until they are restored."""
+	"""The archive holds channels set aside by /template restore. Archived channels are named
+	"<old category>・<channel>" and hidden from everyone until they are restored; /template archivepurge deletes them."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -59,36 +58,10 @@ class Archive(commands.GroupCog, name="Archive", group_name="archive") :
 		logging.info(f"{interaction.user} restored {restored} archived channels in {guild.name}")
 		message = f"Restored {restored} channel(s)."
 		if from_name :
-			message += (f" {from_name} had no stored record, so they were placed by the category in their name and "
-			            f"now follow that category's permissions; check who can see them.")
+			message += (f" {from_name} had no stored record (for example channels archived by rptools): they were "
+			            f"placed by the category in their name, or in the 'Restored' category when it has none, and are "
+			            f"still hidden from everyone; check who should see them.")
 		await interaction.followup.send(message, ephemeral=True)
-
-	# ============================================================
-	@app_commands.command(name="purge", description="Deletes ALL archived channels; this can NOT be undone")
-	async def purge(self, interaction: discord.Interaction) :
-		"""
-		Permanently deletes every archive category and the channels in it, after asking twice.
-
-		**Permissions:**
-		- `Server Owner`
-		"""
-		if error := owner_error(interaction) :
-			return await send_response(interaction, error, ephemeral=True)
-		archives = ServerSetup.archive_categories(interaction.guild)
-		count = sum(len(category.channels) for category in archives)
-		if not archives :
-			return await send_response(interaction, "There is nothing in the archive.", ephemeral=True)
-		confirmed = await double_confirm(
-			interaction,
-			f"Purge the archive of **{interaction.guild.name}**? {count} channel(s) in {len(archives)} archive "
-			f"category(ies) will be deleted.",
-			"**Are you sure?** Deleted channels and their messages can NOT be recovered.")
-		if not confirmed :
-			return await interaction.followup.send("Cancelled, nothing was deleted.", ephemeral=True)
-		deleted = await ServerSetup.purge(interaction.guild)
-		logging.info(f"{interaction.user} purged {deleted} archived channels in {interaction.guild.name}")
-		await interaction.followup.send(f"Archive purged: {deleted} channel(s) deleted.", ephemeral=True)
-
 
 async def setup(bot) :
 	await bot.add_cog(Archive(bot))

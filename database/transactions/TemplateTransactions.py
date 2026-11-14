@@ -12,10 +12,10 @@ class TemplateTransactions(DatabaseTransactions) :
 	"""Server templates, owned per user so a template captured in one server can be applied in another."""
 
 	# ============================================================
-	def add(self, uid: int, guild_id: int, name: str, data: dict) -> Templates | None :
+	def add(self, uid: int, name: str, data: dict) -> Templates | None :
 		"""Returns None when the user already has a template with that name."""
 		# Templates reference users.uid, so make sure the user is registered.
-		UserTransactions().get(uid, guild_id)
+		UserTransactions().ensure_global(uid)
 		with self.createsession() as session :
 			if self.get(uid, name) is not None :
 				return None

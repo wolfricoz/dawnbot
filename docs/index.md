@@ -28,11 +28,12 @@ level roles are handed out automatically, and characters, armor and weapons powe
 * Character sheets: add your own fields (appearance, backstory, ...) with `/character add_info`.
 
 ### Server setup
-* **Templates:** `/template register` saves a server's categories and channels; `/template apply` builds them in
-  another server you own. Applying is limited to the server owner and servers with at most 10 members, and asks twice.
-* **Archive:** applying a template archives the old channels as `<category>・<channel>`, hidden from everyone.
-  `/archive restore` puts them back in their categories with their old names and visibility; `/archive purge`
-  deletes them for good.
+* **Templates:** `/template register` saves a server's categories and channels; `/template restore` builds them in
+  another server you own. Restoring is limited to the server owner and servers with at most 10 members, and asks twice.
+* **Archive:** restoring a template archives the old channels as `<category>・<channel>`, hidden from everyone.
+  `/archive restore` puts them back in their categories with their old names and visibility; `/template archivepurge`
+  deletes them for good. Channels archived by the old rptools bot (`archived-<channel>`) can be restored too; they go
+  to a "Restored" category and stay hidden until you open them up.
 
 ---
 

@@ -19,6 +19,14 @@ class UserTransactions(DatabaseTransactions) :
 		return self.add(uid, guild_id)
 
 	# ============================================================
+	def ensure_global(self, uid: int) -> None :
+		"""Registers the user in the global users table only, for data that is not tied to a guild."""
+		with self.createsession() as session :
+			if session.scalar(Select(Users).where(Users.uid == uid)) is None :
+				session.add(Users(uid=uid))
+				self.commit(session)
+
+	# ============================================================
 	def add(self, uid: int, guild_id: int) -> Experience :
 		"""Registers the user globally and in the guild; existing rows are left alone."""
 		with self.createsession() as session :

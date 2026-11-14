@@ -21,6 +21,10 @@ SEPARATOR = "・"
 CATEGORY_LIMIT = 50
 NAME_LIMIT = 100
 CATEGORY_PART_LIMIT = 40
+# rptools archived channels as "archived-<channel>", without their category.
+LEGACY_PREFIX = "archived-"
+# Where channels go back to when their category is unknown (rptools archives).
+UNKNOWN_CATEGORY = "Restored"
 
 
 class ServerSetup :
@@ -49,11 +53,16 @@ class ServerSetup :
 	# ============================================================
 	@staticmethod
 	def parse_archived_name(name: str) -> tuple[str | None, str] :
-		"""Splits an archived channel name into (category slug, channel name); (None, name) when it has no prefix."""
-		if SEPARATOR not in name :
-			return None, name
-		category, channel = name.split(SEPARATOR, 1)
-		return category, channel
+		"""Splits an archived channel name into (category slug, channel name); (None, name) when it has no prefix.
+
+		Channels archived by rptools are named "archived-<channel>" and carry no category.
+		"""
+		if SEPARATOR in name :
+			category, channel = name.split(SEPARATOR, 1)
+			return category, channel
+		if name.startswith(LEGACY_PREFIX) :
+			return None, name[len(LEGACY_PREFIX) :]
+		return None, name
 
 	# == templates ==
 
@@ -74,9 +83,29 @@ class ServerSetup :
 
 	# ============================================================
 	@staticmethod
+	def normalize(data: dict) -> dict :
+		"""Template data in the current shape. rptools stored {category_id: {"name", "channels": {name: {"type"}}}};
+		that is converted, keeping the order."""
+		if not isinstance(data, dict) :
+			return {"categories" : []}
+		if "categories" in data :
+			return data
+		categories = []
+		for category in data.values() :
+			if not isinstance(category, dict) :
+				continue
+			categories.append({
+				"name"     : category.get("name", "category"),
+				"channels" : [{"name" : name, "type" : (info or {}).get("type", 0)}
+				              for name, info in (category.get("channels") or {}).items()],
+			})
+		return {"categories" : categories}
+
+	# ============================================================
+	@staticmethod
 	def describe(data: dict) -> str :
 		lines = []
-		for category in data.get("categories", []) :
+		for category in ServerSetup.normalize(data).get("categories", []) :
 			lines.append(f"**{category['name']}**")
 			lines += [f"- {channel['name']}" for channel in category.get("channels", [])]
 		return "\n".join(lines) or "This template has no categories."
@@ -110,7 +139,7 @@ class ServerSetup :
 			await category.delete(reason="Template being applied")
 
 		created = 0
-		for category_data in data.get("categories", []) :
+		for category_data in ServerSetup.normalize(data).get("categories", []) :
 			category = await guild.create_category(name=category_data["name"], reason="Template being applied")
 			for channel_data in category_data.get("channels", []) :
 				channel_type = try_enum(discord.ChannelType, channel_data.get("type"))
@@ -172,8 +201,9 @@ class ServerSetup :
 		"""Puts an archived channel back in its category under its old name.
 
 		:param created: categories this restore already created, by name; the guild's cache may not list them yet.
-		@return: True when the exact origin was known (stored record), False when it came from the name prefix, in
-		which case the channel follows its new category's visibility.
+		@return: True when the exact origin was known (stored record). False when it had to be read from the name
+		(including channels archived by rptools); those stay hidden from @everyone, because whether they were private
+		before is unknown, and go to the "Restored" category when the name carries no category either.
 		"""
 		created = {} if created is None else created
 		guild = channel.guild
@@ -184,7 +214,8 @@ class ServerSetup :
 			everyone_view = record.everyone_view
 		else :
 			category_name, name = ServerSetup.parse_archived_name(channel.name)
-			by_slug = True
+			by_slug = category_name is not None
+			category_name = category_name or UNKNOWN_CATEGORY
 			everyone_view = None
 
 		category = None
@@ -194,7 +225,9 @@ class ServerSetup :
 				category = await guild.create_category(name=category_name, reason="Restoring archived channels")
 				created[category_name] = category
 		await channel.edit(category=category, name=name, reason="Restored from the archive")
-		await channel.set_permissions(guild.default_role, view_channel=everyone_view, reason="Restored from the archive")
+		if record is not None :
+			await channel.set_permissions(guild.default_role, view_channel=everyone_view,
+			                              reason="Restored from the archive")
 		ArchiveTransactions().remove(channel.id)
 		logging.info(f"Restored {name} ({channel.id}) in {guild.name} to {category_name}")
 		return record is not None

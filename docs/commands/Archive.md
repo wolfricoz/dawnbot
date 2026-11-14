@@ -9,8 +9,8 @@ nav_order: 1
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-The archive holds channels set aside by /template apply. Archived channels are named
-"<old category>・<channel>" and hidden from everyone until they are restored.
+The archive holds channels set aside by /template restore. Archived channels are named
+"<old category>・<channel>" and hidden from everyone until they are restored; /template archivepurge deletes them.
 
 
 ### `restore`
@@ -22,17 +22,6 @@ gives them their old name and restores who could see them. Restores one archive 
 
 **Permissions:**
 - `Administrator`
-
----
-
-### `purge`
-
-**Usage:** `/archive purge`
-
-> Permanently deletes every archive category and the channels in it, after asking twice.
-
-**Permissions:**
-- `Server Owner`
 
 ---
 

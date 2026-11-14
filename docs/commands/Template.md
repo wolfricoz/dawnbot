@@ -11,7 +11,7 @@ nav_order: 10
 
 Save a server's categories and channels as a template and apply it to a new server.
 
-Applying a template archives the existing channels (see /archive) and is limited to the server owner, to servers
+/template restore archives the existing channels (see /archive) and is limited to the server owner, to servers
 with at most 10 members, and asks for confirmation twice.
 
 
@@ -26,9 +26,9 @@ with at most 10 members, and asks for confirmation twice.
 
 ---
 
-### `apply`
+### `restore`
 
-**Usage:** `/template apply <template>`
+**Usage:** `/template restore <template>`
 
 > Archives every channel that sits in a category, removes those categories and builds the template. Only works
 in servers with at most 10 members (bots not counted) and asks for confirmation twice. Archived channels can
@@ -60,6 +60,17 @@ be brought back with /archive restore.
 **Usage:** `/template delete <template>`
 
 > Deletes one of your templates.
+
+---
+
+### `archivepurge`
+
+**Usage:** `/template archivepurge`
+
+> Permanently deletes every archive category and the channels in it, after asking twice.
+
+**Permissions:**
+- `Server Owner`
 
 ---
 

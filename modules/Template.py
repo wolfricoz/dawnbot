@@ -16,7 +16,7 @@ from views.buttons.Confirm import double_confirm
 class Template(commands.GroupCog, name="Template", group_name="template") :
 	"""Save a server's categories and channels as a template and apply it to a new server.
 
-	Applying a template archives the existing channels (see /archive) and is limited to the server owner, to servers
+	/template restore archives the existing channels (see /archive) and is limited to the server owner, to servers
 	with at most 10 members, and asks for confirmation twice.
 	"""
 
@@ -44,14 +44,14 @@ class Template(commands.GroupCog, name="Template", group_name="template") :
 			return await send_response(interaction, f"You have reached the maximum number of templates ({MAX_TEMPLATES})",
 			                           ephemeral=True)
 		data = ServerSetup.capture(interaction.guild)
-		if TemplateTransactions().add(interaction.user.id, interaction.guild.id, name, data) is None :
+		if TemplateTransactions().add(interaction.user.id, name, data) is None :
 			return await send_response(interaction, f"Template '{name}' already exists", ephemeral=True)
 		await send_response(interaction,
 		                    f"Template '{name.lower()}' created successfully! You can create {MAX_TEMPLATES - count - 1} more templates",
 		                    ephemeral=True)
 
 	# ============================================================
-	@app_commands.command(name="apply", description="Archives this server's channels and builds one of your templates")
+	@app_commands.command(name="restore", description="Applies a template to your server and archives old channels.")
 	@app_commands.autocomplete(template=template_autocomplete)
 	async def apply(self, interaction: discord.Interaction, template: str) :
 		"""
@@ -127,6 +127,34 @@ class Template(commands.GroupCog, name="Template", group_name="template") :
 		remaining = MAX_TEMPLATES - TemplateTransactions().count(interaction.user.id)
 		await send_response(interaction, f"Template '{template}' deleted! You can create {remaining} more templates",
 		                    ephemeral=True)
+
+
+	# ============================================================
+	@app_commands.command(name="archivepurge", description="removes ALL archived channels, this can NOT be undone.")
+	async def archivepurge(self, interaction: discord.Interaction) :
+		"""
+		Permanently deletes every archive category and the channels in it, after asking twice.
+
+		**Permissions:**
+		- `Server Owner`
+		"""
+		if error := owner_error(interaction) :
+			return await send_response(interaction, error, ephemeral=True)
+		archives = ServerSetup.archive_categories(interaction.guild)
+		count = sum(len(category.channels) for category in archives)
+		if not archives :
+			return await send_response(interaction, "There is nothing in the archive.", ephemeral=True)
+		confirmed = await double_confirm(
+			interaction,
+			f"Purge the archive of **{interaction.guild.name}**? {count} channel(s) in {len(archives)} archive "
+			f"category(ies) will be deleted.",
+			"**Are you sure?** Deleted channels and their messages can NOT be recovered.")
+		if not confirmed :
+			return await interaction.followup.send("Cancelled, nothing was deleted.", ephemeral=True)
+		deleted = await ServerSetup.purge(interaction.guild)
+		logging.info(f"{interaction.user} purged {deleted} archived channels in {interaction.guild.name}")
+		await interaction.followup.send(f"Archive purged: {deleted} channel(s) deleted.", ephemeral=True)
+
 
 
 async def setup(bot) :

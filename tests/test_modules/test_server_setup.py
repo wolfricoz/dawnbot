@@ -156,7 +156,17 @@ class TestServerSetup(DatabaseTestCase) :
 		restored, from_name = run(ServerSetup.restore(self.guild, archive))
 		self.assertEqual((restored, from_name), (1, 1))
 		self.assertEqual((orphan.name, orphan.category), ("market", self.rp))
-		self.assertIsNone(orphan.everyone_view)
+		# Without a record it is unknown whether the channel was private, so it stays hidden.
+		self.assertIs(orphan.everyone_view, False)
+
+	def test_restore_rptools_archive(self) :
+		"""rptools archived channels as "archived-<name>" in "archive-..." categories, without their category."""
+		archive = run(self.guild.create_category("archive-overflow-01-01-2025"))
+		old = FakeChannel(self.guild, "archived-roleplay", archive, everyone_view=False)
+		restored, from_name = run(ServerSetup.restore(self.guild))
+		self.assertEqual((restored, from_name), (1, 1))
+		self.assertEqual((old.name, old.category.name, old.everyone_view), ("roleplay", "Restored", False))
+		self.assertNotIn(archive, self.guild.categories)
 
 	def test_archive_overflows_at_fifty(self) :
 		for number in range(55) :
@@ -171,12 +181,58 @@ class TestServerSetup(DatabaseTestCase) :
 		self.assertEqual(ArchiveTransactions().get_all(GUILD_ID), [])
 
 
+class TestLegacyTemplates(unittest.TestCase) :
+
+	def test_rptools_format_is_converted(self) :
+		legacy = {"111" : {"name" : "OOC", "channels" : {"general" : {"type" : 0}, "voice" : {"type" : 2}}},
+		          "222" : {"name" : "RP", "channels" : {}}}
+		data = ServerSetup.normalize(legacy)
+		self.assertEqual(data, {"categories" : [
+			{"name" : "OOC", "channels" : [{"name" : "general", "type" : 0}, {"name" : "voice", "type" : 2}]},
+			{"name" : "RP", "channels" : []}]})
+		self.assertIs(ServerSetup.normalize(data), data)
+		self.assertIn("- voice", ServerSetup.describe(legacy))
+
+	def test_apply_accepts_rptools_format(self) :
+		guild = FakeGuild()
+		created_channels = []
+
+		async def create_channel_stub(guild_, name, channel_type, category=None) :
+			created_channels.append((name, category.name))
+
+		import classes.setup.ServerSetup as module
+		original = module.create_channel
+		module.create_channel = create_channel_stub
+		try :
+			run(ServerSetup.apply(guild, {"1" : {"name" : "OOC", "channels" : {"general" : {"type" : 0}}}}))
+		finally :
+			module.create_channel = original
+		self.assertEqual(created_channels, [("general", "OOC")])
+
+
+class TestRptoolsImport(DatabaseTestCase) :
+
+	def test_import_templates(self) :
+		import json
+		from sqlalchemy import create_engine, text
+		from classes.setup.RptoolsImport import import_templates
+		source = create_engine("sqlite://")
+		legacy = {"1" : {"name" : "OOC", "channels" : {"general" : {"type" : 0}}}}
+		with source.begin() as connection :
+			connection.execute(text("CREATE TABLE templates (id INTEGER PRIMARY KEY, user_id BIGINT, name TEXT, data TEXT)"))
+			connection.execute(text("INSERT INTO templates (user_id, name, data) VALUES (:u, 'basic', :d)"),
+			                   {"u" : USER_ID, "d" : json.dumps(legacy)})
+		self.assertEqual(import_templates(source), (1, 0))
+		self.assertEqual(import_templates(source), (0, 1))
+		self.assertEqual(TemplateTransactions().get(USER_ID, "basic").data["categories"][0]["name"], "OOC")
+
+
 class TestTemplateTransactions(DatabaseTestCase) :
 
 	def test_crud(self) :
 		data = {"categories" : [{"name" : "OOC", "channels" : [{"name" : "general", "type" : 0}]}]}
-		self.assertIsNotNone(TemplateTransactions().add(USER_ID, GUILD_ID, "Basic", data))
-		self.assertIsNone(TemplateTransactions().add(USER_ID, GUILD_ID, "basic", data))
+		self.assertIsNotNone(TemplateTransactions().add(USER_ID, "Basic", data))
+		self.assertIsNone(TemplateTransactions().add(USER_ID, "basic", data))
 		self.assertEqual(TemplateTransactions().get(USER_ID, "BASIC").data, data)
 		self.assertEqual((TemplateTransactions().count(USER_ID), TemplateTransactions().get_names(USER_ID)), (1, ["basic"]))
 		self.assertTrue(TemplateTransactions().delete(USER_ID, "basic"))
