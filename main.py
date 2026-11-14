@@ -66,7 +66,7 @@ database.database().create()
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-activity = discord.Activity(type=discord.ActivityType.watching, name="over RMR")
+activity = discord.Activity(type=discord.ActivityType.playing, name="Gamemaster Ultimate")
 bot = commands.Bot(command_prefix=env('PREFIX', '?'), case_insensitive=False, intents=intents, activity=activity)
 
 
