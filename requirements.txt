@@ -10,3 +10,4 @@ fastapi
 uvicorn
 sentry-sdk[fastapi]
 translate~=3.6.1
+gunicorn
