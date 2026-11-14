@@ -32,6 +32,15 @@ class CharacterTransactions(DatabaseTransactions) :
 			return list(session.scalars(query.order_by(Characters.id)).all())
 
 	# ============================================================
+	def get_in_guild(self, guild_id: int, user_id: int | None = None) -> List[Characters] :
+		"""Every character on the server, or only one member's."""
+		with self.createsession() as session :
+			query = Select(Characters).where(Characters.guild_id == guild_id)
+			if user_id is not None :
+				query = query.where(Characters.uid == user_id)
+			return list(session.scalars(query.order_by(Characters.id)).all())
+
+	# ============================================================
 	def get_every_character(self) -> List[Characters] :
 		with self.createsession() as session :
 			return list(session.scalars(Select(Characters).order_by(Characters.id)).all())
@@ -102,6 +111,30 @@ class CharacterTransactions(DatabaseTransactions) :
 					setattr(character, key, value)
 			self.commit(session)
 			return character
+
+	# ============================================================
+	def progress(self, character_id: int, level_for_xp, points_per_level: int, add_xp: int = 0,
+	             set_xp: int | None = None, add_currency: int = 0) -> tuple[Characters | None, int] :
+		"""Changes a character's XP and currency and levels it up, holding a lock on its row so posts that arrive at
+		the same time cannot overwrite each other.
+
+		level_for_xp turns an amount of XP into a level. A level never goes down.
+		@return: the updated character (None when it does not exist) and the number of levels gained.
+		"""
+		with self.createsession() as session :
+			character = session.scalars(
+				Select(Characters).where(Characters.id == character_id).with_for_update()).first()
+			if character is None :
+				return None, 0
+			xp = set_xp if set_xp is not None else character.xp + add_xp
+			character.xp = max(0, xp)
+			character.currency = character.currency + add_currency
+			level = max(character.level, level_for_xp(character.xp))
+			gained = level - character.level
+			character.level = level
+			character.unspent_points = character.unspent_points + gained * points_per_level
+			self.commit(session)
+			return character, gained
 
 	# ============================================================
 	def approve(self, character_id: int, reviewer_id: int) -> Characters | None :

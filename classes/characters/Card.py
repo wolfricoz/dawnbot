@@ -22,17 +22,22 @@ STATE_COLORS = {PENDING : discord.Color.gold(), APPROVED : discord.Color.green()
 
 # ============================================================
 def chunk_text(text: str, limit: int) -> list[str] :
-	"""Splits text into pieces of at most limit characters, breaking between lines where it can."""
+	"""Splits text into pieces of at most limit characters, breaking between lines where it can.
+
+	A line too long for one piece is cut, preferably at a space; its first part fills up the piece before it, so a
+	short first line (such as a reply line) stays with the text after it.
+	"""
 	chunks, current = [], ""
 	for line in text.split("\n") :
 		while len(line) > limit :
-			# A single line that is too long is cut, preferably at a space.
-			cut = line.rfind(" ", 0, limit)
-			cut = cut if cut > limit // 2 else limit
-			if current :
+			room = limit - (len(current) + 1 if current else 0)
+			if room < limit // 4 :
 				chunks.append(current)
-				current = ""
-			chunks.append(line[:cut])
+				current, room = "", limit
+			cut = line.rfind(" ", 0, room)
+			cut = cut if cut > room // 2 else room
+			chunks.append(f"{current}\n{line[:cut]}" if current else line[:cut])
+			current = ""
 			line = line[cut :].lstrip()
 		if current and len(current) + 1 + len(line) > limit :
 			chunks.append(current)

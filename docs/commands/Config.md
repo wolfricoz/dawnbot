@@ -116,6 +116,18 @@ or rolled.
 
 ---
 
+### `proxy_outside_rp`
+
+**Usage:** `/config proxy_outside_rp <enabled>`
+
+> Sets whether members can post as their characters outside the XP (roleplay) channels. Posts there earn no
+XP and have no minimum length. Off by default.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
 ### `reapproval`
 
 **Usage:** `/config reapproval <mode>`

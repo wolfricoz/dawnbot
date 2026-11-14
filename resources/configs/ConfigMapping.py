@@ -27,6 +27,7 @@ class ConfigMapping(StrEnum) :
 	LEVEL_BASE = "LEVEL_BASE"
 	POINTS_PER_LEVEL = "POINTS_PER_LEVEL"
 	STARTING_CURRENCY = "STARTING_CURRENCY"
+	PROXY_OUTSIDE_RP = "PROXY_OUTSIDE_RP"
 
 	# === Moderation ===
 	MODLOG = "MODLOG"
@@ -61,7 +62,9 @@ settings = [
 	ConfigMapping.STARTING_CURRENCY,
 ]
 
-toggles = []
+toggles = [
+	ConfigMapping.PROXY_OUTSIDE_RP,
+]
 
 defaults = {
 	ConfigMapping.XP_GAIN            : 5,
@@ -133,6 +136,7 @@ docs = {
 	ConfigMapping.LEVEL_BASE         : "How fast characters level: reaching level L takes this number x L(L-1)/2 XP (default 1000, so level 2 at 1000 XP and level 3 at 3000).",
 	ConfigMapping.POINTS_PER_LEVEL   : "How many SPECIAL points a character gets for each level (default 1).",
 	ConfigMapping.STARTING_CURRENCY  : "How much currency a new character starts with (default 3000).",
+	ConfigMapping.PROXY_OUTSIDE_RP   : "Whether members can post as their characters outside the XP channels (default off). Posts there earn no XP and have no minimum length.",
 
 	# == moderation ==
 	ConfigMapping.MODLOG        : "The staff channel for bot notices, such as missing permissions.",

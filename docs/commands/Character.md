@@ -59,6 +59,16 @@ undone.
 
 ---
 
+### `autoproxy`
+
+**Usage:** `/character autoproxy <name>`
+
+> Posts everything you type in this channel (or thread) as one of your approved characters, without a prefix
+or suffix. Leave the name out to turn it off. A prefix or suffix still picks another character, and a message
+starting with a backslash (\) is posted as yourself.
+
+---
+
 ### `list`
 
 **Usage:** `/character list`

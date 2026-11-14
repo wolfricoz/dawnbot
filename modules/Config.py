@@ -230,6 +230,24 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 		await interaction.followup.send(f"stat_method set to {method.value}")
 
 	# ============================================================
+	@app_commands.command(name='proxy_outside_rp')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	async def proxy_outside_rp(self, interaction: Interaction, enabled: bool) :
+		"""
+		Sets whether members can post as their characters outside the XP (roleplay) channels. Posts there earn no
+		XP and have no minimum length. Off by default.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		self._prepare(interaction.guild)
+		ConfigData().add_key(interaction.guild.id, ConfigMapping.PROXY_OUTSIDE_RP, "TRUE" if enabled else "FALSE",
+		                     overwrite=True)
+		where = "everywhere" if enabled else "only in the XP channels"
+		await interaction.followup.send(f"Members can now post as their characters {where}.")
+
+	# ============================================================
 	@app_commands.command(name='reapproval')
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(mode=[Choice(name=x, value=x) for x in choice_settings[ConfigMapping.REAPPROVAL_ON_EDIT]])

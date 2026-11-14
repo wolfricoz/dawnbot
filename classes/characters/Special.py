@@ -150,24 +150,27 @@ class Special :
 
 	# ============================================================
 	@staticmethod
+	def _progress(character: Characters, **changes) -> tuple[Characters, int] :
+		base = Special.level_base(character.guild_id)
+		points = max(0, ConfigData().get_int(character.guild_id, ConfigMapping.POINTS_PER_LEVEL) or 0)
+		return CharacterTransactions().progress(character.id, lambda xp : Special.level_for_xp(xp, base), points,
+		                                        **changes)
+
+	# ============================================================
+	@staticmethod
 	def set_xp(character: Characters, xp: int) -> tuple[Characters, int] :
 		"""Sets the character's XP and levels it up when the XP has reached new levels.
 
 		A level never goes down: when the XP drops, the character keeps its level and the points it earned.
 		@return: the updated character and the number of levels gained.
 		"""
-		xp = max(0, xp)
-		level = max(character.level, Special.level_for_xp(xp, Special.level_base(character.guild_id)))
-		gained = level - character.level
-		points = max(0, ConfigData().get_int(character.guild_id, ConfigMapping.POINTS_PER_LEVEL) or 0)
-		updated = CharacterTransactions().update(character.id, xp=xp, level=level,
-		                                         unspent_points=character.unspent_points + gained * points)
-		return updated, gained
+		return Special._progress(character, set_xp=xp)
 
 	# ============================================================
 	@staticmethod
-	def add_xp(character: Characters, amount: int) -> tuple[Characters, int] :
-		return Special.set_xp(character, character.xp + amount)
+	def add_xp(character: Characters, amount: int, currency: int = 0) -> tuple[Characters, int] :
+		"""Adds XP (and currency) to what the character has in the database, not to the copy passed in."""
+		return Special._progress(character, add_xp=amount, add_currency=currency)
 
 	# ============================================================
 	@staticmethod

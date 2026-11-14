@@ -14,7 +14,10 @@ from classes.characters.Interview import CREATE, EDIT, RESPEC
 from classes.characters.Special import STATS, Special
 from classes.combat.AutoComplete import AutoComplete
 from classes.kernel.ConfigData import ConfigData
+from classes.progression.Progression import Progression
+from classes.proxy.Matcher import PROXY_CHANNEL_TYPES
 from database.database import Characters
+from database.transactions.AutoproxyTransactions import AutoproxyTransactions
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
 from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions, PENDING, RETIRED
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
@@ -148,6 +151,35 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		CharacterTransactions().delete(character.id)
 		logging.info(f"Character {character.name} ({character.id}) deleted by {interaction.user.name}")
 		await interaction.followup.send(f"{character.name} was deleted.", ephemeral=True)
+
+	# ============================================================
+	@app_commands.command(name="autoproxy", description="Posts everything you type in this channel as a character")
+	@app_commands.autocomplete(name=AutoComplete().approved_character)
+	async def autoproxy(self, interaction: discord.Interaction, name: str = None) :
+		"""
+		Posts everything you type in this channel (or thread) as one of your approved characters, without a prefix
+		or suffix. Leave the name out to turn it off. A prefix or suffix still picks another character, and a message
+		starting with a backslash (\\) is posted as yourself.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		channel = interaction.channel
+		if name is None :
+			if AutoproxyTransactions().clear(interaction.user.id, channel.id) :
+				return await interaction.followup.send("Autoproxy is off in this channel.")
+			return await interaction.followup.send("Autoproxy was not on in this channel.")
+		if (character := await self._own_character(interaction, name)) is None :
+			return
+		if character.state != APPROVED :
+			return await interaction.followup.send(f"{character.name} has to be approved by staff first.")
+		if channel.type not in PROXY_CHANNEL_TYPES :
+			return await interaction.followup.send("Characters cannot post in this kind of channel.")
+		AutoproxyTransactions().set(interaction.user.id, interaction.guild_id, channel.id, character.id)
+		note = ""
+		if not Progression.is_tracked(channel) and not ConfigData().get_toggle(interaction.guild_id,
+		                                                                        ConfigMapping.PROXY_OUTSIDE_RP) :
+			note = "\nThis is not a roleplay channel, so nothing is posted as a character here until staff make it one."
+		await interaction.followup.send(f"Everything you type here is now posted as {character.name}. "
+		                                f"Use `/character autoproxy` without a name to stop.{note}")
 
 	# == viewing ==
 

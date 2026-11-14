@@ -28,6 +28,7 @@ from database.transactions.UserTransactions import UserTransactions
 from project.data import BOT_NAME, VERSION
 from views.buttons.CombatInitiatedButtons import CombatInitiatedButtons
 from views.buttons.ReviewButtons import ReviewButtons
+from views.buttons.RoleplayChannelPrompt import RoleplayChannelButton
 
 # Exceptions caused by a server's own setup (missing Discord permissions, an unset
 # or deleted config channel), not by a bug in the bot. These are surfaced to the
@@ -151,6 +152,7 @@ async def setup_hook() :
 	# Persistent views must be registered on every start, or their buttons stop working after a restart.
 	bot.add_view(CombatInitiatedButtons())
 	bot.add_view(ReviewButtons())
+	bot.add_dynamic_items(RoleplayChannelButton)
 
 	directories = ["modules", "listeners", "tasks"]
 	loaded = []

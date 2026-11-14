@@ -252,6 +252,44 @@ class CharacterInfo(Timestamps, Base) :
 	)
 
 
+class ProxyMessages(Base) :
+	"""A message the bot posted as a character. A long post takes several messages; they share first_message_id.
+
+	length, counted, xp_awarded and currency_awarded are only set on a post's first message. counted means the post
+	was made in a roleplay channel, so it earns XP; recalculating XP uses the length of every counted post that was
+	not deleted.
+	"""
+	__tablename__ = "proxy_messages"
+	message_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+	first_message_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                 nullable=True, index=True)
+	uid: Mapped[int] = mapped_column(BigInteger, index=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	# Where the message is: the thread when it was posted in one, otherwise the channel.
+	channel_id: Mapped[int] = mapped_column(BigInteger)
+	length: Mapped[int] = mapped_column(Integer, default=0)
+	counted: Mapped[bool] = mapped_column(Boolean, default=False)
+	xp_awarded: Mapped[int] = mapped_column(BigInteger, default=0)
+	currency_awarded: Mapped[int] = mapped_column(BigInteger, default=0)
+	deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Autoproxy(Base) :
+	"""A channel (or thread) where everything a member types is posted as one of their characters."""
+	__tablename__ = "autoproxy"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	uid: Mapped[int] = mapped_column(BigInteger)
+	guild_id: Mapped[int] = mapped_column(BigInteger)
+	channel_id: Mapped[int] = mapped_column(BigInteger)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+
+	__table_args__ = (
+		UniqueConstraint('uid', 'channel_id', name='uq_autoproxy_uid_channel'),
+	)
+
+
 class Drafts(Base) :
 	"""The saved state of a DM interview, so it survives restarts. A user has at most one."""
 	__tablename__ = "drafts"

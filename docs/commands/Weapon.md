@@ -2,7 +2,7 @@
 layout: default
 title: Weapon
 parent: Commands
-nav_order: 14
+nav_order: 15
 ---
 
 <h1>Weapon</h1>

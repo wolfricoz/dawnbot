@@ -73,3 +73,7 @@ How many SPECIAL points a character gets for each level (default 1).
 
 ### STARTING_CURRENCY
 How much currency a new character starts with (default 3000).
+<h2>Toggles</h2>
+
+### PROXY_OUTSIDE_RP
+Whether members can post as their characters outside the XP channels (default off). Posts there earn no XP and have no minimum length.

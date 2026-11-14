@@ -3,11 +3,13 @@ import logging
 from typing import Awaitable, Callable
 
 import discord
+from discord_py_utilities.messages import send_message
 
 from classes.kernel.ConfigData import ConfigData
 from database.database import Experience
 from database.transactions.ExperienceTransactions import ExperienceTransactions
 from database.transactions.LevelTransactions import LevelTransactions
+from database.transactions.ProxyTransactions import ProxyTransactions
 from database.transactions.UserTransactions import UserTransactions
 from resources.configs.ConfigMapping import ConfigMapping, defaults
 
@@ -30,11 +32,15 @@ class Progression :
 
 	# ============================================================
 	@staticmethod
-	def check_size(message: discord.Message) -> bool :
-		"""False when the message is too short for an XP channel and should be removed."""
-		if len(message.content) <= XP_MINIMUM_LENGTH and message.mentions :
+	def check_size(message: discord.Message, content: str | None = None) -> bool :
+		"""False when the message is too short for an XP channel and should be removed.
+
+		content replaces the message's own text, for a post whose prefix and suffix were taken off.
+		"""
+		content = message.content if content is None else content
+		if len(content) <= XP_MINIMUM_LENGTH and message.mentions :
 			return True
-		if len(message.content) <= MINIMUM_POST_LENGTH and not message.author.guild_permissions.manage_messages :
+		if len(content) <= MINIMUM_POST_LENGTH and not message.author.guild_permissions.manage_messages :
 			return False
 		return True
 
@@ -50,9 +56,14 @@ class Progression :
 	# ============================================================
 	@staticmethod
 	def xp_for(guild_id: int, content: str) -> int :
-		if len(content) <= XP_MINIMUM_LENGTH :
+		return Progression.xp_for_length(guild_id, len(content))
+
+	# ============================================================
+	@staticmethod
+	def xp_for_length(guild_id: int, length: int) -> int :
+		if length <= XP_MINIMUM_LENGTH :
 			return 0
-		return round(len(content) / Progression._gain(guild_id, ConfigMapping.XP_GAIN))
+		return round(length / Progression._gain(guild_id, ConfigMapping.XP_GAIN))
 
 	# ============================================================
 	@staticmethod
@@ -70,6 +81,18 @@ class Progression :
 		record = ExperienceTransactions().add_xp(message.author.id, guild_id, xp, count_message=xp > 0)
 		logging.debug(f"{message.author} gained {xp} xp and {currency} currency in {message.guild.name}")
 		return record
+
+	# ============================================================
+	@staticmethod
+	async def announce_level(member: discord.Member, xp: int) -> None :
+		"""Gives the member the level role their XP has reached and announces it when it is new."""
+		new_rank = await Progression.update_level_roles(member, xp)
+		if new_rank is None :
+			return
+		channel = await ConfigData().get_channel(member.guild, ConfigMapping.ANNOUNCEMENT, optional=True)
+		if channel is not None :
+			await send_message(channel, f"Congratulations {member.mention}, you've leveled up to {new_rank}",
+			                   error_mode='ignore')
 
 	# == level roles ==
 
@@ -161,5 +184,12 @@ class Progression :
 				continue
 			await progress(f"Calculating {channel.mention}")
 			total += await Progression.count_history(channel)
+
+		# Posts made as characters come from the bot's webhooks, so the history above skips them; they are counted
+		# from the bot's own log instead.
+		for uid, lengths in ProxyTransactions().counted_lengths_by_user(guild.id).items() :
+			xp = sum(Progression.xp_for_length(guild.id, length) for length in lengths)
+			ExperienceTransactions().add_xp(uid, guild.id, xp, count_message=False)
+			total += len(lengths)
 		await progress(f"Finished recounting {total} messages")
 		return total
