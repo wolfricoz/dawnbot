@@ -6,6 +6,7 @@ the returned text to the player and acts on the outcome (see CharacterFlow).
 
 A draft walks through its queue of steps:
   name, trigger, avatar          asked for every new character
+  species, occupation            when the server has more than one species or has occupations
   field:<id>                     one per question on the server's sheet
   stat_method, stats             how the SPECIAL stats are set, and their values
   summary                        the answers so far; from here the player changes answers or submits
@@ -13,17 +14,22 @@ A draft walks through its queue of steps:
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable
 
+from classes.characters.Access import Access
 from classes.characters.Card import Card
+from classes.characters.Choices import Choices
 from classes.characters.Edits import Edits
 from classes.characters.ImageStorage import ImageError, ImageStorage
 from classes.characters.Sheet import INFO, Sheet
+from classes.characters.SpeciesRules import SpeciesRules
 from classes.characters.Special import POINT_BUY, ROLLED, STATS, Special
 from classes.kernel.ConfigData import ConfigData
 from database.database import Characters, Drafts
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
 from database.transactions.CharacterTransactions import CharacterTransactions, PENDING
 from database.transactions.DraftTransactions import DraftTransactions
+from database.transactions.OccupationTransactions import OccupationTransactions
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
+from database.transactions.SpeciesTransactions import APPROVED as SPECIES_APPROVED, SpeciesTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 
 CREATE = "create"
@@ -52,6 +58,8 @@ class Reply :
 	finished: bool = False
 	outcome: str | None = None
 	character: Characters | None = None
+	# The species a species interview created or changed.
+	species: object = None
 	# Stored images that are no longer used and should be removed from storage.
 	discard_images: list[int] = field(default_factory=list)
 
@@ -62,25 +70,28 @@ class Interview :
 
 	# ============================================================
 	@staticmethod
-	def start(uid: int, guild_id: int, guild_name: str, kind: str,
-	          character: Characters | None = None) -> tuple[Drafts | None, str] :
+	def start(uid: int, guild_id: int, guild_name: str, kind: str, character: Characters | None = None,
+	          access: Access | None = None) -> tuple[Drafts | None, str] :
 		"""Starts an interview and returns its draft with the first message to send.
 
+		access describes the member, for the species and occupations they may pick.
 		Returns (None, why) when the user is already in an interview.
 		"""
 		existing = DraftTransactions().get(uid)
 		if existing is not None :
 			return None, Interview.busy_text(existing)
 
-		answers = {"guild_name" : guild_name, "fields" : {}}
+		answers = {"guild_name" : guild_name, "fields" : {}, "access" : (access or Access()).to_dict()}
 		if character is not None :
 			answers |= {
-				"name"      : character.name,
-				"prefix"    : character.prefix,
-				"suffix"    : character.suffix,
-				"avatar_id" : character.avatar_id,
-				"fields"    : {str(key) : value for key, value in
-				               CharacterInfoTransactions().get_answers(character.id).items()},
+				"name"          : character.name,
+				"prefix"        : character.prefix,
+				"suffix"        : character.suffix,
+				"avatar_id"     : character.avatar_id,
+				"species_id"    : character.species_id,
+				"occupation_id" : character.occupation_id,
+				"fields"        : {str(key) : value for key, value in
+				                   CharacterInfoTransactions().get_answers(character.id).items()},
 			}
 		if kind == RESPEC :
 			answers["stat_method"] = POINT_BUY
@@ -123,6 +134,14 @@ class Interview :
 		steps = ["name", "trigger"]
 		if ImageStorage.configured() :
 			steps.append("avatar")
+		species = Choices.species(guild_id, Access.from_dict(answers["access"]))
+		if len(species) > 1 :
+			steps.append("species")
+		elif species :
+			# With one species to pick from, there is nothing to ask.
+			answers["species_id"] = species[0].id
+		if OccupationTransactions().get_all(guild_id) :
+			steps.append("occupation")
 		steps += [f"field:{sheet_field.id}" for sheet_field in Sheet.questions(guild_id)]
 		if len(Special.rules(guild_id).methods) > 1 :
 			steps.append("stat_method")
@@ -159,6 +178,10 @@ class Interview :
 			return text
 		if step.startswith("field:") :
 			return Interview._field_prompt(draft)
+		if step == "species" :
+			return Interview._species_prompt(draft)
+		if step == "occupation" :
+			return Interview._occupation_prompt(draft)
 		if step == "stat_method" :
 			rules = Special.rules(draft.guild_id)
 			return (f"**How do you want to set your SPECIAL stats?**\n"
@@ -199,8 +222,75 @@ class Interview :
 
 	# ============================================================
 	@staticmethod
+	def _species(draft: Drafts) :
+		"""The species the draft's character is (or is becoming), or None."""
+		return SpeciesTransactions().get(draft.answers.get("species_id"))
+
+	# ============================================================
+	@staticmethod
+	def _limits(draft: Drafts) -> dict :
+		return SpeciesRules.limits(Interview._species(draft), Special.rules(draft.guild_id))
+
+	# ============================================================
+	@staticmethod
+	def _modifiers(draft: Drafts) -> dict :
+		"""A species changes the starting values only when the character is made."""
+		if draft.kind != CREATE :
+			return {stat : 0 for stat in STATS}
+		return SpeciesRules.modifiers(Interview._species(draft))
+
+	# ============================================================
+	@staticmethod
 	def _budget(draft: Drafts) -> int :
-		return draft.answers.get("budget") or Special.rules(draft.guild_id).budget
+		if draft.answers.get("budget") :
+			return draft.answers["budget"]
+		rules = Special.rules(draft.guild_id)
+		return sum(SpeciesRules.start_values(rules, Interview._limits(draft), Interview._modifiers(draft)).values()) \
+			+ rules.bonus
+
+	# ============================================================
+	@staticmethod
+	def _species_prompt(draft: Drafts) -> str :
+		rules = Special.rules(draft.guild_id)
+		species = Choices.species(draft.guild_id, Access.from_dict(draft.answers.get("access")))
+		lines = ["**What species is your character?**"]
+		for number, option in enumerate(species, start=1) :
+			changes = SpeciesRules.describe(option, rules).replace("\n", ", ").replace("**", "")
+			lines.append(f"{number}. **{option.name}**: {Interview._shorten(option.description or '', 100)}"
+			             f"\n   -# {changes}")
+		lines.append("Answer with the number or the name. Every species has a post in the species forum.")
+		current = Interview._species(draft)
+		if current :
+			lines.append(f"Currently: {current.name}")
+		return "\n".join(lines)
+
+	# ============================================================
+	@staticmethod
+	def _occupation_choices(draft: Drafts) :
+		return Choices.occupations(draft.guild_id, Access.from_dict(draft.answers.get("access")), draft.target_id)
+
+	# ============================================================
+	@staticmethod
+	def _occupation_prompt(draft: Drafts) -> str :
+		choices = Interview._occupation_choices(draft)
+		lines = ["**What is your character's occupation?**"]
+		for number, choice in enumerate(choices, start=1) :
+			line = f"{number}. {choice.label}"
+			if choice.occupation.description :
+				line += f": {Interview._shorten(choice.occupation.description, 100)}"
+			if choice.locked :
+				line += f" (unavailable: {choice.locked})"
+			lines.append(line)
+		if any(choice.locked is None for choice in choices) :
+			lines.append("Answer with the number or the name. The numbers in brackets show how many characters hold "
+			             "it and how many can.")
+		else :
+			lines.append("None of these are open to you right now. Type **skip**; staff can give your character an "
+			             "occupation later.")
+		current = OccupationTransactions().get(draft.answers.get("occupation_id"))
+		if current :
+			lines.append(f"Currently: {current.name}")
+		return "\n".join(lines)
 
 	# ============================================================
 	@staticmethod
@@ -209,20 +299,35 @@ class Interview :
 		method = draft.answers.get("stat_method") or rules.methods[0]
 		if method == ROLLED :
 			Interview._ensure_roll(draft)
+			modifiers = Interview._modifiers(draft)
+			note = ""
+			if any(modifiers.values()) :
+				note = ("\nYour species then changes them: " + ", ".join(
+					f"{stat.capitalize()} {change:+d}" for stat, change in modifiers.items() if change) + ".")
 			return (f"**Your SPECIAL roll:** {', '.join(str(value) for value in draft.rolled_values)}\n"
 			        f"Decide which stat gets which value: send the seven values in this order:\n"
-			        f"{STAT_ORDER}\n"
+			        f"{STAT_ORDER}{note}\n"
 			        f"Type **reroll** to roll again (rerolls so far: {draft.rerolls}).")
 		budget = Interview._budget(draft)
-		if draft.kind == RESPEC :
+		limits = Interview._limits(draft)
+		starts = SpeciesRules.start_values(rules, limits, Interview._modifiers(draft))
+		if draft.kind != CREATE :
 			intro = f"You have **{budget}** points to divide over your stats."
-		else :
+		elif all(value == rules.base for value in starts.values()) :
 			intro = (f"Every stat starts at {rules.base} and you have {rules.bonus} extra points, so **{budget}** "
 			         f"points in total. Lower a stat to free up points for another.")
-		return (f"**Set your SPECIAL stats.**\n{intro} Every stat has to be between {rules.minimum} and "
-		        f"{rules.maximum}.\n"
+		else :
+			intro = (f"Your species starts you at {Special.summary(starts)}, and you have {rules.bonus} extra points, "
+			         f"so **{budget}** points in total. Lower a stat to free up points for another.")
+		if all(limit == (rules.minimum, rules.maximum) for limit in limits.values()) :
+			bounds = f"Every stat has to be between {rules.minimum} and {rules.maximum}."
+		else :
+			bounds = "Your species' limits: " + ", ".join(
+				f"{stat[0].upper()} {low}-{high}" for stat, (low, high) in limits.items()) + "."
+		return (f"**Set your SPECIAL stats.**\n{intro} {bounds}\n"
 		        f"Send seven numbers in this order:\n{STAT_ORDER}\n"
-		        f"For example: `{' '.join(str(rules.base) for _ in STATS)}`. Points you do not spend are kept for later.")
+		        f"For example: `{' '.join(str(starts[stat]) for stat in STATS)}`. Points you do not spend are kept "
+		        f"for later.")
 
 	# ============================================================
 	@staticmethod
@@ -248,11 +353,17 @@ class Interview :
 			items.append(("trigger", "Speaks with", Card.trigger_text(answers.get("prefix"), answers.get("suffix"))))
 			if ImageStorage.configured() :
 				items.append(("avatar", "Picture", "set" if answers.get("avatar_id") else "not set"))
+			if SpeciesTransactions().get_all(draft.guild_id, states=[SPECIES_APPROVED]) :
+				species = Interview._species(draft)
+				items.append(("species", "Species", species.name if species else "not set"))
+			if OccupationTransactions().get_all(draft.guild_id) :
+				occupation = OccupationTransactions().get(answers.get("occupation_id"))
+				items.append(("occupation", "Occupation", occupation.name if occupation else "none"))
 			for sheet_field in Sheet.questions(draft.guild_id) :
 				value = answers["fields"].get(str(sheet_field.id))
 				items.append((f"field:{sheet_field.id}", sheet_field.label,
 				              Interview._shorten(value) if value else "not answered"))
-		if draft.kind != EDIT :
+		if draft.kind != EDIT or answers.get("stats_required") :
 			stats = answers.get("stats")
 			value = "not set"
 			if stats :
@@ -276,8 +387,14 @@ class Interview :
 				problems.append("a prefix or suffix")
 			if draft.kind == CREATE and ImageStorage.configured() and not answers.get("avatar_id") :
 				problems.append("a picture")
+			if SpeciesTransactions().get_all(draft.guild_id, states=[SPECIES_APPROVED]) \
+					and Interview._species(draft) is None :
+				problems.append("a species")
+			if draft.kind == CREATE and answers.get("occupation_id") is None \
+					and any(choice.locked is None for choice in Interview._occupation_choices(draft)) :
+				problems.append("an occupation")
 			problems += [sheet_field.label for sheet_field in Sheet.missing_required(draft.guild_id, answers["fields"])]
-		if draft.kind != EDIT and not answers.get("stats") :
+		if (draft.kind != EDIT or answers.get("stats_required")) and not answers.get("stats") :
 			problems.append("SPECIAL stats")
 		return problems
 
@@ -299,15 +416,18 @@ class Interview :
 	# ============================================================
 	@staticmethod
 	async def answer(draft: Drafts, text: str, attachments: list | None = None,
-	                 store_image: Callable[[object], Awaitable[int]] | None = None) -> Reply :
+	                 store_image: Callable[[object], Awaitable[int]] | None = None,
+	                 access: Access | None = None) -> Reply :
 		"""Handles one message from the player and returns what to send back.
 
 		attachments are the message's uploads; store_image saves one and returns its stored image id, or raises
-		ImageError.
+		ImageError. access is the member as they are now (roles change); without it the last known access is used.
 		"""
 		text = (text or "").strip()
 		command = text.lower()
 		answers = draft.answers
+		if access is not None :
+			answers["access"] = access.to_dict()
 		if command == "cancel" :
 			return Interview._cancel(draft)
 		if command == "back" :
@@ -315,6 +435,12 @@ class Interview :
 
 		step = draft.step
 		problem = None
+		if command == "skip" and step == "occupation" :
+			if any(choice.locked is None for choice in Interview._occupation_choices(draft)) :
+				return Reply("Please pick an occupation.")
+			answers["occupation_id"] = None
+			Interview._advance(draft)
+			return Reply(Interview.prompt(draft))
 		if command == "skip" and not step.startswith("field:") :
 			return Reply("This one cannot be skipped. Type **back** to return to the previous question."
 			             if step != "summary" else "Type the number of an answer to change it, **submit**, or **cancel**.")
@@ -336,6 +462,17 @@ class Interview :
 			return await Interview._answer_avatar(draft, attachments or [], store_image)
 		elif step.startswith("field:") :
 			problem = Interview._answer_field(draft, text, command)
+		elif step == "species" :
+			problem = Interview._answer_species(draft, text)
+			if problem is None and draft.kind == EDIT and answers.get("stats_required") :
+				# The character's stats do not fit the new species, so they are set again before the summary.
+				draft.step = "stats"
+				answers["returning"] = True
+				DraftTransactions().save(draft)
+				return Reply("Your current stats do not fit that species, so please set them again.\n\n"
+				             + Interview.prompt(draft))
+		elif step == "occupation" :
+			problem = Interview._answer_occupation(draft, text)
 		elif step == "stat_method" :
 			problem = Interview._answer_method(draft, command)
 		elif step == "stats" :
@@ -510,6 +647,52 @@ class Interview :
 
 	# ============================================================
 	@staticmethod
+	def _pick(options: list, text: str, name) :
+		"""The option the player means, by its number or its name, or None."""
+		if text.isdigit() and 1 <= int(text) <= len(options) :
+			return options[int(text) - 1]
+		return next((option for option in options if name(option).lower() == text.lower()), None)
+
+	# ============================================================
+	@staticmethod
+	def _answer_species(draft: Drafts, text: str) -> str | None :
+		answers = draft.answers
+		species = Interview._pick(Choices.species(draft.guild_id, Access.from_dict(answers.get("access"))), text,
+		                          lambda option : option.name)
+		if species is None :
+			return "Please pick one of the species, by its number or its name."
+		answers["species_id"] = species.id
+		limits = SpeciesRules.limits(species, Special.rules(draft.guild_id))
+		if draft.kind == CREATE :
+			# Stats chosen for another species may not fit this one.
+			stats = answers.get("stats")
+			if stats and (answers.get("stat_method") == ROLLED or Special.check_values(
+					[stats[stat] for stat in STATS], Special.rules(draft.guild_id), Interview._budget(draft), limits)) :
+				answers.pop("stats", None)
+			return None
+		character = CharacterTransactions().get_by_id(draft.target_id)
+		current = [getattr(character, stat) for stat in STATS]
+		fits = all(limits[stat][0] <= value <= limits[stat][1] for stat, value in zip(STATS, current))
+		answers["stats_required"] = not fits
+		answers.pop("stats", None)
+		if not fits :
+			answers["stat_method"] = POINT_BUY
+			answers["budget"] = sum(current) + character.unspent_points
+		return None
+
+	# ============================================================
+	@staticmethod
+	def _answer_occupation(draft: Drafts, text: str) -> str | None :
+		choice = Interview._pick(Interview._occupation_choices(draft), text, lambda option : option.occupation.name)
+		if choice is None :
+			return "Please pick one of the occupations, by its number or its name."
+		if choice.locked and choice.occupation.id != draft.answers.get("occupation_id") :
+			return f"{choice.occupation.name} {choice.locked}. Please pick another."
+		draft.answers["occupation_id"] = choice.occupation.id
+		return None
+
+	# ============================================================
+	@staticmethod
 	def _answer_method(draft: Drafts, command: str) -> str | None :
 		methods = {"1" : POINT_BUY, "buy" : POINT_BUY, "point-buy" : POINT_BUY, "point buy" : POINT_BUY,
 		           "2" : ROLLED, "roll" : ROLLED, "rolled" : ROLLED}
@@ -529,14 +712,17 @@ class Interview :
 		values = Special.parse(text)
 		if values is None :
 			return f"Please send exactly seven whole numbers, in this order:\n{STAT_ORDER}"
+		limits = Interview._limits(draft)
 		if method == ROLLED :
 			Interview._ensure_roll(draft)
 			problem = Special.check_assignment(values, draft.rolled_values)
+			stats = SpeciesRules.apply_modifiers(Special.as_dict(values), limits, Interview._modifiers(draft))
 		else :
-			problem = Special.check_values(values, rules, Interview._budget(draft))
+			problem = Special.check_values(values, rules, Interview._budget(draft), limits)
+			stats = Special.as_dict(values)
 		if problem is None :
 			draft.answers["stat_method"] = method
-			draft.answers["stats"] = Special.as_dict(values)
+			draft.answers["stats"] = stats
 		return problem
 
 	# == submitting ==
@@ -556,6 +742,9 @@ class Interview :
 			return Reply("That character no longer exists, so nothing was changed.", finished=True,
 			             outcome=CANCELLED, discard_images=Interview._new_images(draft))
 		changes = Interview._changes(draft, character)
+		if "occupation_id" in changes and not Choices.room_for(changes["occupation_id"], character.id) :
+			return Reply("That occupation filled up in the meantime. Please pick another.\n\n"
+			             + Interview.prompt(draft))
 		outcome, character, unused = Edits.submit(character, changes)
 		DraftTransactions().delete(draft.uid)
 		text = {
@@ -577,9 +766,11 @@ class Interview :
 			current = {stat : getattr(character, stat) for stat in STATS}
 			return {"stats" : answers["stats"]} if answers["stats"] != current else {}
 		changes = {}
-		for key in ("name", "prefix", "suffix", "avatar_id") :
+		for key in ("name", "prefix", "suffix", "avatar_id", "species_id", "occupation_id") :
 			if answers.get(key) != getattr(character, key) :
 				changes[key] = answers.get(key)
+		if answers.get("stats_required") and answers.get("stats") :
+			changes["stats"] = answers["stats"]
 		current = {str(key) : value for key, value in CharacterInfoTransactions().get_answers(character.id).items()}
 		fields = {}
 		for sheet_field in Sheet.questions(draft.guild_id) :
@@ -603,6 +794,13 @@ class Interview :
 		if problem is None and CharacterTransactions().trigger_taken(draft.uid, draft.guild_id, answers.get("prefix"),
 		                                                             answers.get("suffix")) :
 			problem = "Another of your characters on this server now uses that prefix and suffix."
+		species = Interview._species(draft)
+		access = Access.from_dict(answers.get("access"))
+		if problem is None and species is not None and species.id not in [
+				option.id for option in Choices.species(draft.guild_id, access)] :
+			problem = f"{species.name} can no longer be picked. Please pick another species."
+		if problem is None and not Choices.room_for(answers.get("occupation_id")) :
+			problem = "That occupation filled up in the meantime. Please pick another."
 		if problem :
 			return Reply(f"{problem}\n\n{Interview.prompt(draft)}")
 
@@ -610,7 +808,8 @@ class Interview :
 		leftover = Interview._budget(draft) - sum(stats.values()) if answers.get("stat_method") == POINT_BUY else 0
 		character = CharacterTransactions().add(
 			draft.uid, draft.guild_id, answers["name"], state=PENDING, prefix=answers.get("prefix"),
-			suffix=answers.get("suffix"), avatar_id=answers.get("avatar_id"), stat_method=answers.get("stat_method"),
+			suffix=answers.get("suffix"), avatar_id=answers.get("avatar_id"), species_id=answers.get("species_id"),
+			occupation_id=answers.get("occupation_id"), stat_method=answers.get("stat_method"),
 			rerolls=draft.rerolls if answers.get("stat_method") == ROLLED else 0, unspent_points=max(0, leftover),
 			currency=ConfigData().get_int(draft.guild_id, ConfigMapping.STARTING_CURRENCY) or 0, **stats)
 		if character is None :

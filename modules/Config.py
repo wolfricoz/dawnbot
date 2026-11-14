@@ -162,14 +162,14 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	@app_commands.command(name='singlechannels')
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(option=[Choice(name=x.lower(), value=x.value) for x in
-	                              [ConfigMapping.CHARACTER, ConfigMapping.CHARACTER_REVIEW, ConfigMapping.TIMELINE,
-	                               ConfigMapping.MODLOG]])
+	                              [ConfigMapping.CHARACTER, ConfigMapping.CHARACTER_REVIEW, ConfigMapping.SPECIES_FORUM,
+	                               ConfigMapping.TIMELINE, ConfigMapping.MODLOG]])
 	async def singlechannels(self, interaction: Interaction, option: Choice[str],
 	                         channel: discord.TextChannel | discord.ForumChannel) :
 		"""
-		Sets the character, character review, timeline or modlog channel. Approved characters are posted in the
-		character channel (a forum gives each its own thread); new and edited characters wait for staff in the
-		character review channel.
+		Sets the character, character review, species forum, timeline or modlog channel. Approved characters and
+		species are posted in the character channel and the species forum (a forum gives each its own thread); new and
+		edited characters and species wait for staff in the character review channel.
 
 		**Permissions:**
 		- `Manage Server`
@@ -246,6 +246,22 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 		                     overwrite=True)
 		where = "everywhere" if enabled else "only in the XP channels"
 		await interaction.followup.send(f"Members can now post as their characters {where}.")
+
+	# ============================================================
+	@app_commands.command(name='species_creation')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.choices(who=[Choice(name=x, value=x) for x in choice_settings[ConfigMapping.SPECIES_CREATION]])
+	async def species_creation(self, interaction: Interaction, who: Choice[str]) :
+		"""
+		Sets who can create species with /species create: everyone, staff (Manage Messages) or off.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		self._prepare(interaction.guild)
+		ConfigData().add_key(interaction.guild.id, ConfigMapping.SPECIES_CREATION, who.value, overwrite=True)
+		await interaction.followup.send(f"species_creation set to {who.value}")
 
 	# ============================================================
 	@app_commands.command(name='reapproval')

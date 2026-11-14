@@ -6,7 +6,9 @@ import logging
 
 import discord
 
+from classes.characters.Access import Access
 from classes.characters.Card import Card, MESSAGE_LIMIT, chunk_text
+from classes.characters.Choices import Choices
 from classes.characters.Edits import APPLIED, Edits, RESUBMITTED, REVIEW
 from classes.characters.ForumPost import ForumPost
 from classes.characters.ImageStorage import ImageStorage
@@ -16,6 +18,7 @@ from classes.kernel.ConfigData import ConfigData
 from database.database import Characters
 from database.transactions.CharacterTransactions import CharacterTransactions
 from database.transactions.DraftTransactions import DraftTransactions
+from database.transactions.OccupationTransactions import OccupationTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 
 # The longest text file read as an answer; Discord turns a long pasted message into a message.txt upload.
@@ -57,7 +60,7 @@ class CharacterFlow :
 	async def begin(interaction: discord.Interaction, kind: str, character: Characters | None = None) -> None :
 		"""Starts an interview from a slash command and tells the user to continue in their DMs."""
 		draft, text = Interview.start(interaction.user.id, interaction.guild.id, interaction.guild.name, kind,
-		                              character)
+		                              character, Access.of(interaction.user))
 		if draft is None :
 			return await CharacterFlow.respond(interaction, text)
 		if not await CharacterFlow.send_dm(interaction.user, text) :
@@ -92,7 +95,10 @@ class CharacterFlow :
 
 		images = [attachment for attachment in message.attachments
 		          if (attachment.content_type or "").startswith("image/")]
-		reply = await Interview.answer(draft, await CharacterFlow._text_of(message), images, store_image)
+		guild = bot.get_guild(draft.guild_id)
+		member = guild.get_member(message.author.id) if guild else None
+		access = Access.of(member) if member is not None else None
+		reply = await Interview.answer(draft, await CharacterFlow._text_of(message), images, store_image, access)
 		await CharacterFlow.send_dm(message.author, reply.text)
 		for image_id in reply.discard_images :
 			await ImageStorage.delete(bot, image_id)
@@ -190,6 +196,13 @@ class CharacterFlow :
 			return await interaction.followup.send("This review is no longer open.", ephemeral=True)
 		bot = interaction.client
 		if approve :
+			occupation_id = (character.pending_changes or {}).get("occupation_id", character.occupation_id) \
+				if Review.kind(character) == CHANGES else character.occupation_id
+			if not Choices.room_for(occupation_id, character.id) :
+				occupation = OccupationTransactions().get(occupation_id)
+				return await interaction.followup.send(
+					f"{occupation.name} is full. Deny this, or raise its limit with `/occupation edit` first.",
+					ephemeral=True)
 			character, unused, kind = Review.approve(character, interaction.user.id)
 			verdict = f"✅ Approved by {interaction.user.mention}"
 			dm = (f"Your changes to **{character.name}** on {interaction.guild.name} were approved."

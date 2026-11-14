@@ -82,9 +82,9 @@ Server settings: XP channels, level roles, currency and the channels the bot pos
 
 **Usage:** `/config singlechannels <option> <channel>`
 
-> Sets the character, character review, timeline or modlog channel. Approved characters are posted in the
-character channel (a forum gives each its own thread); new and edited characters wait for staff in the
-character review channel.
+> Sets the character, character review, species forum, timeline or modlog channel. Approved characters and
+species are posted in the character channel and the species forum (a forum gives each its own thread); new and
+edited characters and species wait for staff in the character review channel.
 
 **Permissions:**
 - `Manage Server`
@@ -122,6 +122,17 @@ or rolled.
 
 > Sets whether members can post as their characters outside the XP (roleplay) channels. Posts there earn no
 XP and have no minimum length. Off by default.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `species_creation`
+
+**Usage:** `/config species_creation <who>`
+
+> Sets who can create species with /species create: everyone, staff (Manage Messages) or off.
 
 **Permissions:**
 - `Manage Server`

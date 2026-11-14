@@ -14,9 +14,10 @@ DENIED = "denied"
 RETIRED = "retired"
 
 # Columns add() and update() accept as keyword arguments.
-FIELDS = ["name", "state", "prefix", "suffix", "avatar_id", "strength", "perception", "endurance", "charisma",
-          "intelligence", "agility", "luck", "stat_method", "rerolls", "unspent_points", "xp", "level", "currency",
-          "forum_thread_id", "forum_message_ids", "review_message_id", "pending_changes", "approved_by", "approved_at"]
+FIELDS = ["name", "state", "prefix", "suffix", "avatar_id", "species_id", "occupation_id", "strength", "perception",
+          "endurance", "charisma", "intelligence", "agility", "luck", "stat_method", "rerolls", "unspent_points", "xp",
+          "level", "currency", "forum_thread_id", "forum_message_ids", "review_message_id", "pending_changes",
+          "approved_by", "approved_at"]
 
 
 class CharacterTransactions(DatabaseTransactions) :

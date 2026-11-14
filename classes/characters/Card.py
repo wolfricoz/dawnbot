@@ -6,7 +6,9 @@ from classes.kernel.ConfigData import ConfigData
 from database.database import CharacterInfo, Characters, SheetFields
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
 from database.transactions.CharacterTransactions import APPROVED, DENIED, PENDING, RETIRED
+from database.transactions.OccupationTransactions import OccupationTransactions
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
+from database.transactions.SpeciesTransactions import SpeciesTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 
 # An embed's description can hold 4096 characters and a whole embed 6000; this leaves room for the title and fields.
@@ -100,6 +102,12 @@ class Card :
 			first.add_field(name="Unspent points", value=str(character.unspent_points))
 		currency_name = ConfigData().get_key(character.guild_id, ConfigMapping.CURRENCY_NAME)
 		first.add_field(name=str(currency_name).capitalize(), value=str(character.currency))
+		species = SpeciesTransactions().get(character.species_id)
+		if species is not None :
+			first.add_field(name="Species", value=species.name)
+		occupation = OccupationTransactions().get(character.occupation_id)
+		if occupation is not None :
+			first.add_field(name="Occupation", value=occupation.name)
 		first.add_field(name="Speaks with", value=Card.trigger_text(character.prefix, character.suffix))
 		if show_state :
 			first.set_footer(text=STATE_LABELS.get(character.state, character.state))

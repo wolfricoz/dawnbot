@@ -79,11 +79,16 @@ class Special :
 
 	# ============================================================
 	@staticmethod
-	def check_values(values: list[int], rules: StatRules, budget: int) -> str | None :
-		"""Why these seven values are not allowed, or None when they are."""
+	def check_values(values: list[int], rules: StatRules, budget: int,
+	                 limits: dict[str, tuple[int, int]] | None = None) -> str | None :
+		"""Why these seven values are not allowed, or None when they are. limits are a species' own {stat: (min,
+		max)}; without them every stat follows the server's limits."""
 		for stat, value in zip(STATS, values) :
-			if value < rules.minimum or value > rules.maximum :
-				return f"{stat.capitalize()} is {value}, but every stat has to be between {rules.minimum} and {rules.maximum}."
+			low, high = limits[stat] if limits else (rules.minimum, rules.maximum)
+			if value < low or value > high :
+				if limits and limits[stat] != (rules.minimum, rules.maximum) :
+					return f"{stat.capitalize()} is {value}, but for your species it has to be between {low} and {high}."
+				return f"{stat.capitalize()} is {value}, but every stat has to be between {low} and {high}."
 		if sum(values) > budget :
 			return f"That adds up to {sum(values)} points, but you have {budget}. Take {sum(values) - budget} off."
 		return None
@@ -186,10 +191,15 @@ class Special :
 			return None, "Spend at least 1 point."
 		if amount > character.unspent_points :
 			return None, f"{character.name} has {character.unspent_points} unspent points."
+		# Imported here: the species rules are built on this module.
+		from classes.characters.SpeciesRules import SpeciesRules
+		from database.transactions.SpeciesTransactions import SpeciesTransactions
+
 		rules = Special.rules(character.guild_id)
+		maximum = SpeciesRules.limits(SpeciesTransactions().get(character.species_id), rules)[stat][1]
 		current = getattr(character, stat)
-		if current + amount > rules.maximum :
-			return None, f"{stat.capitalize()} is {current} and cannot go above {rules.maximum}."
+		if current + amount > maximum :
+			return None, f"{stat.capitalize()} is {current} and cannot go above {maximum}."
 		updated = CharacterTransactions().update(character.id, **{stat : current + amount,
 		                                                          "unspent_points" : character.unspent_points - amount})
 		return updated, None

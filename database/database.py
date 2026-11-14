@@ -163,6 +163,78 @@ class StoredImages(Base) :
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class Species(Timestamps, Base) :
+	"""A species characters can be, made by a player and reviewed by staff, or the default Human.
+
+	stat_limits holds {stat: [min, max]} for the stats it changes; stats it leaves out follow the server's limits.
+	stat_modifiers holds {stat: change to the starting value}. tag_ids are the tags on its post in the species forum,
+	kept in step by the ProxyListener, and decide who may pick it (see tag_requirements). Edits to an approved
+	species wait in pending_changes until staff approve them.
+	"""
+	__tablename__ = "species"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	creator_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	benefits: Mapped[str | None] = mapped_column(Text, nullable=True)
+	drawbacks: Mapped[str | None] = mapped_column(Text, nullable=True)
+	state: Mapped[str] = mapped_column(String(16), default="pending")
+	stat_limits: Mapped[dict] = mapped_column(JSON, default=dict)
+	stat_modifiers: Mapped[dict] = mapped_column(JSON, default=dict)
+	tag_ids: Mapped[list] = mapped_column(JSON, default=list)
+	forum_thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	forum_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	review_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	pending_changes: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+	__table_args__ = (
+		Index('uq_species_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+class Occupations(Base) :
+	"""A role or occupation characters can hold, set by staff.
+
+	max_holders is how many characters can hold it at once (empty means no limit). min_level is a server level (the
+	number of level roles a member has reached), role_id a role the member needs; staff_only ones are only given out
+	by staff.
+	"""
+	__tablename__ = "occupations"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	max_holders: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	min_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	role_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	staff_only: Mapped[bool] = mapped_column(Boolean, default=False)
+	position: Mapped[int] = mapped_column(Integer, default=1)
+
+	__table_args__ = (
+		Index('uq_occupation_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+class TagRequirements(Base) :
+	"""What a tag on a forum post asks of a member before they may pick what the post is about.
+
+	kind is role (value: role id), level (value: server level), staff_only (only staff may give it out) or event
+	(hidden; only given out by staff).
+	"""
+	__tablename__ = "tag_requirements"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	forum_channel_id: Mapped[int] = mapped_column(BigInteger)
+	tag_id: Mapped[int] = mapped_column(BigInteger)
+	kind: Mapped[str] = mapped_column(String(16))
+	value: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+	__table_args__ = (
+		UniqueConstraint('tag_id', 'kind', name='uq_tag_requirement_tag_kind'),
+	)
+
+
 class Characters(Timestamps, Base) :
 	"""A player's character on one server.
 
@@ -183,6 +255,10 @@ class Characters(Timestamps, Base) :
 	suffix: Mapped[str | None] = mapped_column(String(255), nullable=True)
 	avatar_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("stored_images.id", ondelete="SET NULL"),
 	                                              nullable=True)
+	species_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("species.id", ondelete="SET NULL"),
+	                                               nullable=True)
+	occupation_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("occupations.id", ondelete="SET NULL"),
+	                                                  nullable=True)
 
 	strength: Mapped[int] = mapped_column(BigInteger, default=0)
 	perception: Mapped[int] = mapped_column(BigInteger, default=0)
@@ -296,11 +372,14 @@ class Drafts(Base) :
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	uid: Mapped[int] = mapped_column(BigInteger, unique=True)
 	guild_id: Mapped[int] = mapped_column(BigInteger)
-	# create, edit or respec
+	# create, edit or respec for characters; species or species_edit for species
 	kind: Mapped[str] = mapped_column(String(16))
 	# The character being edited; empty while creating.
 	target_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"),
 	                                              nullable=True)
+	# The species being edited.
+	species_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("species.id", ondelete="CASCADE"),
+	                                               nullable=True)
 	step: Mapped[str] = mapped_column(String(64))
 	answers: Mapped[dict] = mapped_column(JSON, default=dict)
 	rolled_values: Mapped[list | None] = mapped_column(JSON, nullable=True)

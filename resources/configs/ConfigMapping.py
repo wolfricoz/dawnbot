@@ -28,6 +28,8 @@ class ConfigMapping(StrEnum) :
 	POINTS_PER_LEVEL = "POINTS_PER_LEVEL"
 	STARTING_CURRENCY = "STARTING_CURRENCY"
 	PROXY_OUTSIDE_RP = "PROXY_OUTSIDE_RP"
+	SPECIES_FORUM = "SPECIES_FORUM"
+	SPECIES_CREATION = "SPECIES_CREATION"
 
 	# === Moderation ===
 	MODLOG = "MODLOG"
@@ -43,6 +45,7 @@ channels = [
 	ConfigMapping.TIMELINE,
 	ConfigMapping.CHARACTER,
 	ConfigMapping.CHARACTER_REVIEW,
+	ConfigMapping.SPECIES_FORUM,
 	ConfigMapping.MODLOG,
 ]
 
@@ -60,6 +63,7 @@ settings = [
 	ConfigMapping.LEVEL_BASE,
 	ConfigMapping.POINTS_PER_LEVEL,
 	ConfigMapping.STARTING_CURRENCY,
+	ConfigMapping.SPECIES_CREATION,
 ]
 
 toggles = [
@@ -80,6 +84,7 @@ defaults = {
 	ConfigMapping.LEVEL_BASE         : 1000,
 	ConfigMapping.POINTS_PER_LEVEL   : 1,
 	ConfigMapping.STARTING_CURRENCY  : 3000,
+	ConfigMapping.SPECIES_CREATION   : "everyone",
 }
 
 # Settings that are whole numbers, with the lowest and highest value /config accepts.
@@ -98,6 +103,7 @@ number_settings = {
 choice_settings = {
 	ConfigMapping.REAPPROVAL_ON_EDIT : ["none", "lore", "all"],
 	ConfigMapping.STAT_METHOD        : ["both", "point_buy", "rolled"],
+	ConfigMapping.SPECIES_CREATION   : ["everyone", "staff", "off"],
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -137,6 +143,8 @@ docs = {
 	ConfigMapping.POINTS_PER_LEVEL   : "How many SPECIAL points a character gets for each level (default 1).",
 	ConfigMapping.STARTING_CURRENCY  : "How much currency a new character starts with (default 3000).",
 	ConfigMapping.PROXY_OUTSIDE_RP   : "Whether members can post as their characters outside the XP channels (default off). Posts there earn no XP and have no minimum length.",
+	ConfigMapping.SPECIES_FORUM      : "The forum (or channel) where approved species are posted. Tags on a species' post can restrict who may pick it; see /tagrule.",
+	ConfigMapping.SPECIES_CREATION   : "Who can create species with /species create: `everyone` (the default), `staff` (Manage Messages) or `off`.",
 
 	# == moderation ==
 	ConfigMapping.MODLOG        : "The staff channel for bot notices, such as missing permissions.",

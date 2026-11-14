@@ -1,5 +1,6 @@
 import discord
 
+from classes.characters.Choices import Choices
 from classes.characters.Sheet import Sheet
 from database.transactions.ServerTransactions import ServerTransactions
 
@@ -8,7 +9,7 @@ from database.transactions.ServerTransactions import ServerTransactions
 def sync_server(guild: discord.Guild) :
 	"""Adds or refreshes one guild in the servers table. Config rows reference it, so call this before writing config.
 
-	A guild that is seen for the first time also gets the default character sheet.
+	A guild that is seen for the first time also gets the default character sheet and the default species.
 	"""
 	owner_name = guild.owner.name if guild.owner else "Unknown"
 	owner_id = guild.owner_id
@@ -19,3 +20,4 @@ def sync_server(guild: discord.Guild) :
 		ServerTransactions().update(guild.id, owner_name, guild.name, guild.member_count or 0, "", delete=False,
 		                            owner_id=owner_id, active=True)
 	Sheet.ensure(guild.id)
+	Choices.ensure_default_species(guild.id)

@@ -15,13 +15,14 @@ class DraftTransactions(DatabaseTransactions) :
 
 	# ============================================================
 	def create(self, uid: int, guild_id: int, kind: str, step: str, target_id: int | None = None,
-	           answers: dict | None = None) -> Drafts | None :
-		"""Starts a draft; returns None when the user already has one."""
+	           answers: dict | None = None, species_id: int | None = None) -> Drafts | None :
+		"""Starts a draft; returns None when the user already has one. target_id is the character being edited,
+		species_id the species being edited."""
 		if self.get(uid) is not None :
 			return None
 		with self.createsession() as session :
 			draft = Drafts(uid=uid, guild_id=guild_id, kind=kind, step=step, target_id=target_id,
-			               answers=answers or {}, rerolls=0)
+			               species_id=species_id, answers=answers or {}, rerolls=0)
 			session.add(draft)
 			self.commit(session)
 			return draft

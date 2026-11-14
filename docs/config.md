@@ -31,6 +31,9 @@ The channel or forum where approved characters are posted.
 ### CHARACTER_REVIEW
 The staff channel where new and edited characters wait for approval. Characters cannot be created until it is set.
 
+### SPECIES_FORUM
+The forum (or channel) where approved species are posted. Tags on a species' post can restrict who may pick it; see /tagrule.
+
 ### MODLOG
 The staff channel for bot notices, such as missing permissions.
 <h2>Settings</h2>
@@ -73,6 +76,9 @@ How many SPECIAL points a character gets for each level (default 1).
 
 ### STARTING_CURRENCY
 How much currency a new character starts with (default 3000).
+
+### SPECIES_CREATION
+Who can create species with /species create: `everyone` (the default), `staff` (Manage Messages) or `off`.
 <h2>Toggles</h2>
 
 ### PROXY_OUTSIDE_RP

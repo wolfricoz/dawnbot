@@ -1,7 +1,8 @@
 """Changes to an existing character, and whether they wait for a staff review before they apply.
 
 A set of changes is a dict with any of these keys:
-  name, prefix, suffix, avatar_id   the new value
+  name, prefix, suffix, avatar_id,
+  species_id, occupation_id         the new value
   fields                            {sheet field id (as text): new answer, or None to clear it}
   extras                            the full new list of the player's own fields, [{"key", "value"}]
   stats                             {stat: value} for all seven stats (a respec)
@@ -11,11 +12,13 @@ from classes.kernel.ConfigData import ConfigData
 from database.database import Characters
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
 from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions, PENDING
+from database.transactions.OccupationTransactions import OccupationTransactions
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
+from database.transactions.SpeciesTransactions import SpeciesTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 
 # What each REAPPROVAL_ON_EDIT mode sends to review. A respec is always reviewed.
-LORE_KEYS = {"name", "avatar_id", "fields"}
+LORE_KEYS = {"name", "avatar_id", "species_id", "occupation_id", "fields"}
 ALL_KEYS = LORE_KEYS | {"prefix", "suffix", "extras"}
 REVIEWED = {"none" : set(), "lore" : LORE_KEYS, "all" : ALL_KEYS}
 
@@ -55,6 +58,13 @@ class Edits :
 		for key in ("prefix", "suffix") :
 			if key in changes :
 				updates[key] = changes[key]
+		# A species or occupation removed while the change was waiting is not applied.
+		if "species_id" in changes and (changes["species_id"] is None
+		                                or SpeciesTransactions().get(changes["species_id"]) is not None) :
+			updates["species_id"] = changes["species_id"]
+		if "occupation_id" in changes and (changes["occupation_id"] is None
+		                                   or OccupationTransactions().get(changes["occupation_id"]) is not None) :
+			updates["occupation_id"] = changes["occupation_id"]
 		if "avatar_id" in changes and changes["avatar_id"] != character.avatar_id :
 			if character.avatar_id is not None :
 				unused_images.append(character.avatar_id)
@@ -142,6 +152,13 @@ class Edits :
 				lines.append(f"**{key.capitalize()}:** `{getattr(character, key) or 'none'}` → `{changes[key] or 'none'}`")
 		if "avatar_id" in changes :
 			lines.append("**Avatar:** a new picture (shown on this card)")
+		if "species_id" in changes :
+			old, new = SpeciesTransactions().get(character.species_id), SpeciesTransactions().get(changes["species_id"])
+			lines.append(f"**Species:** {old.name if old else 'none'} → {new.name if new else 'none'}")
+		if "occupation_id" in changes :
+			old = OccupationTransactions().get(character.occupation_id)
+			new = OccupationTransactions().get(changes["occupation_id"])
+			lines.append(f"**Occupation:** {old.name if old else 'none'} → {new.name if new else 'none'}")
 		if "stats" in changes :
 			old = Special.summary({stat : getattr(character, stat) for stat in STATS})
 			lines.append(f"**SPECIAL (respec):** {old} → {Special.summary(changes['stats'])}")
