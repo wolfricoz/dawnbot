@@ -12,8 +12,7 @@ KIND_HELP = {ROLE : "needs a role", LEVEL : "needs a server level", STAFF_ONLY :
 
 @app_commands.guild_only()
 class TagRule(commands.GroupCog, name="TagRule", group_name="tagrule") :
-	"""Restrictions through forum tags. Link a tag in the species forum to a requirement, and every species whose
-	post has that tag follows it. Retag a post to change who may pick it."""
+
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

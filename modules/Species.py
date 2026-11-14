@@ -20,8 +20,7 @@ STATE_LABELS = {PENDING : "waiting for review", DENIED : "denied"}
 
 @app_commands.guild_only()
 class Species(commands.GroupCog, name="Species", group_name="species") :
-	"""Species for characters. Members make their own; staff review them, and approved ones are posted in the species
-	forum, where tags on a post can restrict who may pick it (see /tagrule)."""
+
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

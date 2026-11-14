@@ -14,8 +14,7 @@ ALL_ARCHIVES = "all"
 
 
 class Archive(commands.GroupCog, name="Archive", group_name="archive") :
-	"""The archive holds channels set aside by /template restore. Archived channels are named
-	"<old category>・<channel>" and hidden from everyone until they are restored; /template archivepurge deletes them."""
+
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

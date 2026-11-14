@@ -42,9 +42,6 @@ OPTION_HELP = {
 
 @app_commands.guild_only()
 class Armory(commands.GroupCog, name="Armory", group_name="armory") :
-	"""The server's gear catalog: the weapons and armor characters can buy in /shop or be given by staff. Staff add
-	items by hand or import a ready-made genre pack. When a gear forum is set (/config singlechannels), every item gets
-	its own post there, and tags on that post can restrict who may buy it (see /tagrule)."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

@@ -18,9 +18,6 @@ from modules.Gear import entry_choices, find_entry, refresh_post, unmet_warning
 @app_commands.guild_only()
 @app_commands.default_permissions(manage_messages=True)
 class GM(commands.GroupCog, name="GM", group_name="gm") :
-	"""Game master tools for staff: grant, take, lose or break a character's gear (event and staff-only items too),
-	and give or take a character's currency. Every change is logged, and currency changes show in the character's
-	/currency history."""
 
 	gear = app_commands.Group(name="gear", description="Give or take characters' gear")
 	currency = app_commands.Group(name="currency", description="Give or take characters' currency")

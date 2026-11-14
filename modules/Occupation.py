@@ -16,8 +16,7 @@ from views.buttons.Confirm import ask
 
 @app_commands.guild_only()
 class Occupation(commands.GroupCog, name="Occupation", group_name="occupation") :
-	"""The roles and occupations characters can hold. Each can have a limit on how many characters hold it, and can
-	need a server level, a role, or be given out by staff only."""
+
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

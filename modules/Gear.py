@@ -95,8 +95,7 @@ async def refresh_post(bot: commands.Bot, character_id: int) -> None :
 
 @app_commands.guild_only()
 class Gear(commands.GroupCog, name="Gear", group_name="gear") :
-	"""Your characters' gear. Buy gear with /shop; here you look at what a character owns, equip it, sell it, or mark
-	it lost or broken. A character wears one armor set at a time and can carry every weapon it owns."""
+
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

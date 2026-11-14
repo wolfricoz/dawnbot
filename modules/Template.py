@@ -14,11 +14,7 @@ from views.buttons.Confirm import double_confirm
 
 
 class Template(commands.GroupCog, name="Template", group_name="template") :
-	"""Save a server's categories and channels as a template and apply it to a new server.
 
-	/template restore archives the existing channels (see /archive) and is limited to the server owner, to servers
-	with at most 10 members, and asks for confirmation twice.
-	"""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
