@@ -15,8 +15,6 @@ from resources.configs.ConfigMapping import ConfigMapping, channels, choice_sett
 
 
 class Config(commands.GroupCog, name="Config", group_name="config") :
-	"""Server settings: XP (roleplay) channels, level roles, characters, currency and the channels the bot posts in."""
-
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 
