@@ -32,7 +32,7 @@ Attack rolls and combat instances.
 
 **Usage:** `/combat reload`
 
-> Reloads armor, weapons and characters from the database.
+> Reloads armor and weapons from the database.
 
 **Permissions:**
 - `Developer`

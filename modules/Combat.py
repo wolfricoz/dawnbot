@@ -14,6 +14,7 @@ from classes.combat.CombatController import CombatController
 from classes.combat.CombatInstance import CombatInstance
 from classes.combat.InstanceManager import InstanceManager
 from classes.kernel.AccessControl import AccessControl
+from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
 from views.buttons.CombatInitiatedButtons import CombatInitiatedButtons
 
 
@@ -26,7 +27,7 @@ class Combat(commands.GroupCog, name="Combat", group_name="combat") :
 	# ============================================================
 	@app_commands.command(name="attack",
 	                      description="attacks a target. Only fill in modifier if you have extra bonuses that aren't from stats.")
-	@app_commands.autocomplete(character=AutoComplete().character,
+	@app_commands.autocomplete(character=AutoComplete().approved_character,
 	                           weapon=AutoComplete().weapon)
 	@app_commands.choices(hitchance_modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)],
 	                      damage_modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)],
@@ -47,10 +48,14 @@ class Combat(commands.GroupCog, name="Combat", group_name="combat") :
 			advantage = advantage.value
 		if isinstance(hitchance_modifier, Choice) :
 			hitchance_modifier = hitchance_modifier.value
-		chosen_character = CombatCache().get_character(interaction.user.id, character)
+		record = CharacterTransactions().get(interaction.user.id, interaction.guild_id, character)
 		chosen_weapon = CombatCache().get_weapon(weapon)
-		if chosen_character is None :
+		if record is None :
 			return await interaction.followup.send(f"Character {character} does not exist")
+		if record.state != APPROVED :
+			return await interaction.followup.send(f"{record.name} has not been approved by staff yet")
+		chosen_character = CombatCache.combatant(record)
+		character = record.name
 		if chosen_weapon is None :
 			return await interaction.followup.send(f"Weapon {weapon} does not exist")
 		# hit dice
@@ -119,7 +124,7 @@ class Combat(commands.GroupCog, name="Combat", group_name="combat") :
 	@AccessControl().check_access("dev")
 	async def forcereload(self, interaction: discord.Interaction) :
 		"""
-		Reloads armor, weapons and characters from the database.
+		Reloads armor and weapons from the database.
 
 		**Permissions:**
 		- `Developer`

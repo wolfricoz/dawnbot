@@ -15,6 +15,19 @@ class ConfigMapping(StrEnum) :
 	TIMELINE = "TIMELINE"
 	CHARACTER = "CHARACTER"
 
+	# === Characters ===
+	CHARACTER_REVIEW = "CHARACTER_REVIEW"
+	CHARACTER_CAP = "CHARACTER_CAP"
+	REAPPROVAL_ON_EDIT = "REAPPROVAL_ON_EDIT"
+	STAT_METHOD = "STAT_METHOD"
+	STAT_BASE = "STAT_BASE"
+	STAT_BONUS = "STAT_BONUS"
+	STAT_MIN = "STAT_MIN"
+	STAT_MAX = "STAT_MAX"
+	LEVEL_BASE = "LEVEL_BASE"
+	POINTS_PER_LEVEL = "POINTS_PER_LEVEL"
+	STARTING_CURRENCY = "STARTING_CURRENCY"
+
 	# === Moderation ===
 	MODLOG = "MODLOG"
 
@@ -28,6 +41,7 @@ channels = [
 	ConfigMapping.ANNOUNCEMENT,
 	ConfigMapping.TIMELINE,
 	ConfigMapping.CHARACTER,
+	ConfigMapping.CHARACTER_REVIEW,
 	ConfigMapping.MODLOG,
 ]
 
@@ -35,14 +49,52 @@ settings = [
 	ConfigMapping.XP_GAIN,
 	ConfigMapping.CURRENCY_GAIN,
 	ConfigMapping.CURRENCY_NAME,
+	ConfigMapping.CHARACTER_CAP,
+	ConfigMapping.REAPPROVAL_ON_EDIT,
+	ConfigMapping.STAT_METHOD,
+	ConfigMapping.STAT_BASE,
+	ConfigMapping.STAT_BONUS,
+	ConfigMapping.STAT_MIN,
+	ConfigMapping.STAT_MAX,
+	ConfigMapping.LEVEL_BASE,
+	ConfigMapping.POINTS_PER_LEVEL,
+	ConfigMapping.STARTING_CURRENCY,
 ]
 
 toggles = []
 
 defaults = {
-	ConfigMapping.XP_GAIN       : 5,
-	ConfigMapping.CURRENCY_GAIN : 30,
-	ConfigMapping.CURRENCY_NAME : "currency",
+	ConfigMapping.XP_GAIN            : 5,
+	ConfigMapping.CURRENCY_GAIN      : 30,
+	ConfigMapping.CURRENCY_NAME      : "currency",
+	ConfigMapping.CHARACTER_CAP      : 3,
+	ConfigMapping.REAPPROVAL_ON_EDIT : "lore",
+	ConfigMapping.STAT_METHOD        : "both",
+	ConfigMapping.STAT_BASE          : 5,
+	ConfigMapping.STAT_BONUS         : 5,
+	ConfigMapping.STAT_MIN           : 1,
+	ConfigMapping.STAT_MAX           : 10,
+	ConfigMapping.LEVEL_BASE         : 1000,
+	ConfigMapping.POINTS_PER_LEVEL   : 1,
+	ConfigMapping.STARTING_CURRENCY  : 3000,
+}
+
+# Settings that are whole numbers, with the lowest and highest value /config accepts.
+number_settings = {
+	ConfigMapping.CHARACTER_CAP     : (1, 50),
+	ConfigMapping.STAT_BASE         : (-2, 13),
+	ConfigMapping.STAT_BONUS        : (0, 100),
+	ConfigMapping.STAT_MIN          : (-2, 13),
+	ConfigMapping.STAT_MAX          : (-2, 13),
+	ConfigMapping.LEVEL_BASE        : (1, 1000000),
+	ConfigMapping.POINTS_PER_LEVEL  : (0, 10),
+	ConfigMapping.STARTING_CURRENCY : (0, 1000000000),
+}
+
+# Settings with a fixed set of values.
+choice_settings = {
+	ConfigMapping.REAPPROVAL_ON_EDIT : ["none", "lore", "all"],
+	ConfigMapping.STAT_METHOD        : ["both", "point_buy", "rolled"],
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -67,7 +119,20 @@ docs = {
 
 	# == roleplay ==
 	ConfigMapping.TIMELINE      : "The channel where /endscene posts scene summaries.",
-	ConfigMapping.CHARACTER     : "The channel or forum for character sheets.",
+	ConfigMapping.CHARACTER     : "The channel or forum where approved characters are posted.",
+
+	# == characters ==
+	ConfigMapping.CHARACTER_REVIEW   : "The staff channel where new and edited characters wait for approval. Characters cannot be created until it is set.",
+	ConfigMapping.CHARACTER_CAP      : "How many characters a member can have (default 3). Retired characters do not count.",
+	ConfigMapping.REAPPROVAL_ON_EDIT : "Which edits to an approved character need a new review: `none`, `lore` (name, avatar and sheet answers; the default) or `all` (also prefix, suffix and the member's own extra fields). Spending earned points never needs a review; a respec always does.",
+	ConfigMapping.STAT_METHOD        : "How members set their SPECIAL stats: `both` (the member chooses; the default), `point_buy` or `rolled`.",
+	ConfigMapping.STAT_BASE          : "The value every SPECIAL stat starts at with point-buy (default 5).",
+	ConfigMapping.STAT_BONUS         : "The extra points a new character can spend on top of the starting values (default 5).",
+	ConfigMapping.STAT_MIN           : "The lowest value a SPECIAL stat can have (default 1).",
+	ConfigMapping.STAT_MAX           : "The highest value a SPECIAL stat can have (default 10).",
+	ConfigMapping.LEVEL_BASE         : "How fast characters level: reaching level L takes this number x L(L-1)/2 XP (default 1000, so level 2 at 1000 XP and level 3 at 3000).",
+	ConfigMapping.POINTS_PER_LEVEL   : "How many SPECIAL points a character gets for each level (default 1).",
+	ConfigMapping.STARTING_CURRENCY  : "How much currency a new character starts with (default 3000).",
 
 	# == moderation ==
 	ConfigMapping.MODLOG        : "The staff channel for bot notices, such as missing permissions.",

@@ -10,8 +10,8 @@ import uuid
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, JSON, String, Text, \
-	URL, UniqueConstraint, create_engine, func, text
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, JSON, String, \
+	Text, URL, UniqueConstraint, create_engine, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.pool import NullPool
 from sqlalchemy_utils import create_database, database_exists
@@ -146,10 +146,29 @@ class Channels(Timestamps, Base) :
 
 
 # ============================================================
-# Combat
+# Characters and combat
 # ============================================================
 
+class StoredImages(Base) :
+	"""An image kept as a message in the storage channel (STORAGE_CHANNEL), such as a character's avatar.
+
+	Discord's attachment links expire, so the message is what is stored; url and expires_at only cache the last link.
+	"""
+	__tablename__ = "stored_images"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	storage_channel_id: Mapped[int] = mapped_column(BigInteger)
+	storage_message_id: Mapped[int] = mapped_column(BigInteger)
+	url: Mapped[str] = mapped_column(Text)
+	expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Characters(Timestamps, Base) :
+	"""A player's character on one server.
+
+	state is the review state (pending, approved, denied, retired); the status column from Timestamps is unrelated.
+	Changes to an approved character that need a new review wait in pending_changes until staff approve them.
+	"""
 	__tablename__ = "characters"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
@@ -157,8 +176,14 @@ class Characters(Timestamps, Base) :
 	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.uid', ondelete="CASCADE"))
 
 	guild_id: Mapped[int] = mapped_column(BigInteger)
+	# Kept as the player wrote it; names are compared without case.
 	name: Mapped[str] = mapped_column(String(255))
-	prestige: Mapped[int] = mapped_column(BigInteger, default=0)
+	state: Mapped[str] = mapped_column(String(16), default="pending", server_default="pending")
+	prefix: Mapped[str | None] = mapped_column(String(255), nullable=True)
+	suffix: Mapped[str | None] = mapped_column(String(255), nullable=True)
+	avatar_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("stored_images.id", ondelete="SET NULL"),
+	                                              nullable=True)
+
 	strength: Mapped[int] = mapped_column(BigInteger, default=0)
 	perception: Mapped[int] = mapped_column(BigInteger, default=0)
 	endurance: Mapped[int] = mapped_column(BigInteger, default=0)
@@ -166,28 +191,85 @@ class Characters(Timestamps, Base) :
 	intelligence: Mapped[int] = mapped_column(BigInteger, default=0)
 	agility: Mapped[int] = mapped_column(BigInteger, default=0)
 	luck: Mapped[int] = mapped_column(BigInteger, default=0)
-	prefix: Mapped[str | None] = mapped_column(String(255), nullable=True)
+	# point_buy or rolled, shown to reviewers together with the number of rerolls.
+	stat_method: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	rerolls: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+	unspent_points: Mapped[int] = mapped_column(BigInteger, default=0)
 
-	armor = mapped_column(BigInteger, ForeignKey('armors.id'))
-	armor_data = relationship("Armors", back_populates="characters", lazy="joined")
+	xp: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+	level: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+	currency: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+
+	# The character's post: the forum thread (when CHARACTER is a forum) and the ids of the messages in it.
+	forum_thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	forum_message_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+	review_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	pending_changes: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	approved_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 	__table_args__ = (
-		UniqueConstraint('uid', 'name', name='uq_character_uid_name'),
+		Index('uq_character_uid_guild_name', 'uid', 'guild_id', text('lower(name)'), unique=True),
 	)
 
 
+class SheetFields(Timestamps, Base) :
+	"""One question on a server's character sheet, asked in the order of position.
+
+	type is short, long, number, choice or info. An info field asks nothing: its help text is shown as a note.
+	"""
+	__tablename__ = "sheet_fields"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	position: Mapped[int] = mapped_column(Integer, default=1)
+	section: Mapped[str | None] = mapped_column(String(100), nullable=True)
+	label: Mapped[str] = mapped_column(String(100))
+	help: Mapped[str | None] = mapped_column(Text, nullable=True)
+	type: Mapped[str] = mapped_column(String(16), default="short")
+	required: Mapped[bool] = mapped_column(Boolean, default=False)
+	max_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	min_value: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	max_value: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	choices: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+
 class CharacterInfo(Timestamps, Base) :
-	"""Free-form fields on a character sheet (appearance, backstory, ...), shown in the order of position."""
+	"""A field on a character sheet, shown in the order of position.
+
+	sheet_field_id links an answer to the server's sheet question; it is empty for fields the player added.
+	"""
 	__tablename__ = "character_info"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+	sheet_field_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("sheet_fields.id", ondelete="SET NULL"),
+	                                                   nullable=True)
 	key: Mapped[str] = mapped_column(String(255))
-	value: Mapped[str] = mapped_column(String(1024))
+	value: Mapped[str] = mapped_column(Text)
 	position: Mapped[int] = mapped_column(Integer, default=1)
 
 	__table_args__ = (
 		UniqueConstraint('character_id', 'key', name='uq_character_info_character_key'),
 	)
+
+
+class Drafts(Base) :
+	"""The saved state of a DM interview, so it survives restarts. A user has at most one."""
+	__tablename__ = "drafts"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	uid: Mapped[int] = mapped_column(BigInteger, unique=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger)
+	# create, edit or respec
+	kind: Mapped[str] = mapped_column(String(16))
+	# The character being edited; empty while creating.
+	target_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"),
+	                                              nullable=True)
+	step: Mapped[str] = mapped_column(String(64))
+	answers: Mapped[dict] = mapped_column(JSON, default=dict)
+	rolled_values: Mapped[list | None] = mapped_column(JSON, nullable=True)
+	rerolls: Mapped[int] = mapped_column(Integer, default=0)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
+	                                             onupdate=func.now())
 
 
 class Armors(Timestamps, Base) :
@@ -199,7 +281,6 @@ class Armors(Timestamps, Base) :
 	ac: Mapped[int] = mapped_column(BigInteger, default=12)
 	hitchance: Mapped[int] = mapped_column(BigInteger, default=0)
 	modifier: Mapped[str] = mapped_column(String(255), nullable=True)
-	characters: Mapped[List["Characters"]] = relationship("Characters", back_populates="armor_data")
 
 
 class Weapons(Timestamps, Base) :

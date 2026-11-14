@@ -1,16 +1,22 @@
-"""In-memory copy of armor, weapons and characters, used by autocomplete and combat rolls.
+"""In-memory copy of armor and weapons, used by autocomplete and combat rolls.
 
 Every write goes through the database transactions first and then refreshes the affected part of the cache, so the
 cache never holds data the database does not. Callers get copies of the entries; mutating them never touches the
-cache.
+cache. Characters are not cached: they change in too many places, so they are always read from the database.
 """
 import copy
 import logging
 
+from classes.characters.Special import STATS
 from classes.kernel.Queue import Singleton
+from database.database import Characters
 from database.transactions.ArmorTransactions import ArmorTransactions
-from database.transactions.CharacterTransactions import CharacterTransactions
 from database.transactions.WeaponTransactions import WeaponTransactions
+
+# What a character fights in while it has no armor equipped. Characters get their armor from their gear once the gear
+# catalog exists; until then every character uses this.
+DEFAULT_ARMOR = {"id" : None, "name" : "unarmored", "hp" : 75, "ap" : 25, "ac" : 12, "hitchance" : 0,
+                 "modifier" : None}
 
 
 class CombatCache(metaclass=Singleton) :
@@ -18,16 +24,12 @@ class CombatCache(metaclass=Singleton) :
 	armor: dict[str, dict] = {}
 	# {name: {"dice", "modifier", "hitmodifier"}}
 	weapons: dict[str, dict] = {}
-	# {user_id: {name: {stats..., "armor": armor id}}}
-	characters: dict[int, dict[str, dict]] = {}
 
 	# ============================================================
 	def load_all(self) :
 		self.load_armor()
 		self.load_weapons()
-		self.load_characters()
-		logging.info(
-			f"Combat cache loaded: {len(self.armor)} armor sets, {len(self.weapons)} weapons, {sum(len(c) for c in self.characters.values())} characters")
+		logging.info(f"Combat cache loaded: {len(self.armor)} armor sets, {len(self.weapons)} weapons")
 
 	# ============================================================
 	def load_armor(self) -> dict :
@@ -53,26 +55,6 @@ class CombatCache(metaclass=Singleton) :
 		}
 		return self.weapons
 
-	# ============================================================
-	def load_characters(self) -> dict :
-		characters = {}
-		for character in CharacterTransactions().get_every_character() :
-			characters.setdefault(character.uid, {})[character.name] = {
-				"id"           : character.id,
-				"prefix"       : character.prefix,
-				"prestige"     : character.prestige,
-				"strength"     : character.strength,
-				"perception"   : character.perception,
-				"endurance"    : character.endurance,
-				"charisma"     : character.charisma,
-				"intelligence" : character.intelligence,
-				"agility"      : character.agility,
-				"luck"         : character.luck,
-				"armor"        : character.armor,
-			}
-		self.characters = characters
-		return self.characters
-
 	# == reads (copies) ==
 
 	# ============================================================
@@ -92,12 +74,17 @@ class CombatCache(metaclass=Singleton) :
 		return copy.deepcopy(self.weapons.get(name.lower()))
 
 	# ============================================================
-	def get_user_characters(self, user_id: int) -> dict[str, dict] :
-		return copy.deepcopy(self.characters.get(user_id, {}))
+	@staticmethod
+	def equipped_armor(character: Characters) -> dict :
+		"""The armor a character fights in."""
+		return copy.deepcopy(DEFAULT_ARMOR)
 
 	# ============================================================
-	def get_character(self, user_id: int, name: str) -> dict | None :
-		return copy.deepcopy(self.characters.get(user_id, {}).get(name.lower()))
+	@staticmethod
+	def combatant(character: Characters) -> dict :
+		"""A character as combat uses it: its name, its seven stats and the armor it fights in."""
+		return {"id" : character.id, "name" : character.name, "armor" : CombatCache.equipped_armor(character),
+		        **{stat : getattr(character, stat) for stat in STATS}}
 
 	# == writes ==
 
@@ -117,7 +104,6 @@ class CombatCache(metaclass=Singleton) :
 	def remove_armor(self, name: str) -> bool :
 		ArmorTransactions().delete(name)
 		self.load_armor()
-		# The delete is refused while characters still wear the armor; report what actually happened.
 		return name.lower() not in self.armor
 
 	# ============================================================
@@ -137,31 +123,3 @@ class CombatCache(metaclass=Singleton) :
 		WeaponTransactions().delete(name)
 		self.load_weapons()
 		return name.lower() not in self.weapons
-
-	# ============================================================
-	def create_character(self, user_id: int, guild_id: int, name: str, armor: str, **stats) :
-		"""Returns None when the armor does not exist or the user already has a character with that name."""
-		armor_data = self.get_armor(armor)
-		if armor_data is None :
-			return None
-		character = CharacterTransactions().add(user_id, guild_id, name, armor_data["id"], **stats)
-		self.load_characters()
-		return character
-
-	# ============================================================
-	def update_character(self, user_id: int, name: str, armor: str = None, **stats) :
-		armor_id = None
-		if armor is not None :
-			armor_data = self.get_armor(armor)
-			if armor_data is None :
-				return None
-			armor_id = armor_data["id"]
-		character = CharacterTransactions().update(user_id, name, armor_id, **stats)
-		self.load_characters()
-		return character
-
-	# ============================================================
-	def remove_character(self, user_id: int, name: str) -> bool :
-		removed = CharacterTransactions().delete(user_id, name)
-		self.load_characters()
-		return removed

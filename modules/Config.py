@@ -11,7 +11,7 @@ from classes.kernel.Queue import Queue
 from classes.kernel.ServerSync import sync_server
 from classes.progression.Progression import Progression
 from database.transactions.LevelTransactions import LevelTransactions
-from resources.configs.ConfigMapping import ConfigMapping, channels, settings
+from resources.configs.ConfigMapping import ConfigMapping, channels, choice_settings, number_settings, settings
 
 
 class Config(commands.GroupCog, name="Config", group_name="config") :
@@ -162,19 +162,89 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	@app_commands.command(name='singlechannels')
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(option=[Choice(name=x.lower(), value=x.value) for x in
-	                              [ConfigMapping.CHARACTER, ConfigMapping.TIMELINE, ConfigMapping.MODLOG]])
+	                              [ConfigMapping.CHARACTER, ConfigMapping.CHARACTER_REVIEW, ConfigMapping.TIMELINE,
+	                               ConfigMapping.MODLOG]])
 	async def singlechannels(self, interaction: Interaction, option: Choice[str],
 	                         channel: discord.TextChannel | discord.ForumChannel) :
 		"""
-		Sets the character, timeline or modlog channel.
+		Sets the character, character review, timeline or modlog channel. Approved characters are posted in the
+		character channel (a forum gives each its own thread); new and edited characters wait for staff in the
+		character review channel.
 
 		**Permissions:**
 		- `Manage Server`
 		"""
 		await interaction.response.defer(ephemeral=True)
 		self._prepare(interaction.guild)
+		if option.value == ConfigMapping.CHARACTER_REVIEW and not isinstance(channel, discord.TextChannel) :
+			return await interaction.followup.send("The character review channel has to be a text channel.")
 		ConfigData().add_key(interaction.guild.id, option.value, channel.id, overwrite=True)
 		await interaction.followup.send(f"{option.name} channel set to {channel.mention}")
+
+	# ============================================================
+	@app_commands.command(name='characters')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.choices(option=[Choice(name=key.lower(), value=key.value) for key in number_settings])
+	async def characters(self, interaction: Interaction, option: Choice[str], value: int) :
+		"""
+		Sets one of the numbers for characters: the character cap, the SPECIAL rules (stat_base, stat_bonus,
+		stat_min, stat_max), how fast characters level (level_base, points_per_level) or the starting currency.
+		Existing characters keep the stats they have.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		self._prepare(interaction.guild)
+		guild_id = interaction.guild.id
+		lowest, highest = number_settings[option.value]
+		if not lowest <= value <= highest :
+			return await interaction.followup.send(f"{option.name} has to be between {lowest} and {highest}.")
+		stats = {key : ConfigData().get_int(guild_id, key) for key in
+		         (ConfigMapping.STAT_MIN, ConfigMapping.STAT_BASE, ConfigMapping.STAT_MAX)}
+		if option.value in stats :
+			stats[option.value] = value
+			if not stats[ConfigMapping.STAT_MIN] <= stats[ConfigMapping.STAT_BASE] <= stats[ConfigMapping.STAT_MAX] :
+				return await interaction.followup.send(
+					f"That would not fit: stat_min ({stats[ConfigMapping.STAT_MIN]}) has to be at most stat_base "
+					f"({stats[ConfigMapping.STAT_BASE]}), which has to be at most stat_max "
+					f"({stats[ConfigMapping.STAT_MAX]}). Change the others first.")
+		ConfigData().add_key(guild_id, option.value, value, overwrite=True)
+		await interaction.followup.send(f"{option.name} set to {value}")
+
+	# ============================================================
+	@app_commands.command(name='stat_method')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.choices(method=[Choice(name=x, value=x) for x in choice_settings[ConfigMapping.STAT_METHOD]])
+	async def stat_method(self, interaction: Interaction, method: Choice[str]) :
+		"""
+		Sets how members set their SPECIAL stats when creating a character: both (the member chooses), point_buy
+		or rolled.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		self._prepare(interaction.guild)
+		ConfigData().add_key(interaction.guild.id, ConfigMapping.STAT_METHOD, method.value, overwrite=True)
+		await interaction.followup.send(f"stat_method set to {method.value}")
+
+	# ============================================================
+	@app_commands.command(name='reapproval')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.choices(mode=[Choice(name=x, value=x) for x in choice_settings[ConfigMapping.REAPPROVAL_ON_EDIT]])
+	async def reapproval(self, interaction: Interaction, mode: Choice[str]) :
+		"""
+		Sets which edits to an approved character need a new staff review: none, lore (name, picture and sheet
+		answers) or all (also prefix, suffix and the member's own extra fields). A respec is always reviewed.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		self._prepare(interaction.guild)
+		ConfigData().add_key(interaction.guild.id, ConfigMapping.REAPPROVAL_ON_EDIT, mode.value, overwrite=True)
+		await interaction.followup.send(f"reapproval_on_edit set to {mode.value}")
 
 	# ============================================================
 	@app_commands.command(name='category')
@@ -235,7 +305,9 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 			channel_id = config.get_int(guild.id, key)
 			lines.append(f"**{key.lower()}:** {f'<#{channel_id}>' if channel_id else 'not set'}")
 		for key in settings :
-			lines.append(f"**{key.lower()}:** {config.get_key(guild.id, key)}")
+			# get_key reads "0" and "1" as off and on, so whole-number settings are read as numbers.
+			value = config.get_int(guild.id, key) if key in number_settings else config.get_key(guild.id, key)
+			lines.append(f"**{key.lower()}:** {value}")
 		levels = LevelTransactions().get_all(guild.id)
 		lines.append("**Level roles:** " + (
 			", ".join(f"<@&{level.role_id}> ({level.xp_required} xp)" for level in levels) or "none"))

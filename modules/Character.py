@@ -2,233 +2,312 @@ import logging
 
 import discord
 from discord import app_commands
+from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.characters.Card import Card, STATE_LABELS
+from classes.characters.CharacterFlow import CharacterFlow
+from classes.characters.Edits import APPLIED, Edits, REVIEW
+from classes.characters.ForumPost import ForumPost
+from classes.characters.ImageStorage import ImageStorage
+from classes.characters.Interview import CREATE, EDIT, RESPEC
+from classes.characters.Special import STATS, Special
 from classes.combat.AutoComplete import AutoComplete
-from classes.combat.CombatCache import CombatCache
+from classes.kernel.ConfigData import ConfigData
+from database.database import Characters
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
-from discord_py_utilities.messages import send_response
+from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions, PENDING, RETIRED
+from database.transactions.SheetFieldTransactions import SheetFieldTransactions
+from resources.configs.ConfigMapping import ConfigMapping
+from views.buttons.Confirm import ask
 
-# Points every character can divide over its stats, before extra points.
-BASE_POINTS = 12
+# How many extra fields of their own a player can add to one character.
+MAX_EXTRA_FIELDS = 25
 
 
+@app_commands.guild_only()
 class Character(commands.GroupCog, name="Character", group_name="character") :
-	"""Create and manage your combat characters."""
+	"""Create and manage your characters. New characters and most changes are reviewed by staff."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 
-	# ============================================================
-	@staticmethod
-	def character_embed(name: str, character: dict) -> discord.Embed :
-		armor = CombatCache().get_armor_by_id(character["armor"])
-		embed = discord.Embed(title=name)
-		embed.add_field(name="Armor", value=armor["name"] if armor else "None")
-		embed.add_field(name="Strength", value=character["strength"])
-		embed.add_field(name="Perception", value=character["perception"])
-		embed.add_field(name="Endurance", value=character["endurance"])
-		embed.add_field(name="Charisma", value=character["charisma"])
-		embed.add_field(name="Intelligence", value=character["intelligence"])
-		embed.add_field(name="Agility", value=character["agility"])
-		embed.add_field(name="extra_points", value=character["prestige"])
-		for info in CharacterInfoTransactions().get_all(character["id"])[:16] :
-			embed.add_field(name=info.key, value=info.value, inline=False)
-		if character.get("prefix") :
-			embed.set_footer(text=f"prefix: {character['prefix']}")
-		return embed
+	# == helpers ==
 
 	# ============================================================
-	@app_commands.command(name="create", description="creates a character")
-	@app_commands.autocomplete(armor=AutoComplete().armor)
-	async def create(self, interaction: discord.Interaction,
-	                 name: str,
-	                 armor: str,
-	                 strength: int,
-	                 perception: int,
-	                 endurance: int,
-	                 charisma: int,
-	                 intelligence: int,
-	                 agility: int,
-	                 extra_points: int = 0,
-	                 prefix: app_commands.Range[str, 1, 255] = None) :
-		"""
-		Creates a character. You can divide 12 points (plus any extra points) over the stats.
-		"""
-		await interaction.response.defer(ephemeral=True)
-		allocated_points = strength + perception + endurance + charisma + intelligence + agility
-		max_points = BASE_POINTS + extra_points
-		if allocated_points > max_points :
-			await interaction.followup.send(
-				f"You have too many points allocated, you are allowed a maximum of {max_points} points but you allocated {allocated_points}!")
-			return
-		if CombatCache().get_armor(armor) is None :
-			await interaction.followup.send(f"Armor set {armor} does not exist")
-			return
-		character = CombatCache().create_character(interaction.user.id, interaction.guild_id, name, armor,
-		                                           strength=strength, perception=perception, endurance=endurance,
-		                                           charisma=charisma, intelligence=intelligence, agility=agility,
-		                                           prestige=extra_points, prefix=prefix)
+	async def _own_character(self, interaction: discord.Interaction, name: str) -> Characters | None :
+		"""The member's character with that name on this server; tells them when there is none."""
+		character = CharacterTransactions().get(interaction.user.id, interaction.guild_id, name)
 		if character is None :
-			await interaction.followup.send(f"You already have a character named {name}")
-			return
-		logging.info(
-			f"Character {name} created by {interaction.user.name} with stats: {armor}, {strength}, {perception}, {endurance}, {charisma}, {intelligence}, {agility}, {extra_points}")
-		await interaction.followup.send(f"Character {name} created")
-
-	# ============================================================
-	@app_commands.command(name="delete", description="deletes a character")
-	@app_commands.autocomplete(name=AutoComplete().character)
-	async def delete(self, interaction: discord.Interaction, name: str) :
-		"""
-		Deletes one of your characters.
-		"""
-		await interaction.response.defer(ephemeral=True)
-		if not CombatCache().remove_character(interaction.user.id, name) :
-			await interaction.followup.send(f"Character {name} does not exist")
-			return
-		logging.info(f"Character {name} deleted by {interaction.user.name}")
-		await interaction.followup.send(f"Character {name} deleted")
-
-	# ============================================================
-	@app_commands.command(name="list", description="lists all characters")
-	async def list(self, interaction: discord.Interaction) :
-		"""
-		Lists your characters and their stats.
-		"""
-		await interaction.response.defer()
-		embed = discord.Embed(title="Characters")
-		for name, character in list(CombatCache().get_user_characters(interaction.user.id).items())[:25] :
-			armor = CombatCache().get_armor_by_id(character["armor"])
-			embed.add_field(name=name, value=f"Armor: {armor['name'] if armor else 'None'}\n"
-			                                 f"Strength: {character['strength']}\n"
-			                                 f"Perception: {character['perception']}\n"
-			                                 f"Endurance: {character['endurance']}\n"
-			                                 f"Charisma: {character['charisma']}\n"
-			                                 f"Intelligence: {character['intelligence']}\n"
-			                                 f"Agility: {character['agility']}\n"
-			                                 f"extra_points: {character['prestige']}")
-		await interaction.followup.send(embed=embed)
-
-	# ============================================================
-	@app_commands.command(name="edit", description="edits a character")
-	@app_commands.autocomplete(name=AutoComplete().character, armor=AutoComplete().armor)
-	async def edit(self, interaction: discord.Interaction,
-	               name: str,
-	               armor: str = None,
-	               strength: int = None,
-	               perception: int = None,
-	               endurance: int = None,
-	               charisma: int = None,
-	               intelligence: int = None,
-	               agility: int = None,
-	               extra_points: int = None,
-	               prefix: app_commands.Range[str, 1, 255] = None) :
-		"""
-		Edits one of your characters; options you leave out keep their value.
-		"""
-		await interaction.response.defer(ephemeral=True)
-		if CombatCache().get_character(interaction.user.id, name) is None :
-			await interaction.followup.send(f"Character {name} does not exist")
-			return
-		if armor is not None and CombatCache().get_armor(armor) is None :
-			await interaction.followup.send(f"Armor set {armor} does not exist")
-			return
-		CombatCache().update_character(interaction.user.id, name, armor, strength=strength, perception=perception,
-		                               endurance=endurance, charisma=charisma, intelligence=intelligence,
-		                               agility=agility, prestige=extra_points, prefix=prefix)
-		logging.info(f"Character {name} edited by {interaction.user.name}")
-		await interaction.followup.send(f"Character {name} edited")
-
-	# ============================================================
-	@app_commands.command(name="profile", description="shows the profile of a character")
-	@app_commands.autocomplete(name=AutoComplete().character)
-	async def profile(self, interaction: discord.Interaction, name: str) :
-		"""
-		Shows one of your characters.
-		"""
-		character = CombatCache().get_character(interaction.user.id, name)
-		if character is None :
-			await interaction.response.send_message(f"Character {name} does not exist")
-			return
-		await interaction.response.send_message(embed=self.character_embed(name, character))
-
-	# ============================================================
-	@app_commands.command(name="show", description="look at another person's character")
-	async def show(self, interaction: discord.Interaction, member: discord.Member, name: str) :
-		"""
-		Shows another member's character.
-		"""
-		character = CombatCache().get_character(member.id, name)
-		if character is None :
-			await interaction.response.send_message(f"Character {name} does not exist")
-			return
-		await interaction.response.send_message(embed=self.character_embed(name, character))
-
-
-	# == character sheet fields ==
-
-	# ============================================================
-	async def _own_character(self, interaction: discord.Interaction, name: str) -> dict | None :
-		character = CombatCache().get_character(interaction.user.id, name)
-		if character is None :
-			await send_response(interaction, f"Character {name} does not exist", ephemeral=True)
+			await CharacterFlow.respond(interaction, f"You have no character called {name} on this server.")
 		return character
 
 	# ============================================================
-	@app_commands.command(name="add_info", description="Adds a field (appearance, backstory, ...) to your character")
-	@app_commands.autocomplete(name=AutoComplete().character)
-	async def add_info(self, interaction: discord.Interaction, name: str, key: app_commands.Range[str, 1, 255],
-	                   value: app_commands.Range[str, 1, 1000]) :
+	async def _send_card(self, interaction: discord.Interaction, character: Characters) -> None :
+		avatar_url = await ImageStorage.url(self.bot, character.avatar_id)
+		embeds = Card.embeds(character, avatar_url)
+		await interaction.followup.send(embed=embeds[0])
+		for embed in embeds[1 :] :
+			await interaction.followup.send(embed=embed)
+
+	# == creating and changing ==
+
+	# ============================================================
+	@app_commands.command(name="create", description="Creates a character; I ask the questions in your DMs")
+	async def create(self, interaction: discord.Interaction) :
 		"""
-		Adds a field to one of your characters; fields show on /character profile in their own order.
+		Starts creating a character. The bot asks its questions in your DMs: a name, how you speak as the character,
+		a picture, the server's character sheet and your SPECIAL stats. There is no time limit. When you submit,
+		staff review the character before you can use it.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		guild_id = interaction.guild_id
+		if ConfigData().get_int(guild_id, ConfigMapping.CHARACTER_REVIEW) is None :
+			return await interaction.followup.send(
+				"This server has not set up character reviews yet. Staff can set the review channel with "
+				"`/config singlechannels` (option `character_review`).")
+		cap = ConfigData().get_int(guild_id, ConfigMapping.CHARACTER_CAP)
+		if CharacterTransactions().count_active(interaction.user.id, guild_id) >= cap :
+			return await interaction.followup.send(
+				f"You already have {cap} characters here, which is this server's limit. Delete one first.")
+		await CharacterFlow.begin(interaction, CREATE)
+
+	# ============================================================
+	@app_commands.command(name="edit", description="Changes a character's answers; I ask in your DMs")
+	@app_commands.autocomplete(name=AutoComplete().character)
+	async def edit(self, interaction: discord.Interaction, name: str) :
+		"""
+		Changes one of your characters: its name, prefix and suffix, picture or sheet answers. The bot shows the
+		current answers in your DMs and you pick what to change. Depending on the server's settings, changes to an
+		approved character wait for staff approval; until then the character stays as it was. A character that was
+		denied is sent back to staff when you submit.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		if (character := await self._own_character(interaction, name)) is None :
+			return
+		if character.state == RETIRED :
+			return await interaction.followup.send(f"{character.name} is retired and cannot be edited.")
+		await CharacterFlow.begin(interaction, EDIT, character)
+
+	# ============================================================
+	@app_commands.command(name="respec", description="Redistributes a character's SPECIAL points; staff review it")
+	@app_commands.autocomplete(name=AutoComplete().character)
+	async def respec(self, interaction: discord.Interaction, name: str) :
+		"""
+		Divides all of a character's SPECIAL points again, including unspent ones. The bot asks for the new stats in
+		your DMs. Staff always review a respec before it applies.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		if (character := await self._own_character(interaction, name)) is None :
+			return
+		if character.state == RETIRED :
+			return await interaction.followup.send(f"{character.name} is retired and cannot be changed.")
+		await CharacterFlow.begin(interaction, RESPEC, character)
+
+	# ============================================================
+	@app_commands.command(name="spend", description="Spends a character's unspent SPECIAL points on a stat")
+	@app_commands.autocomplete(name=AutoComplete().approved_character)
+	@app_commands.choices(stat=[Choice(name=stat.capitalize(), value=stat) for stat in STATS])
+	async def spend(self, interaction: discord.Interaction, name: str, stat: Choice[str],
+	                amount: app_commands.Range[int, 1, 100] = 1) :
+		"""
+		Spends points your character earned by levelling up. This needs no staff review.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		if (character := await self._own_character(interaction, name)) is None :
+			return
+		if character.state != APPROVED :
+			return await interaction.followup.send(f"{character.name} has to be approved before it can spend points.")
+		updated, problem = Special.spend(character, stat.value, amount)
+		if updated is None :
+			return await interaction.followup.send(problem)
+		logging.info(f"{interaction.user.name} spent {amount} on {stat.value} of character {character.id}")
+		await ForumPost.sync(self.bot, updated)
+		await interaction.followup.send(f"{updated.name}'s {stat.name} is now {getattr(updated, stat.value)}. "
+		                                f"Unspent points left: {updated.unspent_points}.")
+
+	# ============================================================
+	@app_commands.command(name="delete", description="Deletes a character for good")
+	@app_commands.autocomplete(name=AutoComplete().character)
+	async def delete(self, interaction: discord.Interaction, name: str) :
+		"""
+		Deletes one of your characters, with its sheet, picture and post in the character channel. This cannot be
+		undone.
 		"""
 		if (character := await self._own_character(interaction, name)) is None :
 			return
-		if CharacterInfoTransactions().add(character["id"], key, value) is None :
-			return await send_response(interaction, f"{name} already has a field called {key}", ephemeral=True)
-		await send_response(interaction, f"Added {key} to {name}", ephemeral=True)
+		if not await ask(interaction, f"Delete **{character.name}** for good? This cannot be undone.", "Delete") :
+			return
+		character = CharacterTransactions().get_by_id(character.id)
+		if character is None :
+			return await interaction.followup.send("That character was already deleted.", ephemeral=True)
+		await CharacterFlow.withdraw_review(self.bot, character, "The character was deleted by its player.")
+		await ForumPost.remove(self.bot, character)
+		for image_id in {character.avatar_id, (character.pending_changes or {}).get("avatar_id")} - {None} :
+			await ImageStorage.delete(self.bot, image_id)
+		CharacterTransactions().delete(character.id)
+		logging.info(f"Character {character.name} ({character.id}) deleted by {interaction.user.name}")
+		await interaction.followup.send(f"{character.name} was deleted.", ephemeral=True)
+
+	# == viewing ==
 
 	# ============================================================
-	@app_commands.command(name="edit_info", description="Changes a field of your character")
+	@app_commands.command(name="list", description="Lists your characters on this server")
+	async def list_characters(self, interaction: discord.Interaction) :
+		"""
+		Lists your characters on this server with their review state, level and stats.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		characters = CharacterTransactions().get_all(interaction.user.id, interaction.guild_id)
+		if not characters :
+			return await interaction.followup.send("You have no characters here yet. Make one with `/character create`.")
+		embed = discord.Embed(title="Your characters")
+		for character in characters[:25] :
+			state = STATE_LABELS.get(character.state, character.state)
+			if character.state == APPROVED and character.pending_changes :
+				state += ", changes waiting for review"
+			embed.add_field(name=character.name[:256], inline=False,
+			                value=f"{state}\nLevel {character.level} · {Card.stats_text(character)}\n"
+			                      f"Speaks with {Card.trigger_text(character.prefix, character.suffix)}")
+		await interaction.followup.send(embed=embed)
+
+	# ============================================================
+	@app_commands.command(name="profile", description="Shows one of your characters")
+	@app_commands.autocomplete(name=AutoComplete().character)
+	async def profile(self, interaction: discord.Interaction, name: str) :
+		"""
+		Shows one of your characters: its sheet, SPECIAL stats, level and how you speak as it.
+		"""
+		await interaction.response.defer()
+		if (character := await self._own_character(interaction, name)) is None :
+			return
+		await self._send_card(interaction, character)
+
+	# ============================================================
+	@app_commands.command(name="show", description="Shows another member's character")
+	async def show(self, interaction: discord.Interaction, member: discord.Member, name: str) :
+		"""
+		Shows another member's approved character. Staff (Manage Messages) can also see characters that are not
+		approved yet.
+		"""
+		await interaction.response.defer()
+		character = CharacterTransactions().get(member.id, interaction.guild_id, name)
+		if character is not None and character.state != APPROVED \
+				and not interaction.user.guild_permissions.manage_messages :
+			character = None
+		if character is None :
+			return await interaction.followup.send(f"{member.display_name} has no approved character called {name}.")
+		await self._send_card(interaction, character)
+
+	# == the player's own extra fields ==
+
+	# ============================================================
+	async def _change_extras(self, interaction: discord.Interaction, character: Characters, extras: list[dict],
+	                         done: str) -> None :
+		"""Saves a character's new list of extra fields, through a staff review when the server asks for one."""
+		if character.state != APPROVED :
+			CharacterInfoTransactions().replace_extras(character.id, extras)
+			if character.state == PENDING :
+				# Reviewers should decide on what the character looks like now.
+				await CharacterFlow.post_review(self.bot, character)
+			return await interaction.followup.send(done)
+		outcome, character, _ = Edits.submit(character, {"extras" : extras})
+		if outcome == REVIEW :
+			await CharacterFlow.post_review(self.bot, character)
+			return await interaction.followup.send(f"{done} Staff review this change before it shows.")
+		if outcome == APPLIED :
+			await ForumPost.sync(self.bot, character)
+		await interaction.followup.send(done)
+
+	# ============================================================
+	@staticmethod
+	def _extras(character: Characters) -> list[dict] :
+		"""The character's extra fields as they will be once the changes waiting for review are approved."""
+		pending = (character.pending_changes or {}).get("extras")
+		if character.state == APPROVED and pending is not None :
+			return [dict(extra) for extra in pending]
+		return [{"key" : info.key, "value" : info.value} for info in
+		        CharacterInfoTransactions().get_extras(character.id)]
+
+	# ============================================================
+	@staticmethod
+	def _find_extra(extras: list[dict], key: str) -> dict | None :
+		return next((extra for extra in extras if extra["key"].lower() == key.lower()), None)
+
+	# ============================================================
+	@app_commands.command(name="add_info", description="Adds a field of your own to your character")
+	@app_commands.autocomplete(name=AutoComplete().character)
+	async def add_info(self, interaction: discord.Interaction, name: str, key: app_commands.Range[str, 1, 100],
+	                   value: app_commands.Range[str, 1, 4000]) :
+		"""
+		Adds a field of your own to one of your characters, on top of the server's sheet. Your fields show after the
+		sheet, in their own order.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		if (character := await self._own_character(interaction, name)) is None :
+			return
+		extras = self._extras(character)
+		taken = [field.label.lower() for field in SheetFieldTransactions().get_all(interaction.guild_id)]
+		if self._find_extra(extras, key) is not None or key.lower() in taken :
+			return await interaction.followup.send(f"{character.name} already has a field called {key}.")
+		if len(extras) >= MAX_EXTRA_FIELDS :
+			return await interaction.followup.send(f"A character can have at most {MAX_EXTRA_FIELDS} extra fields.")
+		extras.append({"key" : key, "value" : value})
+		await self._change_extras(interaction, character, extras, f"Added {key} to {character.name}.")
+
+	# ============================================================
+	@app_commands.command(name="edit_info", description="Changes one of your own fields on your character")
 	@app_commands.autocomplete(name=AutoComplete().character)
 	async def edit_info(self, interaction: discord.Interaction, name: str, key: str,
-	                    value: app_commands.Range[str, 1, 1000]) :
+	                    value: app_commands.Range[str, 1, 4000]) :
 		"""
-		Changes the value of one of your character's fields.
+		Changes the value of a field you added yourself. Answers to the server's sheet are changed with
+		/character edit.
 		"""
+		await interaction.response.defer(ephemeral=True)
 		if (character := await self._own_character(interaction, name)) is None :
 			return
-		if CharacterInfoTransactions().edit(character["id"], key, value) is None :
-			return await send_response(interaction, f"{name} has no field called {key}", ephemeral=True)
-		await send_response(interaction, f"Updated {key} of {name}", ephemeral=True)
+		extras = self._extras(character)
+		if (extra := self._find_extra(extras, key)) is None :
+			return await interaction.followup.send(f"{character.name} has no extra field called {key}.")
+		extra["value"] = value
+		await self._change_extras(interaction, character, extras, f"Updated {extra['key']} of {character.name}.")
 
 	# ============================================================
-	@app_commands.command(name="remove_info", description="Removes a field from your character")
+	@app_commands.command(name="remove_info", description="Removes one of your own fields from your character")
 	@app_commands.autocomplete(name=AutoComplete().character)
 	async def remove_info(self, interaction: discord.Interaction, name: str, key: str) :
 		"""
-		Removes one of your character's fields.
+		Removes a field you added yourself.
 		"""
+		await interaction.response.defer(ephemeral=True)
 		if (character := await self._own_character(interaction, name)) is None :
 			return
-		if not CharacterInfoTransactions().remove(character["id"], key) :
-			return await send_response(interaction, f"{name} has no field called {key}", ephemeral=True)
-		await send_response(interaction, f"Removed {key} from {name}", ephemeral=True)
+		extras = self._extras(character)
+		if (extra := self._find_extra(extras, key)) is None :
+			return await interaction.followup.send(f"{character.name} has no extra field called {key}.")
+		extras.remove(extra)
+		await self._change_extras(interaction, character, extras, f"Removed {extra['key']} from {character.name}.")
 
 	# ============================================================
-	@app_commands.command(name="move_info", description="Changes where a field shows on your character's profile")
+	@app_commands.command(name="move_info", description="Changes the order of your own fields on your character")
 	@app_commands.autocomplete(name=AutoComplete().character)
 	async def move_info(self, interaction: discord.Interaction, name: str, key: str,
 	                    position: app_commands.Range[int, 1, 100]) :
 		"""
-		Moves one of your character's fields to another position; position 1 shows first.
+		Moves a field you added yourself to another position among your own fields; position 1 shows first.
 		"""
+		await interaction.response.defer(ephemeral=True)
 		if (character := await self._own_character(interaction, name)) is None :
 			return
-		if not CharacterInfoTransactions().move(character["id"], key, position) :
-			return await send_response(interaction, f"{name} has no field called {key}", ephemeral=True)
-		await send_response(interaction, f"Moved {key} of {name} to position {position}", ephemeral=True)
+		extras = self._extras(character)
+		if (extra := self._find_extra(extras, key)) is None :
+			return await interaction.followup.send(f"{character.name} has no extra field called {key}.")
+		extras.remove(extra)
+		position = max(1, min(position, len(extras) + 1))
+		extras.insert(position - 1, extra)
+		await self._change_extras(interaction, character, extras,
+		                          f"Moved {extra['key']} of {character.name} to position {position}.")
 
 
 async def setup(bot) :

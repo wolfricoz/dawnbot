@@ -82,7 +82,46 @@ Server settings: XP channels, level roles, currency and the channels the bot pos
 
 **Usage:** `/config singlechannels <option> <channel>`
 
-> Sets the character, timeline or modlog channel.
+> Sets the character, character review, timeline or modlog channel. Approved characters are posted in the
+character channel (a forum gives each its own thread); new and edited characters wait for staff in the
+character review channel.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `characters`
+
+**Usage:** `/config characters <option> <value>`
+
+> Sets one of the numbers for characters: the character cap, the SPECIAL rules (stat_base, stat_bonus,
+stat_min, stat_max), how fast characters level (level_base, points_per_level) or the starting currency.
+Existing characters keep the stats they have.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `stat_method`
+
+**Usage:** `/config stat_method <method>`
+
+> Sets how members set their SPECIAL stats when creating a character: both (the member chooses), point_buy
+or rolled.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
+### `reapproval`
+
+**Usage:** `/config reapproval <mode>`
+
+> Sets which edits to an approved character need a new staff review: none, lore (name, picture and sheet
+answers) or all (also prefix, suffix and the member's own extra fields). A respec is always reviewed.
 
 **Permissions:**
 - `Manage Server`

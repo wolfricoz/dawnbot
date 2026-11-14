@@ -3,7 +3,7 @@ import logging
 import discord
 from discord_py_utilities.messages import send_response
 
-from database.transactions.CharacterTransactions import CharacterTransactions
+from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
 from views.multiselect.characterselect import SelectCharacterView
 
 
@@ -16,9 +16,10 @@ class CombatInitiatedButtons(discord.ui.View) :
 	@discord.ui.button(label="Join Instance", style=discord.ButtonStyle.green, custom_id="add_character")
 	async def allow(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""Lets a member pick one of their characters to join the instance."""
-		characters = CharacterTransactions().get_all(interaction.user.id, interaction.guild_id)
+		characters = CharacterTransactions().get_all(interaction.user.id, interaction.guild_id, states=[APPROVED])
 		if not characters or len(characters) < 1 :
-			return await send_response(interaction, f"{interaction.user.name} has no characters added.", ephemeral=True)
+			return await send_response(interaction, f"{interaction.user.name} has no approved characters.",
+			                           ephemeral=True)
 
 		select = SelectCharacterView(characters)
 		await send_response(interaction, "Select a character!", view=select, ephemeral=True)

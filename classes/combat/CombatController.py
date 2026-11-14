@@ -1,8 +1,6 @@
 import random
 from math import ceil
 
-from classes.combat.CombatCache import CombatCache
-
 
 class CombatController :
 
@@ -11,15 +9,13 @@ class CombatController :
 	def calculate_hit(chosen_character: dict, weapon: str, chosen_weapon: dict, hitchance_modifier: int,
 	                  advantage: str, enemy_ac: int) :
 		"""
-		Rolls to hit.
+		Rolls to hit. chosen_character is a combatant from CombatCache.combatant: its stats and the armor it fights in.
 		:return: on a miss (False, final_hit, hit_result, hitmod); on a hit (final_hit, crit, hit_result, hitmod)
 		"""
 		crit = False
 		hit_dice_count = 2 if advantage.lower() == "yes" else 1
 		hit_results = []
-		armor_mod = CombatCache().get_armor_by_id(chosen_character['armor'])
-		if armor_mod is None :
-			raise ValueError("Armor not found")
+		armor_mod = chosen_character['armor']
 		hitmod = 0
 		hitmod += chosen_weapon['hitmodifier'] or 0
 		hitmod += hitchance_modifier

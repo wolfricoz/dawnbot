@@ -2,7 +2,7 @@
 layout: default
 title: Template
 parent: Commands
-nav_order: 10
+nav_order: 11
 ---
 
 <h1>Template</h1>

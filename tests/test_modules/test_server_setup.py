@@ -4,11 +4,11 @@ from types import SimpleNamespace
 
 import discord
 
-from classes.combat.CombatCache import CombatCache
 from classes.setup.Safeguards import MAX_MEMBERS, human_member_count, template_error
 from classes.setup.ServerSetup import SEPARATOR, ServerSetup
 from database.transactions.ArchiveTransactions import ArchiveTransactions
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
+from database.transactions.CharacterTransactions import CharacterTransactions
 from database.transactions.TemplateTransactions import TemplateTransactions
 from test_modules.base import DatabaseTestCase, GUILD_ID, USER_ID
 
@@ -243,15 +243,10 @@ class TestCharacterInfo(DatabaseTestCase) :
 
 	def setUp(self) :
 		super().setUp()
-		CombatCache().create_armor("leather", 75, 12)
-		CombatCache().create_character(USER_ID, GUILD_ID, "Ayla", "leather", prefix="ayla:")
-		self.character = CombatCache().get_character(USER_ID, "ayla")
+		self.character = {"id" : self.add_character().id}
 
 	def keys(self) :
 		return [info.key for info in CharacterInfoTransactions().get_all(self.character["id"])]
-
-	def test_prefix_is_stored(self) :
-		self.assertEqual(self.character["prefix"], "ayla:")
 
 	def test_fields(self) :
 		info = CharacterInfoTransactions()
@@ -267,5 +262,5 @@ class TestCharacterInfo(DatabaseTestCase) :
 
 	def test_fields_go_with_the_character(self) :
 		CharacterInfoTransactions().add(self.character["id"], "Age", "30")
-		CombatCache().remove_character(USER_ID, "ayla")
+		CharacterTransactions().delete(self.character["id"])
 		self.assertEqual(CharacterInfoTransactions().get_all(self.character["id"]), [])
