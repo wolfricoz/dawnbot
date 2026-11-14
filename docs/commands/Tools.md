@@ -22,9 +22,14 @@ Roleplay tools: dice, coin flips, scene endings and translation.
 
 ### `dice`
 
-**Usage:** `/dice <dicetype> <modifier> <title> <amount>`
+**Usage:** `/dice <dicetype> <modifier> <title> <amount> <character> <stat>`
 
-> Rolls one or more dice with an optional modifier. Dice of 100 sides or more triple the modifier.
+> Rolls one or more dice and posts the result with a line of story text that depends on how the roll went.
+>
+> Pick one of your approved characters to roll as them, and a SPECIAL stat to add its modifier: the stat minus the
+> server's starting stat value (5 by default), so 5 adds nothing, 10 adds +5 and 1 adds -4. The modifier option
+> comes on top. Modifiers are added once to the total, and dice of 100 sides or more triple them. Rolling every die
+> on its highest side is a critical success; every die on 1 is a critical failure.
 
 ---
 
