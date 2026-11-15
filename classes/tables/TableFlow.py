@@ -62,18 +62,10 @@ class TableFlow :
 			character = CharacterTransactions().get(interaction.user.id, guild_id, character_name)
 			if character is None or character.state != APPROVED :
 				return await reply(interaction, f"You have no approved character called {character_name}.")
-		entries = RollTableTransactions().entries(table.id)
-		shift = 0
-		if table.luck and character is not None :
-			shift = Tables.luck_shift(character.luck, Special.rules(guild_id).base)
-		rolled = Tables.roll(entries, table.dice, TableFlow.lookup(guild_id), shift=shift)
+		record, rolled, shift = TableFlow.make_roll(guild_id, table, interaction.user.id, character,
+		                                            interaction.channel_id, secret)
 		if rolled is None :
 			return await reply(interaction, f"{table.name} has no entries to roll.")
-		record = RollTableTransactions().add_roll(guild_id, table, interaction.user.id,
-		                                          character_id=character.id if character else None,
-		                                          channel_id=interaction.channel_id, natural=rolled.natural,
-		                                          rolled=rolled.rolled, text=rolled.text, actions=rolled.actions,
-		                                          secret=secret)
 		if record is None :
 			return await reply(interaction, "Something went wrong saving the roll; please try again.")
 		logging.info(f"{interaction.user.name} rolled {rolled.rolled} on table {table.id} in {interaction.guild.name}")
@@ -91,6 +83,45 @@ class TableFlow :
 			await interaction.response.send_message(embed=embed)
 		else :
 			await interaction.response.send_message(embed=embed, view=view)
+
+	# ============================================================
+	@staticmethod
+	def make_roll(guild_id: int, table: RollTables, uid: int, character: Characters | None, channel_id: int | None,
+	              secret: bool = False) :
+		"""Rolls a table and keeps the roll. Returns (record, rolled, Luck shift); rolled is None when the table has no
+		entries, record None when it couldn't be saved."""
+		entries = RollTableTransactions().entries(table.id)
+		shift = 0
+		if table.luck and character is not None :
+			shift = Tables.luck_shift(character.luck, Special.rules(guild_id).base)
+		rolled = Tables.roll(entries, table.dice, TableFlow.lookup(guild_id), shift=shift)
+		if rolled is None :
+			return None, None, shift
+		record = RollTableTransactions().add_roll(guild_id, table, uid,
+		                                          character_id=character.id if character else None,
+		                                          channel_id=channel_id, natural=rolled.natural,
+		                                          rolled=rolled.rolled, text=rolled.text, actions=rolled.actions,
+		                                          secret=secret)
+		return record, rolled, shift
+
+	# ============================================================
+	@staticmethod
+	async def post_roll(channel, table: RollTables, uid: int, character: Characters | None,
+	                    heading: str | None = None) -> TableRolls | None :
+		"""Rolls a table and posts its card in a channel (travel encounters). Returns the roll."""
+		from views.tables.TableButtons import roll_view
+
+		record, rolled, shift = TableFlow.make_roll(channel.guild.id, table, uid, character, channel.id)
+		if record is None :
+			return None
+		embed = TableFlow.embed(record, table, character, shift, rolled.notes)
+		view = roll_view(record)
+		try :
+			await channel.send(content=heading, embed=embed, view=view or discord.utils.MISSING,
+			                   allowed_mentions=discord.AllowedMentions.none())
+		except discord.HTTPException as e :
+			logging.warning(f"Could not post a roll on table {table.id}: {e}")
+		return record
 
 	# ============================================================
 	@staticmethod

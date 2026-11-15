@@ -115,9 +115,10 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 	@app_commands.describe(name="The table's name, used to roll it and in [[name]]",
 	                       luck="Rolling as a character shifts the roll by 2 x their Luck modifier toward the end",
 	                       visibility="Who can see and roll it (default everyone)",
-	                       file="A .txt file with the entries, for tables too long for the form")
+	                       file="A .txt file with the entries, for tables too long for the form",
+	                       deck="An omen deck for /omen draw instead of a table to roll")
 	async def create(self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100], luck: bool = False,
-	                 visibility: Choice[str] = None, file: discord.Attachment = None) :
+	                 visibility: Choice[str] = None, file: discord.Attachment = None, deck: bool = False) :
 		"""
 		Creates a table. Without a file, a form asks for the description and the entries (up to 4000 characters).
 
@@ -131,7 +132,7 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 		- Lines starting with `#` are skipped.
 
 		Luck-touched tables (`luck`) put the best results at the high end: rolling as a character moves the roll by
-		twice their Luck modifier.
+		twice their Luck modifier. A `deck` is drawn from with /omen draw instead (one card per entry, `Name: meaning`).
 
 		**Permissions:**
 		- `Manage Messages`
@@ -148,6 +149,7 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 			table = RollTableTransactions().add(guild_id, name.strip(), parsed.entries,
 			                                    description=(description or "").strip() or None, dice=parsed.dice,
 			                                    luck=luck, visibility=visibility_value,
+			                                    kind="deck" if deck else "table",
 			                                    creator_uid=save_interaction.user.id)
 			if table is None :
 				return await reply(save_interaction, f"There already is a table called {name}.")

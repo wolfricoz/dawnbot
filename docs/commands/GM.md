@@ -2,7 +2,7 @@
 layout: default
 title: GM
 parent: Commands
-nav_order: 15
+nav_order: 20
 ---
 
 <h1>GM</h1>

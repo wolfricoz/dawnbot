@@ -2,7 +2,7 @@
 layout: default
 title: Gear
 parent: Commands
-nav_order: 13
+nav_order: 18
 ---
 
 <h1>Gear</h1>

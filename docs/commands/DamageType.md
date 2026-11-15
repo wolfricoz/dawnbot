@@ -2,7 +2,7 @@
 layout: default
 title: DamageType
 parent: Commands
-nav_order: 10
+nav_order: 13
 ---
 
 <h1>DamageType</h1>

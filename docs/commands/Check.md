@@ -2,7 +2,7 @@
 layout: default
 title: Check
 parent: Commands
-nav_order: 6
+nav_order: 7
 ---
 
 <h1>Check</h1>

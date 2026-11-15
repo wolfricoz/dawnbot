@@ -24,7 +24,8 @@ nav_order: 3
 > Combat values are optional. Weapons use `dice` (like 2d6), `damage_type`, `attack_stat` and `damage_stat`
 > (the stats added to attack and damage rolls), `hit_mod`, `range`, `properties` (like `light, thrown`; a
 > `shield` gives +2 AC while equipped), `ap_cost` and `weapon_kind` (sword, spear, bow, claw...: which weapon
-> techniques it allows; without it the kind is read from the name). Armor uses `armor_class`, `ac` (added to AC), `dt` (taken
+> techniques it allows; without it the kind is read from the name). Armor uses `armor_class`, `ac` (added to
+> AC), `dt` (taken
 > off every hit), `hit_mod` and `ability_hit_mod`. Consumables use `use` (heal, cure, boost or nothing
 > automatic), `dice` (healing or a shield) and `condition` (what a cure removes or a boost gives); they cost 2 AP
 > in a fight and are used up. When a gear forum is set, the item is posted there.

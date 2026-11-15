@@ -10,9 +10,11 @@ SOLD = "sold"
 # A consumable used up in a fight.
 USED = "used"
 STATUSES = [OWNED, LOST, BROKEN, SOLD, USED]
+# Crafting materials stack in one entry (see classes/economy/Crafting.py).
+MATERIAL = "material"
 
 # Columns update() accepts as keyword arguments.
-FIELDS = ["equipped", "status", "changed_by", "price_paid", "proficiency"]
+FIELDS = ["equipped", "status", "changed_by", "price_paid", "proficiency", "quantity", "quality", "name"]
 
 
 class CharacterGearTransactions(DatabaseTransactions) :
@@ -20,11 +22,20 @@ class CharacterGearTransactions(DatabaseTransactions) :
 
 	# ============================================================
 	def add(self, character_id: int, gear_item_id: int | None, name: str, kind: str, source: str, price_paid: int,
-	        changed_by: int | None = None) -> CharacterGear | None :
+	        changed_by: int | None = None, quantity: int = 1) -> CharacterGear | None :
+		"""Adds an item. Materials stack: a character's owned entry of the same material gets the quantity added."""
 		with self.createsession() as session :
+			if kind == MATERIAL and gear_item_id is not None :
+				stack = session.scalar(Select(CharacterGear).where(CharacterGear.character_id == character_id,
+				                                                   CharacterGear.gear_item_id == gear_item_id,
+				                                                   CharacterGear.status == OWNED))
+				if stack is not None :
+					stack.quantity = (stack.quantity or 1) + quantity
+					self.commit(session)
+					return stack
 			entry = CharacterGear(character_id=character_id, gear_item_id=gear_item_id, name=name, kind=kind,
 			                      source=source, price_paid=price_paid, changed_by=changed_by, status=OWNED,
-			                      equipped=False)
+			                      equipped=False, quantity=max(1, quantity))
 			session.add(entry)
 			self.commit(session)
 			return entry if entry.id is not None else None

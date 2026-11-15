@@ -2,7 +2,7 @@
 layout: default
 title: Shop
 parent: Commands
-nav_order: 20
+nav_order: 32
 ---
 
 <h1>Shop</h1>

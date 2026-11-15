@@ -2,7 +2,7 @@
 layout: default
 title: User
 parent: Commands
-nav_order: 26
+nav_order: 40
 ---
 
 <h1>User</h1>

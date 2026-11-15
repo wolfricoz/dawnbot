@@ -43,6 +43,18 @@ Optional: the forum where approved abilities are posted. Tags on an ability's po
 ### GM_ROLL_LOG
 Optional: a channel where every secret roll is copied (secret and passive checks, secret /dice rolls and secret table rolls), so the server can audit them.
 
+### CHRONICLE
+The forum (or channel) where finished scenes are written up as transcripts.
+
+### LETTER_CHANNEL
+Optional: where the bot says a letter arrived when its recipient has DMs closed.
+
+### JOB_BOARD
+The forum where jobs are posted with /job post.
+
+### RUMOR_CHANNEL
+The channel where rumors are posted.
+
 ### MODLOG
 The staff channel for bot notices, such as missing permissions.
 <h2>Settings</h2>

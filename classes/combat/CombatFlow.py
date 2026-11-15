@@ -349,6 +349,14 @@ class CombatFlow :
 			await reply(interaction, "Something went wrong creating the fight; please try again.")
 			return None
 		logging.info(f"{interaction.user.name} started fight {fight.id} in {interaction.guild.name}")
+		try :
+			from classes.scenes.SceneFlow import SceneFlow
+
+			# A fight started from a scene's channel pauses the scene until the fight ends.
+			SceneFlow.pause_for_fight([interaction.channel_id, getattr(interaction.channel, "parent_id", None)],
+			                          fight.id)
+		except Exception as e :
+			logging.error(f"Pausing the scene for fight {fight.id} failed: {e}", exc_info=True)
 		await CombatFlow.update_board(interaction.client, fight)
 		lethal_note = " It is **lethal**." if lethal else ""
 		await reply(interaction, f"The fight is ready in {thread.mention}.{lethal_note} Players press **Join** on "

@@ -2,7 +2,7 @@
 layout: default
 title: Tools
 parent: Commands
-nav_order: 25
+nav_order: 38
 ---
 
 <h1>Tools</h1>
@@ -16,7 +16,9 @@ Roleplay tools: dice, coin flips, scene endings and translation.
 
 **Usage:** `/endscene <rpenddate> <title>`
 
-> Ends the scene in this channel and posts a summary entry in the timeline channel.
+> Ends the scene in this channel and posts a summary entry in the timeline channel. When a scene from /scene start
+> is open here, this ends it like /scene end (host or staff), writing its chronicle too. The in-world date
+> defaults to the server's calendar.
 
 ---
 

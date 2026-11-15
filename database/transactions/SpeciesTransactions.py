@@ -9,7 +9,7 @@ DENIED = "denied"
 
 # Columns add() and update() accept as keyword arguments.
 FIELDS = ["name", "creator_uid", "description", "benefits", "drawbacks", "state", "stat_limits", "stat_modifiers",
-          "tag_ids", "forum_thread_id", "forum_message_id", "review_message_id", "pending_changes"]
+          "tag_ids", "forum_thread_id", "forum_message_id", "review_message_id", "pending_changes", "language_ids"]
 
 
 class SpeciesTransactions(DatabaseTransactions) :

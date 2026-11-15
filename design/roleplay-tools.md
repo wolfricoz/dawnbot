@@ -1,12 +1,11 @@
 # Roleplay tools: design
 
-Status: proposal, 15 November 2026; Rico answered the open questions the same day (section 16). **Phase A (GM checks,
-secret rolls, roll tables) is built** on branch `feature/combat` with migration `0016_checks_tables`
-(`0017_drop_legacy_combat` was renumbered so it stays last); section 20 lists the choices made while building it. The
-other phases are not built yet. The doc covers the 15 tools picked from the idea list: languages, scenes and post
-order, the chronicle, calendar and weather, locations and travel, rumors, GM checks, secret rolls, roll tables, the job
-board, faction reputation, downtime, crafting, letters and omens. Not picked: idle-channel prompts, the memorial wall
-and the relationship web.
+Status: proposal, 15 November 2026; Rico answered the open questions the same day (section 16). **All six phases are
+built** on branch `feature/combat`: phase A (migration `0016_checks_tables`, section 20) and phases B to F (migrations
+`0017_world` to `0021_rumors_omens`, section 21). `0022_drop_legacy_combat` was renumbered so it stays last. The doc
+covers the 15 tools picked from the idea list: languages, scenes and post order, the chronicle, calendar and weather,
+locations and travel, rumors, GM checks, secret rolls, roll tables, the job board, faction reputation, downtime,
+crafting, letters and omens. Not picked: idle-channel prompts, the memorial wall and the relationship web.
 
 Every tool builds on systems that already exist: proxying (`classes/proxy/`), SPECIAL and the stat modifier
 (`stat − STAT_BASE`), the Luck crit range and bad-roll protection (`classes/combat/Fortune.py`), the gear catalog and
@@ -367,16 +366,16 @@ Rico's answers, 15 November 2026. The sections above already follow them.
 ## 19. Build order
 
 Each phase stands on its own and can be play-tested before the next. Migrations follow the combat ones;
-`drop_legacy_combat` is renumbered each time so it stays last while it is unmerged (now `0017`).
+`drop_legacy_combat` is renumbered each time so it stays last while it is unmerged (now `0022`).
 
 | Phase | Tools | Why this order | Migration |
 |---|---|---|---|
 | A ✅ | GM checks, secret rolls, roll tables | Only touch dice; everything later uses them. | `0016_checks_tables` |
-| B | Calendar and weather, locations and travel | Scenes, letters and rumors read the date and location. Travel uses tables. | `world` |
-| C | Scenes and post order, chronicle | Need locations and the calendar for the card. | `scenes` |
-| D | Languages, letters | Hook into the proxy pipeline; letters need languages and routes. | `languages_letters` |
-| E | Factions, job board, downtime, crafting | The economy round: jobs pay standing, downtime runs crafting and study. | `economy` |
-| F | Rumor mill, omens | Flavor on top of locations, checks and occupations. | `rumors_omens` |
+| B ✅ | Calendar and weather, locations and travel | Scenes, letters and rumors read the date and location. Travel uses tables. | `0017_world` |
+| C ✅ | Scenes and post order, chronicle | Need locations and the calendar for the card. | `0018_scenes` |
+| D ✅ | Languages, letters | Hook into the proxy pipeline; letters need languages and routes. | `0019_languages_letters` |
+| E ✅ | Factions, job board, downtime, crafting | The economy round: jobs pay standing, downtime runs crafting and study. | `0020_economy` |
+| F ✅ | Rumor mill, omens | Flavor on top of locations, checks and occupations. | `0021_rumors_omens` |
 
 New code areas: `classes/checks/`, `classes/tables/`, `classes/world/` (calendar, weather, locations, travel),
 `classes/scenes/` (scenes, chronicle), `classes/language/`, `classes/letters/`, `classes/economy/` (factions, jobs,
@@ -409,3 +408,66 @@ Code: `classes/checks/` (`Checks.py` rules, `CheckCard.py` the card, `CheckFlow.
 `views/tables/TableButtons.py`, `views/buttons/Show.py`, `modules/Check.py`, `modules/Table.py`, `tasks/CheckTask.py`,
 `resources/data/tables/fantasy.json`. `CombatFlow.start` now returns the fight it opened. Tests:
 `tests/test_modules/test_checks.py` and `test_tables.py`.
+
+## 21. Phases B to F as built
+
+Choices made while building, beyond (or instead of) sections 1 to 15. Settings are set with `/config roleplay`
+(autocomplete lists them all with their values), channels with `/config singlechannels`.
+
+### Phase B: calendar, weather, locations, travel
+
+| Topic | Decision |
+|---|---|
+| Commands | `/calendar setup | view | birthday`, `/calendar event add | remove | list`, `/time now | advance | set`, `/weather now | set`, `/location set | view | who | list | remove`, `/location region add | edit | remove | list`, `/location route add | remove | list`, `/travel`. Birthdays are `/calendar birthday` (not `/character birthday`). |
+| Presets | Gregorian, and a fantasy year of twelve 30-day months with a 28-day moon (original names). Custom calendars are typed as `Name: days: season` lines. |
+| Flowing time | `TIME_FLOW` ratios (`1:1`, `2:1`, `4:1`, `7:1`, `1:2`, `1:4`, `1:7`), moved every minute by `tasks/WorldTask.py` in whole parts of the day; a week of events at most is announced after a long jump. |
+| Weather | Per region (or the server's own outside any region). A location whose climate differs from its region's reads the region's weather at the same place on its own ladder. Forced weather keeps until the weather would change next. |
+| Presence | From `proxy_messages`: a character is at the location of its last post within `PRESENCE_DAYS`. A thread counts as its channel's location. Passive checks use the same setting now. |
+| Travel | Origin is the channel's location, else where the character last posted. Without a route travel is instant with the destination's danger. Encounters post the route's (or destination's) table card at the destination, with its Grant and Start fight buttons; without a table the GM settles it. No GM-role ping (there is no GM role). |
+| Not built | The "Set up location" button on the new-channel prompt. |
+
+### Phase C: scenes and the chronicle
+
+| Topic | Decision |
+|---|---|
+| Commands | `/scene start | end | join | leave | pass | away | back | add | remove | move | host | pause | resume | card`, `/chronicle make | character` (instead of `/character scenes`). `/endscene` ends an open scene (host or staff); `rpenddate` is optional and defaults to the calendar. |
+| Counting | `Proxy.handle` calls `SceneFlow.on_post` after the rewards; only the participant's scene character counts. Out-of-turn posts reorder as Rico decided. |
+| Timers | Nudges, skips, free-mode reminders, idle warnings and resuming after a fight run every 5 minutes from `WorldTask`. A fight started from the scene's channel (or its thread's parent) pauses the scene; it resumes when that fight ends. |
+| Chronicle | Read from the channel's history between the card and the end; check, dice and table cards become notes. Posted to `CHRONICLE` (a forum gets a thread; a text channel a message with a thread) with an HTML and a Markdown file and an **Add summary** button (players in it, or staff). |
+
+### Phase D: languages and letters
+
+| Topic | Decision |
+|---|---|
+| Commands | `/language add | edit | remove | list | known | pick | speak | grant | take | species`, message menu **Understand**, `/letter write | inbox | read | transit | intercept`. Staff grant languages with `/language grant`, not `/gm language`. |
+| Starting languages | `/language pick` (not an interview step), up to `LANGUAGE_SLOTS` + 1 per 2 Intelligence above the stat base. |
+| Markers | `{Elvish}` switches, `{}` goes back to the post's default, `{common}` (or the common language's name) to common. |
+| Webhook buttons | The Understand button is sent on the post's last message; if the library refuses buttons on a webhook, the post goes out without it and the message menu still works. |
+| Editing | A language post is edited as written (with markers) and scrambled again; long language posts (several messages) can't be edited. |
+| Letters | Replies work from the DM. Interception is `/letter intercept` (read, hold, deliver, destroy) and only when `LETTER_INTERCEPT` is on; `/letter transit` shows only who wrote to whom unless it is on. Reported letters go to `MODLOG` with their text. |
+
+### Phase E: factions, jobs, downtime, crafting
+
+| Topic | Decision |
+|---|---|
+| Commands | `/faction add | edit | remove | list | standing | give | item` (standing changes are `/faction give`, not `/gm rep`), `/job post | cancel | list`, `/downtime spend | occupation`, `/craft recipes | make | projects | salvage | uncurse`, `/craft recipe add | remove | mishap | salvage | import`. |
+| Shop | `Gear.buy` checks a faction item's tier and Vilified standing and prices it by standing. |
+| Not built | Tag requirements of kind `reputation`, occupation faction requirements, carousing's faction standing, and per-occupation flavor lines (default lines are used). |
+| Jobs | Forum thread per job; its name carries the state (🟢 open, 🟡 taken, ✅ done, ❌ failed, ⚪ cancelled) instead of forum tags, and finished jobs are locked. Partial success pays half and half the standing; items only on success. Player jobs hold `currency × slots` in escrow and refund what isn't paid out. |
+| Downtime | Rolls count toward bad-roll protection. Occupation pay, stat, crit table and seer are set with `/downtime occupation`. |
+| Crafting | Materials are catalog items of kind `material` and stack (`character_gear.quantity`). Projects set their ingredients aside up front; a bad failure takes a day of progress back, a crit on any day makes the result masterwork; projects don't make cursed items. Salvage keeps each listed material on a coin flip. The fantasy recipe pack (`resources/data/recipes/fantasy.json`) adds 11 materials (two of them tools), 11 recipes and salvage lists for the fantasy gear pack. |
+| **Combat bonus not wired** | Masterwork and cursed work everywhere outside fights (names, sell value, cursed armor staying on). Their fight bonus (+1/−1 to hit, +1/−1 DT) is ready in `Crafting.adjust_combat` but `classes/combat/Loadout.py` doesn't call it yet: another session was changing the combat files while this was built. |
+
+### Phase F: rumors and omens
+
+| Topic | Decision |
+|---|---|
+| Commands | `/rumor post | listen | plant | mark | pin | block | list`, `/omen draw | read | decks`. Server decks are made with `/table create deck:true` (one card per entry). |
+| Listening | Once per real (UTC) day per character; carousing in downtime overhears at +2 without using the day's listen. Whispered rumors spread from `WorldTask` once heard 3 times. |
+| Omens | Draws are per character and deck without replacement; a seer's reading counts as the other character's draw. A boon sets the bad-roll streak to armed; a bane adds −1 to the next check (`CheckFlow.make_roll`). |
+
+New code: `classes/world/`, `classes/scenes/`, `classes/language/`, `classes/economy/`, `classes/flavor/`,
+`classes/kernel/RoleplaySettings.py`, their `database/transactions/*Transactions.py`, `views/scenes/`, `views/letters/`,
+`views/economy/`, the cogs in `modules/` and `tasks/WorldTask.py`; data in `resources/data/decks/` and
+`resources/data/recipes/`. Tests: `test_world.py`, `test_scenes.py`, `test_languages.py`, `test_economy.py`,
+`test_flavor.py`.

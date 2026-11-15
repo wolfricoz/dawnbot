@@ -29,8 +29,12 @@ from views.buttons.RoleplayChannelPrompt import RoleplayChannelButton
 from views.multiselect.StatPicker import StatButton, StatSelect
 from views.buttons.SpeciesReviewButtons import SpeciesReviewButtons
 from views.combat.AbilityReviewButtons import AbilityReviewButtons
+from classes.language.LanguageFlow import UnderstandButton
 from views.checks.CheckButtons import CheckButton
+from views.letters.LetterButtons import LetterButton
+from views.scenes.SceneButtons import ChronicleButton, SceneButton
 from views.combat.BoardButtons import CombatButton
+from views.economy.JobButtons import JobButton
 from views.tables.TableButtons import TableRollButton
 
 # Exceptions caused by a server's own setup (missing Discord permissions, an unset
@@ -162,7 +166,9 @@ async def setup_hook() :
 	bot.add_view(ReviewButtons())
 	bot.add_view(SpeciesReviewButtons())
 	bot.add_view(AbilityReviewButtons())
-	bot.add_dynamic_items(RoleplayChannelButton, StatSelect, StatButton, CombatButton, CheckButton, TableRollButton)
+	bot.add_dynamic_items(RoleplayChannelButton, StatSelect, StatButton, CombatButton, CheckButton, TableRollButton,
+	                      SceneButton, ChronicleButton, UnderstandButton, LetterButton,
+	                      JobButton)
 
 	directories = ["modules", "listeners", "tasks"]
 	loaded = []

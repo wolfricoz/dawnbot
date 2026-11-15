@@ -206,7 +206,9 @@ class Gear(commands.GroupCog, name="Gear", group_name="gear") :
 			return
 		if not entry.equipped :
 			return await CharacterFlow.respond(interaction, f"{entry.name} isn't equipped.")
-		GearRules.unequip(entry)
+		if GearRules.unequip(entry) is None :
+			return await CharacterFlow.respond(interaction, f"The cursed {entry.name} won't come off; a GM has to "
+			                                                f"lift the curse first (/craft uncurse).")
 		await CharacterFlow.respond(interaction, f"{record.name} put away **{entry.name}**.")
 		await refresh_post(self.bot, record.id)
 

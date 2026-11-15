@@ -46,8 +46,6 @@ HELP_BONUS = 2
 STRONG_MARGIN = Rules.STRONG_MARGIN
 DEFAULT_HOURS = 24
 MAX_HOURS = 168
-# Characters count as present in a channel when they posted there in the last this many days (passive checks).
-PRESENCE_DAYS = 7
 
 
 # ============================================================

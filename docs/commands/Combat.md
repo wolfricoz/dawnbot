@@ -2,7 +2,7 @@
 layout: default
 title: Combat
 parent: Commands
-nav_order: 7
+nav_order: 9
 ---
 
 <h1>Combat</h1>

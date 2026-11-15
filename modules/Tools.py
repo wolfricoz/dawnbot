@@ -18,6 +18,7 @@ from classes.dice.DiceCard import DiceCard
 from classes.kernel.ConfigData import ConfigData
 from data.languages import LANGUAGES
 from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
+from database.transactions.SceneTransactions import SceneTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 from views.buttons.Show import ShowView
 
@@ -43,10 +44,29 @@ class Tools(commands.Cog) :
 
 	# ============================================================
 	@app_commands.command(name="endscene", description="ends the scene")
-	async def endscene(self, interaction: discord.Interaction, rpenddate: str, title: str = None) :
+	async def endscene(self, interaction: discord.Interaction, rpenddate: str = None, title: str = None) :
 		"""
-		Ends the scene in this channel and posts a summary entry in the timeline channel.
+		Ends the scene in this channel and posts a summary entry in the timeline channel. When a scene from /scene start
+		is open here, this ends it like /scene end (host or staff), writing its chronicle too. The in-world date
+		defaults to the server's calendar.
 		"""
+		from classes.scenes.SceneFlow import SceneFlow
+		from classes.world.WorldFlow import WorldFlow
+
+		scene = SceneFlow.scene_here(interaction.channel)
+		if scene is not None :
+			if not SceneFlow.runs(scene, interaction.user) :
+				return await interaction.response.send_message("Only the scene's host (or staff) can end it.",
+				                                               ephemeral=True)
+			await interaction.response.defer(ephemeral=True, thinking=True)
+			if title :
+				SceneTransactions().update(scene.id, title=title[:200])
+			scene, _ = await SceneFlow.finish(self.bot, scene.id, interaction.user.id, None, rpenddate)
+			return await interaction.followup.send(f"🏁 **{scene.title}** has ended.", ephemeral=True)
+		rpenddate = rpenddate or WorldFlow.short_date(interaction.guild_id)
+		if not rpenddate :
+			return await interaction.response.send_message("Give the in-world date the scene ended (rpenddate).",
+			                                               ephemeral=True)
 		await interaction.response.defer(thinking=False, ephemeral=True)
 		channel = await ConfigData().get_channel(interaction.guild, ConfigMapping.TIMELINE, optional=True)
 		if channel is None :

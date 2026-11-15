@@ -107,6 +107,8 @@ class Users(Timestamps, Base) :
 
 	# Core unique reference point. A user only ever has ONE row here globally.
 	uid: Mapped[int] = mapped_column(BigInteger, unique=True)
+	# /scene away: no scene nudges or skips for them until then.
+	away_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Experience(Timestamps, Base) :
@@ -182,6 +184,8 @@ class Species(Timestamps, Base) :
 	forum_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	review_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	pending_changes: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	# Languages every character of the species speaks fluently.
+	language_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
 	__table_args__ = (
 		Index('uq_species_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -202,6 +206,13 @@ class Occupations(Base) :
 	role_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	staff_only: Mapped[bool] = mapped_column(Boolean, default=False)
 	position: Mapped[int] = mapped_column(Integer, default=1)
+	# Downtime work: what a day pays (empty is WORK_PAY), the stat it rolls, a roll table for a great day, and flavor
+	# lines per outcome. seer occupations can read omens for others.
+	pay: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	work_stat: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	table_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	flavor: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	seer: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
 	__table_args__ = (
 		Index('uq_occupation_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -284,6 +295,12 @@ class Characters(Timestamps, Base) :
 	legendary_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 	# clothing, light, medium or heavy; empty means it is read from the sheet (see Loadout).
 	armor_proficiency: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# {"month", "day"} on the in-world calendar.
+	birthday: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	# /language speak: the language its posts are in unless they say otherwise (empty is the common language).
+	speaking_language_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	# The last omen drawn: {"card", "deck", "effect" (boon, bane or none), "used", "drawn_at"}.
+	omen: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 	__table_args__ = (
 		Index('uq_character_uid_guild_name', 'uid', 'guild_id', text('lower(name)'), unique=True),
@@ -385,6 +402,11 @@ class GearItems(Timestamps, Base) :
 	forum_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	# The genre pack the item was imported from, if any.
 	pack: Mapped[str | None] = mapped_column(String(50), nullable=True)
+	# A faction's item: its standing changes the price, and faction_tier (a standing tier) is needed to buy it.
+	faction_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	faction_tier: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# What salvaging it gives: {material name: amount}.
+	salvage: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 	__table_args__ = (
 		Index('uq_gear_item_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -410,6 +432,10 @@ class CharacterGear(Base) :
 	changed_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	# excellent, good, average, poor or awful; empty counts as awful (weapons only).
 	proficiency: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# How many: materials stack in one entry.
+	quantity: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+	# masterwork or cursed (crafted), or empty.
+	quality: Mapped[str | None] = mapped_column(String(16), nullable=True)
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
 	                                             onupdate=func.now())
@@ -800,6 +826,519 @@ class TableRolls(Base) :
 	fight_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	secret: Mapped[bool] = mapped_column(Boolean, default=False)
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ============================================================
+# The world: calendar, weather, locations and travel
+# ============================================================
+
+# months is [{"name", "days", "season"}], weekdays a list of names. month and day count from 1; part is the time of day
+# (0 dawn to 5 night). flow is manual or a ratio such as 2:1 (in-world days per real day), copied from TIME_FLOW when
+# time moves; last_tick is when flowing time was last moved.
+class Calendars(Base) :
+	"""A server's in-world calendar and the current in-world date."""
+	__tablename__ = "calendars"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+	preset: Mapped[str] = mapped_column(String(32), default="gregorian")
+	months: Mapped[list] = mapped_column(JSON, default=list)
+	weekdays: Mapped[list] = mapped_column(JSON, default=list)
+	era: Mapped[str | None] = mapped_column(String(32), nullable=True)
+	year: Mapped[int] = mapped_column(Integer, default=1)
+	month: Mapped[int] = mapped_column(Integer, default=1)
+	day: Mapped[int] = mapped_column(Integer, default=1)
+	part: Mapped[int] = mapped_column(Integer, default=1)
+	moon_cycle: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	last_tick: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# year empty means every year. last_year is the in-world year it was last announced, so it is announced once.
+class CalendarEvents(Base) :
+	"""A holiday or event on the in-world calendar, announced on its day."""
+	__tablename__ = "calendar_events"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(100))
+	month: Mapped[int] = mapped_column(Integer)
+	day: Mapped[int] = mapped_column(Integer)
+	year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	last_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class Regions(Base) :
+	"""A group of locations (a city, a forest) that shares a climate and its weather."""
+	__tablename__ = "regions"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(100))
+	climate: Mapped[str] = mapped_column(String(16), default="temperate")
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+	__table_args__ = (
+		Index('uq_region_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+# climate empty means the region's. table_id is the roll table for encounters on the way here.
+class Locations(Base) :
+	"""A place in the world, bound to one channel or thread."""
+	__tablename__ = "locations"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	channel_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	image_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("stored_images.id", ondelete="SET NULL"),
+	                                             nullable=True)
+	region_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("regions.id", ondelete="SET NULL"),
+	                                              nullable=True)
+	climate: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	indoor: Mapped[bool] = mapped_column(Boolean, default=False)
+	danger: Mapped[int] = mapped_column(Integer, default=0)
+	hazards: Mapped[str | None] = mapped_column(Text, nullable=True)
+	table_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("roll_tables.id", ondelete="SET NULL"),
+	                                             nullable=True)
+	tags: Mapped[list] = mapped_column(JSON, default=list)
+
+
+# hours is the in-world travel time.
+class Routes(Base) :
+	"""A road between two locations, with its travel time and danger."""
+	__tablename__ = "routes"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	from_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("locations.id", ondelete="CASCADE"))
+	to_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("locations.id", ondelete="CASCADE"))
+	hours: Mapped[int] = mapped_column(Integer, default=0)
+	danger: Mapped[int] = mapped_column(Integer, default=0)
+	table_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("roll_tables.id", ondelete="SET NULL"),
+	                                             nullable=True)
+	two_way: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+# region_id empty is the server's weather outside any region. world_day is the in-world day (an ordinal) it was rolled
+# for, so flowing time rolls it once a day.
+class WeatherStates(Base) :
+	"""The current weather of a region."""
+	__tablename__ = "weather_states"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	region_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("regions.id", ondelete="CASCADE"),
+	                                              nullable=True)
+	climate: Mapped[str] = mapped_column(String(16))
+	weather: Mapped[str] = mapped_column(String(32))
+	forced: Mapped[bool] = mapped_column(Boolean, default=False)
+	world_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	since: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# state is travelling or arrived.
+class Travels(Base) :
+	"""A character on the road, until it arrives."""
+	__tablename__ = "travels"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+	from_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("locations.id", ondelete="SET NULL"),
+	                                            nullable=True)
+	to_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("locations.id", ondelete="CASCADE"))
+	arrive_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+	state: Mapped[str] = mapped_column(String(16), default="travelling")
+	encounter: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ============================================================
+# Scenes and the chronicle
+# ============================================================
+
+# channel_id is where the scene runs: a channel, or a thread. mode is order or free; state open, paused or ended.
+# paused_by_fight is the fight that paused it (it resumes when that fight ends). turn_index points into the active
+# participants in position order. world_start and world_end are in-world dates ({"year", "month", "day", "part",
+# "text"}).
+class Scenes(Base) :
+	"""A tracked roleplay in one channel or thread, with a post order."""
+	__tablename__ = "scenes"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	channel_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	title: Mapped[str] = mapped_column(String(200))
+	host_uid: Mapped[int] = mapped_column(BigInteger)
+	mode: Mapped[str] = mapped_column(String(16), default="order")
+	state: Mapped[str] = mapped_column(String(16), default="open")
+	paused_by_fight: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	location_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("locations.id", ondelete="SET NULL"),
+	                                                nullable=True)
+	turn_index: Mapped[int] = mapped_column(Integer, default=0)
+	turn_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	card_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	last_post_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	idle_warned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	world_start: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	world_end: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+	chronicle_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+	ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# state is active, left or removed.
+class SceneParticipants(Base) :
+	"""A character taking part in a scene."""
+	__tablename__ = "scene_participants"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	scene_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("scenes.id", ondelete="CASCADE"), index=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+	uid: Mapped[int] = mapped_column(BigInteger)
+	position: Mapped[int] = mapped_column(Integer, default=0)
+	state: Mapped[str] = mapped_column(String(16), default="active")
+	posts: Mapped[int] = mapped_column(Integer, default=0)
+	words: Mapped[int] = mapped_column(Integer, default=0)
+	skips: Mapped[int] = mapped_column(Integer, default=0)
+	last_post_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	last_nudged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# thread_id is the chronicle's forum thread (or the thread on its message in a text channel); message_id its first
+# message. channel_id, first_message_id and last_message_id are the roleplay it covers.
+class Chronicles(Base) :
+	"""A finished scene (or a stretch of older roleplay) written up as a transcript."""
+	__tablename__ = "chronicles"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	scene_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("scenes.id", ondelete="SET NULL"),
+	                                             nullable=True)
+	title: Mapped[str] = mapped_column(String(200))
+	channel_id: Mapped[int] = mapped_column(BigInteger)
+	first_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	last_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+	created_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChronicleCharacters(Base) :
+	"""A character in a chronicle, with how much it wrote there."""
+	__tablename__ = "chronicle_characters"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	chronicle_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("chronicles.id", ondelete="CASCADE"), index=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	posts: Mapped[int] = mapped_column(Integer, default=0)
+	words: Mapped[int] = mapped_column(Integer, default=0)
+
+
+# ============================================================
+# Languages and letters
+# ============================================================
+
+# sound is a preset (flowing, harsh, clipped, sibilant, runes, glyphs) or custom, with syllables then the custom list.
+# The common language is the one every character speaks.
+class Languages(Base) :
+	"""A language characters can speak; readers who don't know it see it scrambled."""
+	__tablename__ = "languages"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(50))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	sound: Mapped[str] = mapped_column(String(16), default="flowing")
+	syllables: Mapped[list | None] = mapped_column(JSON, nullable=True)
+	common: Mapped[bool] = mapped_column(Boolean, default=False)
+	pack: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+	__table_args__ = (
+		Index('uq_language_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+# fluency is fluent or partial; source start, species, study or granted.
+class CharacterLanguages(Base) :
+	"""A language a character knows."""
+	__tablename__ = "character_languages"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	language_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("languages.id", ondelete="CASCADE"))
+	fluency: Mapped[str] = mapped_column(String(16), default="fluent")
+	source: Mapped[str] = mapped_column(String(16), default="start")
+
+	__table_args__ = (
+		UniqueConstraint('character_id', 'language_id', name='uq_character_language'),
+	)
+
+
+# segments is the post as written: [{"language": id or null, "text"}], null being the common language.
+class ProxyLanguages(Base) :
+	"""The original text of a post made in a language, by its first message."""
+	__tablename__ = "proxy_languages"
+	first_message_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	segments: Mapped[list] = mapped_column(JSON, default=list)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# state is in_transit, held, delivered, returned or destroyed. world_date is the in-world date it was written on.
+class Letters(Base) :
+	"""An in-character letter from one character to another."""
+	__tablename__ = "letters"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	from_character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                      nullable=True)
+	to_character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                    nullable=True)
+	from_uid: Mapped[int] = mapped_column(BigInteger)
+	from_name: Mapped[str] = mapped_column(String(255))
+	to_name: Mapped[str] = mapped_column(String(255))
+	subject: Mapped[str] = mapped_column(String(200))
+	body: Mapped[str] = mapped_column(Text)
+	language_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("languages.id", ondelete="SET NULL"),
+	                                                nullable=True)
+	sealed: Mapped[bool] = mapped_column(Boolean, default=False)
+	seal_broken: Mapped[bool] = mapped_column(Boolean, default=False)
+	express: Mapped[bool] = mapped_column(Boolean, default=False)
+	world_date: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	deliver_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+	state: Mapped[str] = mapped_column(String(16), default="in_transit")
+	read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	reply_to_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	reported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	intercepted_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ============================================================
+# The economy round: factions, jobs, downtime and crafting
+# ============================================================
+
+# rivals lists faction ids: gaining standing here costs half as much there.
+class Factions(Base) :
+	"""A faction characters gain and lose standing with."""
+	__tablename__ = "factions"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	colour: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	emoji: Mapped[str | None] = mapped_column(String(64), nullable=True)
+	hidden: Mapped[bool] = mapped_column(Boolean, default=False)
+	rivals: Mapped[list] = mapped_column(JSON, default=list)
+
+	__table_args__ = (
+		Index('uq_faction_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+class CharacterReputation(Base) :
+	"""A character's standing with a faction, from -100 to 100."""
+	__tablename__ = "character_reputation"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	faction_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("factions.id", ondelete="CASCADE"))
+	value: Mapped[int] = mapped_column(Integer, default=0)
+
+	__table_args__ = (
+		UniqueConstraint('character_id', 'faction_id', name='uq_character_reputation'),
+	)
+
+
+class ReputationLog(Base) :
+	"""Every change to a character's standing, for disputes and audits."""
+	__tablename__ = "reputation_log"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	faction_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("factions.id", ondelete="CASCADE"))
+	amount: Mapped[int] = mapped_column(Integer)
+	reason: Mapped[str] = mapped_column(String(32))
+	actor_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# reward is {"currency", "xp", "items": [names]}. state is open, taken, done, failed or cancelled. poster_character_id
+# is set for a player's job, whose currency reward is held in escrow until it ends.
+class Jobs(Base) :
+	"""A job on the job board."""
+	__tablename__ = "jobs"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	poster_uid: Mapped[int] = mapped_column(BigInteger)
+	poster_character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id",
+	                                                                              ondelete="SET NULL"), nullable=True)
+	title: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str] = mapped_column(Text)
+	reward: Mapped[dict] = mapped_column(JSON, default=dict)
+	slots: Mapped[int] = mapped_column(Integer, default=1)
+	min_level: Mapped[int] = mapped_column(Integer, default=1)
+	faction_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("factions.id", ondelete="SET NULL"),
+	                                               nullable=True)
+	rep_success: Mapped[int] = mapped_column(Integer, default=0)
+	rep_failure: Mapped[int] = mapped_column(Integer, default=0)
+	location_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("locations.id", ondelete="SET NULL"),
+	                                                nullable=True)
+	deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	state: Mapped[str] = mapped_column(String(16), default="open")
+	escrow: Mapped[int] = mapped_column(BigInteger, default=0)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# state is claimed, waiting, withdrawn or done; outcome success, partial or failure.
+class JobClaims(Base) :
+	"""A character on a job (or on its waiting list)."""
+	__tablename__ = "job_claims"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	job_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+	uid: Mapped[int] = mapped_column(BigInteger)
+	state: Mapped[str] = mapped_column(String(16), default="claimed")
+	outcome: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# day is the downtime day (DOWNTIME_RESET decides when it starts); one activity per character per day.
+class Downtime(Base) :
+	"""A character's downtime activity on one day."""
+	__tablename__ = "downtime"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	day: Mapped[str] = mapped_column(String(10))
+	activity: Mapped[str] = mapped_column(String(16))
+	outcome: Mapped[str] = mapped_column(String(16))
+	details: Mapped[dict] = mapped_column(JSON, default=dict)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+	__table_args__ = (
+		UniqueConstraint('character_id', 'day', name='uq_downtime_character_day'),
+	)
+
+
+class StudyProgress(Base) :
+	"""How far a character is in studying a language."""
+	__tablename__ = "study_progress"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	language_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("languages.id", ondelete="CASCADE"))
+	points: Mapped[int] = mapped_column(Integer, default=0)
+
+	__table_args__ = (
+		UniqueConstraint('character_id', 'language_id', name='uq_study_progress'),
+	)
+
+
+# ingredients is [{"item_id", "amount"}]. days 0 is made right away; more is a project worked on in downtime.
+class Recipes(Base) :
+	"""A crafting recipe: ingredients and a roll make an item."""
+	__tablename__ = "recipes"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(100))
+	result_item_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("gear_items.id", ondelete="CASCADE"),
+	                                                   nullable=True)
+	result_amount: Mapped[int] = mapped_column(Integer, default=1)
+	ingredients: Mapped[list] = mapped_column(JSON, default=list)
+	tool_item_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("gear_items.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	stat: Mapped[str] = mapped_column(String(16), default="intelligence")
+	dc: Mapped[int] = mapped_column(Integer, default=12)
+	occupation_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("occupations.id", ondelete="SET NULL"),
+	                                                  nullable=True)
+	occupation_required: Mapped[bool] = mapped_column(Boolean, default=False)
+	min_level: Mapped[int] = mapped_column(Integer, default=1)
+	faction_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("factions.id", ondelete="SET NULL"),
+	                                               nullable=True)
+	days: Mapped[int] = mapped_column(Integer, default=0)
+	mishap_table_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("roll_tables.id", ondelete="SET NULL"),
+	                                                    nullable=True)
+	pack: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+	__table_args__ = (
+		Index('uq_recipe_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+# reserved is the ingredients set aside ([{"item_id", "amount"}]); state working, done or abandoned.
+class CraftProjects(Base) :
+	"""A recipe that takes days, worked on in downtime."""
+	__tablename__ = "craft_projects"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	recipe_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("recipes.id", ondelete="SET NULL"),
+	                                              nullable=True)
+	days_done: Mapped[int] = mapped_column(Integer, default=0)
+	masterwork: Mapped[bool] = mapped_column(Boolean, default=False)
+	state: Mapped[str] = mapped_column(String(16), default="working")
+	reserved: Mapped[list] = mapped_column(JSON, default=list)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ============================================================
+# Flavor: rumors and omens
+# ============================================================
+
+# truth is unknown, true, false or partial (GMs mark it; hidden from players). secret rumors are never posted, only
+# overheard. heard counts how often characters overheard it; in whisper mode it spreads (is posted) at 3.
+class Rumors(Base) :
+	"""A rumor going round: posted anonymously, or planted by a GM."""
+	__tablename__ = "rumors"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	author_uid: Mapped[int] = mapped_column(BigInteger)
+	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	text: Mapped[str] = mapped_column(Text)
+	location_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("locations.id", ondelete="SET NULL"),
+	                                                nullable=True)
+	region_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("regions.id", ondelete="SET NULL"),
+	                                              nullable=True)
+	truth: Mapped[str] = mapped_column(String(16), default="unknown")
+	secret: Mapped[bool] = mapped_column(Boolean, default=False)
+	planted: Mapped[bool] = mapped_column(Boolean, default=False)
+	heard: Mapped[int] = mapped_column(Integer, default=0)
+	spread_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	pinned: Mapped[bool] = mapped_column(Boolean, default=False)
+	expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class RumorHeard(Base) :
+	"""A character overheard a rumor."""
+	__tablename__ = "rumor_heard"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	rumor_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("rumors.id", ondelete="CASCADE"), index=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	heard_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# kind is listen (once a real day per character) or block (a member who may not post rumors; character_id empty).
+class RumorMarks(Base) :
+	"""When a character last listened for rumors, and members blocked from posting them."""
+	__tablename__ = "rumor_marks"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	kind: Mapped[str] = mapped_column(String(16))
+	uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"),
+	                                                 nullable=True)
+	day: Mapped[str | None] = mapped_column(String(10), nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# deck is a built-in deck's key (tarot, bones) or "table:<id>" for a server deck. cycle goes up each time the
+# character's deck is reshuffled, so cards are drawn without replacement within a cycle.
+class OmenDraws(Base) :
+	"""A card a character drew."""
+	__tablename__ = "omen_draws"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	deck: Mapped[str] = mapped_column(String(32))
+	card: Mapped[str] = mapped_column(String(100))
+	cycle: Mapped[int] = mapped_column(Integer, default=1)
+	reader_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	drawn_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # ============================================================

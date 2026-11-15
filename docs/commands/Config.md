@@ -2,7 +2,7 @@
 layout: default
 title: Config
 parent: Commands
-nav_order: 8
+nav_order: 10
 ---
 
 <h1>Config</h1>
@@ -104,10 +104,11 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 
 **Usage:** `/config singlechannels <option> <channel>`
 
-> Sets the character, character review, species forum, gear forum, timeline, modlog or GM roll log channel.
-> Approved characters and species are posted in the character channel and the species forum (a forum gives each
-> its own thread); new and edited characters and species wait for staff in the character review channel. The GM
-> roll log gets a copy of every secret roll.
+> Sets one of the channels the bot posts in. Approved characters and species are posted in the character channel
+> and the species forum (a forum gives each its own thread); new and edited characters and species wait for staff
+> in the character review channel. The GM roll log gets a copy of every secret roll. The chronicle gets finished
+> scenes, the job board (a forum) jobs, the letter channel notices for members with DMs closed, and the rumor
+> channel rumors.
 >
 > **Permissions:**
 > - `Manage Server`
@@ -215,6 +216,19 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 
 > Adds or removes a forum whose posts earn XP (a roleplay forum). Posts made as a character there also earn
 > the character currency.
+>
+> **Permissions:**
+> - `Manage Server`
+
+---
+
+### `roleplay`
+
+**Usage:** `/config roleplay <setting> <value>`
+
+> Sets one of the roleplay tools' settings: in-world time and weather, travel, scenes, languages, letters, jobs,
+> downtime, rumors and omens. Start typing to see them all with their current values; /config view lists them
+> too.
 >
 > **Permissions:**
 > - `Manage Server`

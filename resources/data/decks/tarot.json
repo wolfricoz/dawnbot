@@ -1,0 +1,27 @@
+{
+  "title": "Tarot (major arcana)",
+  "cards": [
+    {"name": "The Fool", "upright": "A first step into the unknown. Trust the road, even if you can't see where it bends.", "reversed": "A leap made without looking. Something you rushed past will catch up with you.", "effect": "boon"},
+    {"name": "The Magician", "upright": "Everything you need is already in your hands. Use it.", "reversed": "Clever tricks hide an empty purse. Someone is not what they claim.", "effect": "boon"},
+    {"name": "The High Priestess", "upright": "Listen to the quiet voice. The answer is in what goes unsaid.", "reversed": "A secret kept too long begins to rot."},
+    {"name": "The Empress", "upright": "Growth, comfort and plenty. Tend what you have and it will flourish.", "reversed": "Too much of a good thing; something is being smothered."},
+    {"name": "The Emperor", "upright": "Order and a firm hand. Rules will serve you now.", "reversed": "A rigid will cracks under pressure. Bend, or break."},
+    {"name": "The Hierophant", "upright": "Old ways and trusted teachers. Seek the counsel of those who came before.", "reversed": "Tradition is a cage today. Question it."},
+    {"name": "The Lovers", "upright": "A bond that matters, and a choice that tests it.", "reversed": "A rift between hearts, or between what you want and what you need.", "reversed_effect": "bane"},
+    {"name": "The Chariot", "upright": "Victory through will. Hold the reins and charge.", "reversed": "Pulled in two directions, you go nowhere.", "effect": "boon"},
+    {"name": "Strength", "upright": "Quiet courage tames the wild beast. Gentleness is not weakness.", "reversed": "Doubt gnaws at your resolve.", "effect": "boon"},
+    {"name": "The Hermit", "upright": "Step away from the crowd. Clarity waits in solitude.", "reversed": "Isolation has become hiding."},
+    {"name": "Wheel of Fortune", "upright": "The wheel turns in your favor. Seize the moment while it lasts.", "reversed": "The wheel turns against you. Brace yourself.", "effect": "boon", "reversed_effect": "bane"},
+    {"name": "Justice", "upright": "What is owed will be paid, one way or another.", "reversed": "The scales are rigged. Someone escapes what they deserve."},
+    {"name": "The Hanged Man", "upright": "Wait. Seen from upside down, the problem looks different.", "reversed": "Stalling for nothing; the sacrifice was wasted."},
+    {"name": "Death", "upright": "An ending, and the room it makes for something new. Not always a grave.", "reversed": "Clinging to what is already gone.", "reversed_effect": "bane"},
+    {"name": "Temperance", "upright": "Balance and patience. Mix the waters slowly.", "reversed": "Excess in one thing, starvation in another."},
+    {"name": "The Devil", "upright": "Chains you put on yourself. A temptation with a price.", "reversed": "The chains loosen. You can walk away now.", "effect": "bane"},
+    {"name": "The Tower", "upright": "Sudden upheaval. What was built on sand comes down.", "reversed": "Disaster narrowly avoided, for now.", "effect": "bane"},
+    {"name": "The Star", "upright": "Hope after the storm. Healing comes.", "reversed": "Hope dims, but has not gone out.", "effect": "boon"},
+    {"name": "The Moon", "upright": "Illusions and half-truths. Not everything that glimmers in the dark is real.", "reversed": "The fog lifts; a deception is revealed.", "effect": "bane"},
+    {"name": "The Sun", "upright": "Warmth, success and a clear sky. Things go your way.", "reversed": "A cloud over a bright day; joy delayed, not denied.", "effect": "boon"},
+    {"name": "Judgement", "upright": "A reckoning, and a calling. Answer it.", "reversed": "You hear the call and pretend you didn't."},
+    {"name": "The World", "upright": "A circle closes. Something long worked for is complete.", "reversed": "So close to the end, and one piece is missing.", "effect": "boon"}
+  ]
+}

@@ -193,7 +193,8 @@ class CheckFlow :
 				stat = check.opposed[str(side)]["stat"]
 			helps, help_ = Checks.take_help(check.helps, interaction.user.id)
 			extras = [Bonus(f"Help ({help_.get('helper_name')})", Checks.HELP_BONUS)] if help_ else []
-			result, first = CheckFlow.make_roll(check, character, stat, extras)
+			result, first = CheckFlow.make_roll(check, character, stat, extras,
+			                                    getattr(interaction.channel, "parent_id", None))
 			details = {"bonuses" : [[bonus.label, bonus.value] for bonus in result.bonuses], "notes" : result.notes}
 			if first is not None :
 				details["rerolled"] = first.total
@@ -222,13 +223,23 @@ class CheckFlow :
 
 	# ============================================================
 	@staticmethod
-	def make_roll(check: CheckRecord, character: Characters, stat: str, extras: list[Bonus]) :
-		"""Rolls for a character, with bad-roll protection when the roll can fail on its own (it has a DC).
+	def make_roll(check: CheckRecord, character: Characters, stat: str, extras: list[Bonus],
+	              parent_id: int | None = None) :
+		"""Rolls for a character, with bad-roll protection when the roll can fail on its own (it has a DC). The
+		weather at an outdoor location adds its modifier.
 
 		@return: the result that counts, and the first roll when it was made again (else None).
 		"""
 		stats = Checks.stats_of(character)
 		base = CheckFlow.base(check.guild_id)
+		extras = list(extras) + CheckFlow.situational(check.guild_id, check.channel_id, parent_id, stat)
+		from classes.flavor import OmenFlow
+
+		bane = OmenFlow.bane(character)
+		if bane :
+			# An omen's bane: -1 on this check, then it is spent.
+			extras.append(Bonus("Omen", OmenFlow.BANE_PENALTY))
+			OmenFlow.use_bane(character.id)
 
 		def make() :
 			return Checks.roll(stats, stat, check.dc, base, check.modifier or 0, extras)
@@ -236,6 +247,15 @@ class CheckFlow :
 		if check.dc is None :
 			return make(), None
 		return Fortune.for_character(character.id, make, lambda result : result.success, lambda result : result.total)
+
+	# ============================================================
+	@staticmethod
+	def situational(guild_id: int, channel_id: int | None, parent_id: int | None, stat: str) -> list[Bonus] :
+		"""Modifiers from the world: the weather where the check is rolled."""
+		from classes.world.WorldFlow import WorldFlow
+
+		weather = WorldFlow.check_bonus(guild_id, channel_id, parent_id, stat)
+		return [weather] if weather else []
 
 	# ============================================================
 	@staticmethod
@@ -358,7 +378,11 @@ class CheckFlow :
 	def present(guild: discord.Guild, channel_id: int, role: discord.Role | None,
 	            member: discord.Member | None) -> list[Characters] :
 		"""The approved characters that posted in this channel in the last few days, limited to a role or member."""
-		since = datetime.now(timezone.utc) - timedelta(days=Checks.PRESENCE_DAYS)
+		from classes.kernel import RoleplaySettings
+		from resources.configs.ConfigMapping import ConfigMapping
+
+		days = RoleplaySettings.number(guild.id, ConfigMapping.PRESENCE_DAYS)
+		since = datetime.now(timezone.utc) - timedelta(days=days)
 		characters = []
 		for character_id in ProxyTransactions().recent_characters(channel_id, since) :
 			character = CharacterTransactions().get_by_id(character_id)
@@ -382,7 +406,11 @@ class CheckFlow :
 			                                f"{', '.join(Checks.DCS)}.")
 		characters = CheckFlow.present(interaction.guild, interaction.channel_id, role, member)
 		if not characters :
-			return await reply(interaction, f"No characters posted here in the last {Checks.PRESENCE_DAYS} days"
+			from classes.kernel import RoleplaySettings
+			from resources.configs.ConfigMapping import ConfigMapping
+
+			days = RoleplaySettings.number(interaction.guild_id, ConfigMapping.PRESENCE_DAYS)
+			return await reply(interaction, f"No characters posted here in the last {days} days"
 			                                f"{' (in that role or for that member)' if role or member else ''}.")
 		check = CheckTransactions().create(interaction.guild_id, interaction.channel_id, interaction.user.id, stat,
 		                                   title=(title or None) and title[:200], dc=dc, kind=PASSIVE,
@@ -391,10 +419,12 @@ class CheckFlow :
 		if check is None :
 			return await reply(interaction, "Something went wrong saving the check; please try again.")
 		base = CheckFlow.base(interaction.guild_id)
+		extras = CheckFlow.situational(interaction.guild_id, interaction.channel_id,
+		                               getattr(interaction.channel, "parent_id", None), stat)
 		lines, passed = [], []
 		for character in characters :
 			# Passive rolls happen without the player knowing, so they don't count toward bad-roll protection.
-			result = Checks.roll(Checks.stats_of(character), stat, dc, base, modifier)
+			result = Checks.roll(Checks.stats_of(character), stat, dc, base, modifier, extras)
 			CheckTransactions().add_roll(check.id, character.id, character.uid, character.name, stat,
 			                             natural=result.natural, total=result.total, outcome=result.outcome)
 			lines.append(f"**{character.name}** (<@{character.uid}>) · {result.breakdown()} · "

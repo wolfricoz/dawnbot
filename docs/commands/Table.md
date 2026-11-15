@@ -2,7 +2,7 @@
 layout: default
 title: Table
 parent: Commands
-nav_order: 22
+nav_order: 34
 ---
 
 <h1>Table</h1>
@@ -14,7 +14,7 @@ Roll tables for loot, encounters, names and plot hooks; staff make them, anyone 
 
 ### `create`
 
-**Usage:** `/table create <name> <luck> <visibility> <file>`
+**Usage:** `/table create <name> <luck> <visibility> <file> <deck>`
 
 > Creates a table. Without a file, a form asks for the description and the entries (up to 4000 characters).
 >
@@ -28,7 +28,7 @@ Roll tables for loot, encounters, names and plot hooks; staff make them, anyone 
 > - Lines starting with `#` are skipped.
 >
 > Luck-touched tables (`luck`) put the best results at the high end: rolling as a character moves the roll by
-> twice their Luck modifier.
+> twice their Luck modifier. A `deck` is drawn from with /omen draw instead (one card per entry, `Name: meaning`).
 >
 > **Permissions:**
 > - `Manage Messages`
