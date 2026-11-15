@@ -271,3 +271,28 @@ class TestNpcAbilities(unittest.TestCase) :
 		Autopilot(run).take_turn(mage)
 		self.assertTrue(any("uses **Ability 0**" in line for line in run.outcome.lines))
 		self.assertTrue(any("uses **Ability 1**" in line for line in run.outcome.lines))
+
+
+class TestBluntRevision(DatabaseTestCase) :
+
+	def test_untouched_blunt_now_knocks_prone(self) :
+		from classes.combat.DamageTypes import REVISIONS
+
+		self.add_server()
+		transactions = DamageTypeTransactions()
+		old = REVISIONS[0][2]
+		transactions.add(GUILD_ID, "Blunt", trigger="strong_hit", effect=old, pack="default")
+		DamageTypes.ensure(GUILD_ID)
+		self.assertEqual(transactions.find(GUILD_ID, "Blunt").effect["condition"], C.PRONE)
+		# Staff set it back to stun on purpose: it stays that way.
+		transactions.update(transactions.find(GUILD_ID, "Blunt").id, effect=old)
+		DamageTypes.ensure(GUILD_ID)
+		self.assertEqual(transactions.find(GUILD_ID, "Blunt").effect["condition"], C.STUNNED)
+
+	def test_an_edited_blunt_is_left_alone(self) :
+		self.add_server()
+		transactions = DamageTypeTransactions()
+		edited = {"kind" : "condition", "condition" : C.WEAKENED, "turns" : 2}
+		transactions.add(GUILD_ID, "Blunt", trigger="strong_hit", effect=edited, pack="default")
+		DamageTypes.ensure(GUILD_ID)
+		self.assertEqual(transactions.find(GUILD_ID, "Blunt").effect, edited)

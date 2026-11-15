@@ -31,7 +31,7 @@ ORIGINAL_DEFAULTS = ["Slashing", "Piercing", "Blunt", "Fire", "Frost", "Lightnin
 DEFAULTS = [
 	("Slashing", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.BLEEDING, "turns" : 2}),
 	("Piercing", STRONG_HIT, {"kind" : IGNORE_DT}),
-	("Blunt", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.STUNNED, "turns" : 1}),
+	("Blunt", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.PRONE, "turns" : 1}),
 	("Fire", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.BURNING, "turns" : 2}),
 	("Frost", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.SLOWED, "turns" : 1}),
 	("Lightning", STRONG_HIT, {"kind" : ARC}),
@@ -44,7 +44,13 @@ DEFAULTS = [
 	("Sonic", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.PRONE, "turns" : 1}),
 	(RESTORATION, ALWAYS, {"kind" : CLEANSE}),
 ]
-
+# Changes to a default type that reach servers whose type is still exactly the old default (a type staff edited is left
+# alone), once each: (marker kept in OFFERED_KEY, name, old effect, new effect). Blunt used to stun on a strong hit;
+# with multi-hit attacks every hit could stun, so it knocks the target prone instead (Rico, 2026-11-15).
+REVISIONS = [
+	("Blunt:prone", "Blunt", {"kind" : CONDITION, "condition" : Conditions.STUNNED, "turns" : 1},
+	 {"kind" : CONDITION, "condition" : Conditions.PRONE, "turns" : 1}),
+]
 
 
 # ============================================================
@@ -61,7 +67,8 @@ class DamageTypes :
 	@staticmethod
 	def ensure(guild_id: int) -> None :
 		"""Gives a server the default types when it has none, and any default added since it got its table (like Acid,
-		Necrotic and Sonic) that it doesn't have yet. Each default is only offered once, so deleting one sticks."""
+		Necrotic and Sonic) that it doesn't have yet, and applies REVISIONS to defaults nobody edited. Each default and
+		revision is only offered once, so deleting or editing one sticks."""
 		transactions = _transactions()
 		existing = {record.name.lower() for record in transactions.get_all(guild_id)}
 		offered = DamageTypes.offered(guild_id)
@@ -76,6 +83,14 @@ class DamageTypes :
 			if name.lower() not in existing :
 				transactions.add(guild_id, name, trigger=trigger, effect=effect, pack=PACK)
 			offered.append(name)
+			added = True
+		for marker, name, old, new in REVISIONS :
+			if marker in offered :
+				continue
+			record = transactions.find(guild_id, name)
+			if record is not None and record.pack == PACK and (record.effect or {}) == old :
+				transactions.update(record.id, effect=new)
+			offered.append(marker)
 			added = True
 		if added or DamageTypes.offered(guild_id) is None :
 			DamageTypes.remember(guild_id, offered)
