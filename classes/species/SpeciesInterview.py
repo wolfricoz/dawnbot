@@ -2,15 +2,21 @@
 
 Like the character interview, every answer is saved in the player's draft (kind species or species_edit), so it has
 no time limit. This module holds the questions and the rules; SpeciesFlow sends the messages.
+
+A species can also be made in the middle of creating a character: the character's draft is kept in the species
+draft (answers["paused_character"]) and comes back when the species is submitted (with the new species picked) or
+cancelled.
 """
 from dataclasses import dataclass
 
 from classes.characters.Interview import FORBIDDEN_NAME_PARTS, Reply, STAT_ORDER
 from classes.characters.SpeciesRules import HIGHEST, LOWEST, SpeciesRules
 from classes.characters.Special import STATS, Special
+from classes.kernel.ConfigData import ConfigData
 from database.database import Drafts, Species
 from database.transactions.DraftTransactions import DraftTransactions
 from database.transactions.SpeciesTransactions import APPROVED, DENIED, PENDING, SpeciesTransactions
+from resources.configs.ConfigMapping import ConfigMapping
 
 CREATE = "species"
 EDIT = "species_edit"
@@ -63,17 +69,42 @@ class SpeciesInterview :
 
 	# ============================================================
 	@staticmethod
-	def start(uid: int, guild_id: int, guild_name: str, species: Species | None = None) -> tuple[Drafts | None, str] :
-		"""Starts creating a species, or changing one. Returns (None, why) when the user is in another interview."""
+	def can_create(guild_id: int, staff: bool) -> str | None :
+		"""Why the member may not create a species on this server, or None when they may."""
+		who = str(ConfigData().get_key(guild_id, ConfigMapping.SPECIES_CREATION)).lower()
+		if who == "off" :
+			return "This server does not take new species."
+		if who == "staff" and not staff :
+			return "On this server, only staff create species."
+		if ConfigData().get_int(guild_id, ConfigMapping.CHARACTER_REVIEW) is None :
+			return ("This server has not set up reviews yet. Staff can set the review channel with "
+			        "`/config singlechannels` (option `character_review`).")
+		return None
+
+	# ============================================================
+	@staticmethod
+	def start(uid: int, guild_id: int, guild_name: str, species: Species | None = None,
+	          paused_character: dict | None = None) -> tuple[Drafts | None, str] :
+		"""Starts creating a species, or changing one. Returns (None, why) when the user is in another interview.
+
+		paused_character is the draft of a character being created, kept until this species is submitted or cancelled.
+		"""
 		existing = DraftTransactions().get(uid)
 		if existing is not None :
 			from classes.characters.Interview import Interview
 			return None, Interview.busy_text(existing)
 		answers = {"guild_name" : guild_name} | SpeciesInterview._defaults(guild_id, species)
+		if paused_character :
+			answers["paused_character"] = paused_character
 		kind = EDIT if species else CREATE
 		draft = DraftTransactions().create(uid, guild_id, kind, "summary" if species else "name", answers=answers,
 		                                   species_id=species.id if species else None)
-		if species is None :
+		if paused_character :
+			intro = (f"**Making a new species on {guild_name}**\n"
+			         f"Your character is saved. Describe your species, then set how it changes the SPECIAL stats. "
+			         f"When you submit it, your character gets it and we carry on with the character; staff review "
+			         f"the species alongside it. Cancel to go back to your character without one.")
+		elif species is None :
 			intro = (f"**Creating a species on {guild_name}**\n"
 			         f"Describe your species, then set how it changes the SPECIAL stats. Staff review it, and once "
 			         f"approved anyone can play it. Type **back** for the previous question or **cancel** to stop.")
@@ -179,7 +210,10 @@ class SpeciesInterview :
 		answers = draft.answers
 		if command == "cancel" :
 			DraftTransactions().delete(draft.uid)
-			return Reply("Cancelled. Nothing was changed.", finished=True, outcome=CANCELLED)
+			text = "Cancelled. Nothing was changed."
+			if answers.get("paused_character") :
+				text = f"Cancelled the species.\n\n{SpeciesInterview._resume(draft)}"
+			return Reply(text, finished=True, outcome=CANCELLED)
 		if command == "back" :
 			if draft.step == "summary" :
 				return Reply("You are at the summary. Type a number to change that answer.")
@@ -294,8 +328,11 @@ class SpeciesInterview :
 			if species is None :
 				return Reply("Something went wrong while saving the species. Please type **submit** again.")
 			DraftTransactions().delete(draft.uid)
-			return Reply(f"**{species.name}** was sent to the staff of {guild_name} for review. I'll message you when "
-			             f"they have looked at it.", finished=True, outcome=CREATED, species=species)
+			text = (f"**{species.name}** was sent to the staff of {guild_name} for review. I'll message you when "
+			        f"they have looked at it.")
+			if draft.answers.get("paused_character") :
+				text += f"\n\n{SpeciesInterview._resume(draft, species)}"
+			return Reply(text, finished=True, outcome=CREATED, species=species)
 		species = SpeciesTransactions().get(draft.species_id)
 		DraftTransactions().delete(draft.uid)
 		if species is None :
@@ -307,6 +344,15 @@ class SpeciesInterview :
 			species = SpeciesTransactions().update(species.id, state=PENDING, **data)
 			text = f"{species.name} was updated and sent to staff for review."
 		return Reply(text, finished=True, outcome=REVIEW, species=species)
+
+	# ============================================================
+	@staticmethod
+	def _resume(draft: Drafts, species: Species | None = None) -> str :
+		"""Brings back the character this species interview interrupted; returns its next question."""
+		from classes.characters.Interview import Interview
+
+		return "**Back to your character.**\n" + Interview.resume(draft.uid, draft.guild_id,
+		                                                          draft.answers["paused_character"], species)
 
 	# ============================================================
 	@staticmethod

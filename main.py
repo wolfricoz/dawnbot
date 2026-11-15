@@ -27,6 +27,7 @@ from project.data import BOT_NAME, VERSION
 from views.buttons.ReviewButtons import ReviewButtons
 from views.buttons.RoleplayChannelPrompt import RoleplayChannelButton
 from views.multiselect.StatPicker import StatButton, StatSelect
+from views.buttons.InterviewControls import InterviewButton, InterviewSelect
 from views.buttons.SpeciesReviewButtons import SpeciesReviewButtons
 from views.combat.AbilityReviewButtons import AbilityReviewButtons
 from classes.language.LanguageFlow import UnderstandButton
@@ -165,6 +166,7 @@ async def setup_hook() :
 	# Persistent views must be registered on every start, or their buttons stop working after a restart.
 	bot.add_view(ReviewButtons())
 	bot.add_view(SpeciesReviewButtons())
+	bot.add_dynamic_items(RoleplayChannelButton, StatSelect, StatButton, InterviewButton, InterviewSelect)
 	bot.add_view(AbilityReviewButtons())
 	bot.add_dynamic_items(RoleplayChannelButton, StatSelect, StatButton, CombatButton, CheckButton, TableRollButton,
 	                      SceneButton, ChronicleButton, UnderstandButton, LetterButton,

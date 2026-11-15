@@ -11,6 +11,8 @@ LOWEST = -2
 HIGHEST = 13
 # The largest change to one starting value.
 MAX_MODIFIER = 5
+# What describe says about a species that leaves every stat as it is.
+NO_CHANGES = "No changes to the SPECIAL stats."
 
 Limits = dict[str, tuple[int, int]]
 
@@ -96,4 +98,4 @@ class SpeciesRules :
 				parts.append(f"starts {modifiers[stat]:+d}")
 			if parts :
 				lines.append(f"**{stat.capitalize()}:** {', '.join(parts)}")
-		return "\n".join(lines) or "No changes to the SPECIAL stats."
+		return "\n".join(lines) or NO_CHANGES

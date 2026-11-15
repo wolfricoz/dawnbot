@@ -11,11 +11,10 @@ from discord.ext import commands
 from classes.characters.Access import Access
 from classes.characters.Choices import Choices
 from classes.characters.CharacterFlow import CharacterFlow
-from classes.kernel.ConfigData import ConfigData
+from classes.species.SpeciesInterview import SpeciesInterview
 from classes.species.SpeciesFlow import SpeciesFlow
 from database.database import Species as SpeciesRow
 from database.transactions.SpeciesTransactions import APPROVED, DENIED, PENDING, SpeciesTransactions
-from resources.configs.ConfigMapping import ConfigMapping
 from views.buttons.Confirm import ask
 
 STATE_LABELS = {PENDING : "waiting for review", DENIED : "denied"}
@@ -54,15 +53,9 @@ class Species(commands.GroupCog, name="Species", group_name="species") :
 		changes to the starting stats. Staff review it; once approved, anyone can pick it for their characters.
 		"""
 		await interaction.response.defer(ephemeral=True)
-		who = str(ConfigData().get_key(interaction.guild_id, ConfigMapping.SPECIES_CREATION)).lower()
-		if who == "off" :
-			return await interaction.followup.send("This server does not take new species.")
-		if who == "staff" and not interaction.user.guild_permissions.manage_messages :
-			return await interaction.followup.send("On this server, only staff create species.")
-		if ConfigData().get_int(interaction.guild_id, ConfigMapping.CHARACTER_REVIEW) is None :
-			return await interaction.followup.send(
-				"This server has not set up reviews yet. Staff can set the review channel with "
-				"`/config singlechannels` (option `character_review`).")
+		problem = SpeciesInterview.can_create(interaction.guild_id, interaction.user.guild_permissions.manage_messages)
+		if problem :
+			return await interaction.followup.send(problem)
 		await SpeciesFlow.begin(interaction)
 
 	# ============================================================
