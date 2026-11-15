@@ -126,10 +126,12 @@ class StatButton(discord.ui.DynamicItem[discord.ui.Button], template=r"stat_btn:
 		from classes.characters.CharacterFlow import CharacterFlow
 		from classes.characters.Interview import Interview
 
+		controls = draft.answers.get("controls_message")
 		reply = await Interview.answer(draft, values)
 		if StatPanel.is_open(draft) :
 			# The interview refused the values; say why and keep the picker.
 			return await interaction.response.edit_message(view=build(draft, reply.text.split("\n")[0]))
 		stats = draft.answers.get("stats") or {}
 		await interaction.response.edit_message(view=closed(f"SPECIAL saved: {Special.summary(stats)}"))
-		await CharacterFlow.deliver(interaction.client, interaction.user, reply, step_before="stats")
+		await CharacterFlow.deliver(interaction.client, interaction.user, reply, step_before="stats",
+		                            old_controls=controls)

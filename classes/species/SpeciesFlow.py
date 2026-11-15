@@ -49,7 +49,7 @@ class SpeciesFlow :
 		draft, text = SpeciesInterview.start(interaction.user.id, interaction.guild.id, interaction.guild.name, species)
 		if draft is None :
 			return await CharacterFlow.respond(interaction, text)
-		if not await CharacterFlow.send_dm(interaction.user, text) :
+		if not await CharacterFlow.send_question(interaction.user, text) :
 			DraftTransactions().delete(interaction.user.id)
 			return await CharacterFlow.respond(interaction, "I could not send you a DM. Please allow direct messages "
 			                                                "from this server and try again.")
@@ -58,12 +58,24 @@ class SpeciesFlow :
 	# ============================================================
 	@staticmethod
 	async def handle_dm(bot: discord.Client, message: discord.Message, draft: Drafts) -> None :
-		reply = SpeciesInterview.answer(draft, await CharacterFlow._text_of(message))
-		await CharacterFlow.send_dm(message.author, reply.text)
+		await SpeciesFlow.answer_text(bot, message.author, draft, await CharacterFlow._text_of(message))
+
+	# ============================================================
+	@staticmethod
+	async def answer_text(bot: discord.Client, user: discord.User | discord.Member, draft: Drafts, text: str,
+	                      pressed_message_id: int | None = None) -> None :
+		"""Feeds text to the user's species interview (typed, or a button or menu press) and sends the reply."""
+		controls = draft.answers.get("controls_message")
+		reply = SpeciesInterview.answer(draft, text)
+		await CharacterFlow.strip_controls(user, controls if controls != pressed_message_id else None)
+		# A species made while creating a character ends by going back to the character, whose question (and its
+		# buttons) is part of the reply.
+		await CharacterFlow.send_question(user, reply.text)
 		if reply.finished and reply.outcome in (CREATED, REVIEW) and reply.species is not None :
 			if not await SpeciesFlow.post_review(bot, reply.species) :
-				await CharacterFlow.send_dm(message.author, "I could not reach the server's review channel, so staff "
-				                                            "have not seen this yet. Please let the server's staff know.")
+				await CharacterFlow.send_dm(user, "I could not reach the server's review channel, so staff have not "
+				                                  "seen this yet. Please let the server's staff know.")
+		await CharacterFlow.send_stat_picker(user)
 
 	# == review ==
 

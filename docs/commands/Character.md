@@ -17,8 +17,9 @@ Create and manage your characters. New characters and most changes are reviewed 
 **Usage:** `/character create`
 
 > Starts creating a character. The bot asks its questions in your DMs: a name, how you speak as the character,
-a picture, the server's character sheet and your SPECIAL stats. There is no time limit. When you submit,
-staff review the character before you can use it.
+a picture, a species (or make a new one on the spot), the server's character sheet and your SPECIAL stats.
+Every question has buttons or menus to answer with, and typing works too. There is no time limit. When
+you submit, staff review the character before you can use it.
 
 ---
 

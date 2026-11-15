@@ -45,15 +45,60 @@ class CharacterFlow :
 	@staticmethod
 	async def send_dm(user: discord.abc.Messageable, text: str) -> bool :
 		"""Sends text as one or more DMs. False when the user's DMs are closed."""
+		return await CharacterFlow._send(user, text) is not None
+
+	# ============================================================
+	@staticmethod
+	async def _send(user: discord.abc.Messageable, text: str,
+	                view: discord.ui.View | None = None) -> discord.Message | None :
+		"""Sends text as one or more DMs, with view under the last one; returns that last message, or None when the
+		user's DMs are closed. If Discord refuses the view, the text goes without it."""
+		chunks = chunk_text(text, MESSAGE_LIMIT)
+		message = None
 		try :
-			for chunk in chunk_text(text, MESSAGE_LIMIT) :
-				await user.send(chunk)
-			return True
+			for index, chunk in enumerate(chunks) :
+				if index == len(chunks) - 1 and view is not None :
+					try :
+						message = await user.send(chunk, view=view)
+						continue
+					except discord.Forbidden :
+						raise
+					except discord.HTTPException as e :
+						logging.warning(f"Discord refused the interview controls for {user}: {e}")
+				message = await user.send(chunk)
+			return message
 		except discord.Forbidden :
-			return False
+			return None
 		except discord.HTTPException as e :
 			logging.warning(f"Could not DM {user}: {e}")
-			return False
+			return None
+
+	# ============================================================
+	@staticmethod
+	async def send_question(user: discord.abc.Messageable, text: str) -> bool :
+		"""Sends an interview message with the buttons and menus of the user's current question (character or
+		species interview), and remembers it so the next answer can take them off again. False when DMs are closed."""
+		from views.buttons import InterviewControls
+
+		draft = DraftTransactions().get(user.id)
+		view = InterviewControls.view(draft) if draft is not None else None
+		message = await CharacterFlow._send(user, text, view)
+		if message is not None and view is not None and message.components :
+			draft.answers["controls_message"] = message.id
+			DraftTransactions().save(draft)
+		return message is not None
+
+	# ============================================================
+	@staticmethod
+	async def strip_controls(user: discord.User | discord.Member, message_id: int | None) -> None :
+		"""Takes the buttons and menus off an earlier question once it has been answered."""
+		if not message_id :
+			return
+		try :
+			channel = user.dm_channel or await user.create_dm()
+			await channel.get_partial_message(message_id).edit(view=None)
+		except discord.HTTPException :
+			pass
 
 	# ============================================================
 	@staticmethod
@@ -75,7 +120,7 @@ class CharacterFlow :
 		if draft is None :
 			await ImageStorage.delete(interaction.client, avatar_id)
 			return await CharacterFlow.respond(interaction, text)
-		if not await CharacterFlow.send_dm(interaction.user, text) :
+		if not await CharacterFlow.send_question(interaction.user, text) :
 			DraftTransactions().delete(interaction.user.id)
 			await ImageStorage.delete(interaction.client, avatar_id)
 			return await CharacterFlow.respond(interaction, DMS_CLOSED)
@@ -114,8 +159,20 @@ class CharacterFlow :
 		member = guild.get_member(message.author.id) if guild else None
 		access = Access.of(member) if member is not None else None
 		step_before = draft.step
+		controls = draft.answers.get("controls_message")
 		reply = await Interview.answer(draft, await CharacterFlow._text_of(message), images, store_image, access)
-		await CharacterFlow.deliver(bot, message.author, reply, step_before)
+		await CharacterFlow.deliver(bot, message.author, reply, step_before, controls)
+
+	# ============================================================
+	@staticmethod
+	async def answer_text(bot: discord.Client, user: discord.User | discord.Member, draft, text: str,
+	                      pressed_message_id: int | None = None) -> None :
+		"""Feeds text to the user's character interview as if they typed it (a button or menu press)."""
+		step_before = draft.step
+		controls = draft.answers.get("controls_message")
+		reply = await Interview.answer(draft, text)
+		await CharacterFlow.deliver(bot, user, reply, step_before,
+		                            controls if controls != pressed_message_id else None)
 
 	# ============================================================
 	@staticmethod
@@ -130,10 +187,15 @@ class CharacterFlow :
 
 	# ============================================================
 	@staticmethod
-	async def deliver(bot: discord.Client, user: discord.User | discord.Member, reply, step_before: str | None) -> None :
+	async def deliver(bot: discord.Client, user: discord.User | discord.Member, reply, step_before: str | None,
+	                  old_controls: int | None = None) -> None :
 		"""Sends the interview's reply and carries out what it decided: removing pictures, posting the review card,
-		updating the forum post, or showing the SPECIAL menus for the next question."""
-		await CharacterFlow.send_dm(user, reply.text)
+		updating the forum post, or showing the SPECIAL menus for the next question.
+
+		old_controls is the message with the previous question's buttons, which are taken off first.
+		"""
+		await CharacterFlow.strip_controls(user, old_controls)
+		await CharacterFlow.send_question(user, reply.text)
 		for image_id in reply.discard_images :
 			await ImageStorage.delete(bot, image_id)
 		if not reply.finished :
@@ -238,6 +300,8 @@ class CharacterFlow :
 			await interaction.message.edit(view=None)
 			return await interaction.followup.send("This review is no longer open.", ephemeral=True)
 		bot = interaction.client
+		if approve and (waiting := Review.waiting_on(character)) :
+			return await interaction.followup.send(waiting, ephemeral=True)
 		if approve :
 			occupation_id = (character.pending_changes or {}).get("occupation_id", character.occupation_id) \
 				if Review.kind(character) == CHANGES else character.occupation_id
