@@ -6,7 +6,7 @@ from database.transactions.CharacterTransactions import APPROVED, CharacterTrans
 
 
 class AutoComplete :
-	"""Autocomplete callbacks for the armor, weapon and character options. Discord shows at most 25 choices."""
+	"""Autocomplete callbacks for the armor, weapon and character options (at most 25 choices)."""
 
 	# ============================================================
 	@staticmethod

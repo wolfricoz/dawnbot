@@ -70,6 +70,16 @@ fields of their own.
 
 ---
 
+### `template`
+
+**Usage:** `/sheet template`
+
+> Gives you the server's character sheet as blank text to copy. Fill it in wherever you like, then paste it into
+the DM from `/character create` (or `/character edit`) in one message: the bot fills in what it can and only
+asks what is missing. Questions marked with * are required.
+
+---
+
 ### `reset`
 
 **Usage:** `/sheet reset`

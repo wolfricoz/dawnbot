@@ -20,7 +20,8 @@ from classes.characters.Card import Card
 from classes.characters.Choices import Choices
 from classes.characters.Edits import Edits
 from classes.characters.ImageStorage import ImageError, ImageStorage
-from classes.characters.Sheet import INFO, Sheet
+from classes.characters import SheetPaste
+from classes.characters.Sheet import INFO, LONG, Sheet
 from classes.characters.SpeciesRules import SpeciesRules
 from classes.characters.Special import POINT_BUY, ROLLED, STATS, Special
 from classes.gear.Gear import ARMOR, CREATION, Gear, ShopItem
@@ -116,12 +117,16 @@ class Interview :
 			IMPORT : f"**Bringing {character.name if character else ''} to {guild_name}**\n"
 			         f"I copied their name, how you speak as them, their picture and their written answers. Experience, "
 			         f"stats, gear and currency start fresh here. I'll ask what this server needs; there is no time "
-			         f"limit. Type **back** for the previous question or **cancel** to stop.",
+			         f"limit. Type **back** for the previous question or **cancel** to stop. You can also paste a sheet "
+			         f"here to fill in several answers at once.",
 			CREATE : f"**Creating a character on {guild_name}**\n"
 			         f"I'll ask you some questions, one at a time. There is no time limit: every answer is saved, so "
 			         f"you can stop and come back later.\n"
 			         f"Type **back** for the previous question, **skip** to leave an optional question empty, or "
-			         f"**cancel** to stop.",
+			         f"**cancel** to stop.\n"
+			         f"Already wrote this character down somewhere? Paste the whole sheet here in one message and "
+			         f"I'll fill in what I can, then only ask what's missing. Type **template** for a blank copy of "
+			         f"this server's sheet to fill in.",
 			EDIT   : f"**Editing {character.name if character else ''} on {guild_name}**",
 			RESPEC : f"**Changing the SPECIAL stats of {character.name if character else ''} on {guild_name}**\n"
 			         f"Staff review a respec before it applies. Type **cancel** to stop.",
@@ -372,7 +377,8 @@ class Interview :
 			return (f"**Your SPECIAL roll:** {', '.join(str(value) for value in draft.rolled_values)}\n"
 			        f"Decide which stat gets which value: send the seven values in this order:\n"
 			        f"{STAT_ORDER}{note}\n"
-			        f"Type **reroll** to roll again (rerolls so far: {draft.rerolls}).")
+			        f"Type **reroll** to roll again (rerolls so far: {draft.rerolls}).\n"
+			        f"-# Or place each value with the menus below.")
 		budget = Interview._budget(draft)
 		limits = Interview._limits(draft)
 		starts = SpeciesRules.start_values(rules, limits, Interview._modifiers(draft))
@@ -392,7 +398,8 @@ class Interview :
 		return (f"**Set your SPECIAL stats.**\n{intro} {bounds}\n"
 		        f"Send seven numbers in this order:\n{STAT_ORDER}\n"
 		        f"For example: `{' '.join(str(starts[stat]) for stat in STATS)}`. Points you do not spend are kept "
-		        f"for later.")
+		        f"for later.\n"
+		        f"-# Or pick each value with the menus below; they keep count of your points.")
 
 	# ============================================================
 	@staticmethod
@@ -542,11 +549,16 @@ class Interview :
 		lines = ["**Summary**"]
 		for number, (_, label, value) in enumerate(Interview._summary_items(draft), start=1) :
 			lines.append(f"{number}. **{label}:** {value}")
+		extras = draft.answers.get("extras") or []
+		if extras and Interview._is_new(draft) :
+			lines.append(f"**Extra fields:** {Interview._shorten(', '.join(extra['key'] for extra in extras))}")
 		problems = Interview._problems(draft)
 		if problems :
 			lines.append(f"\nStill needed: {', '.join(problems)}.")
 		send = "apply your changes" if draft.kind == EDIT else "send it to staff"
 		lines.append(f"\nType a number to change that answer, **submit** to {send}, or **cancel** to stop.")
+		if draft.kind != RESPEC :
+			lines.append("-# You can also paste a sheet here to change several answers at once.")
 		return "\n".join(lines)
 
 	# == answering ==
@@ -570,6 +582,14 @@ class Interview :
 			return Interview._cancel(draft)
 		if command == "back" :
 			return Interview._back(draft)
+		if command == "template" and draft.kind != RESPEC :
+			return Reply("Copy this, fill it in and paste it back here in one message. Leave out what you don't "
+			             "know yet; I'll ask for anything required that's missing.\n"
+			             + "\n".join(Interview.template(draft)))
+		if draft.kind != RESPEC :
+			entries = SheetPaste.parse(text, SheetFieldTransactions().get_all(draft.guild_id), Interview._builtins(draft))
+			if SheetPaste.is_sheet(entries, Interview._paste_threshold(draft)) :
+				return await Interview._paste(draft, entries, attachments or [], store_image)
 
 		step = draft.step
 		problem = None
@@ -617,6 +637,7 @@ class Interview :
 			if command == "reroll" and answers.get("stat_method") == ROLLED :
 				draft.rolled_values = Special.roll(Special.rules(draft.guild_id))
 				draft.rerolls += 1
+				answers.pop("stat_assign", None)
 				DraftTransactions().save(draft)
 				return Reply(Interview.prompt(draft))
 			problem = Interview._answer_stats(draft, text)
@@ -725,14 +746,21 @@ class Interview :
 		if parsed is None :
 			return None, (f"Please send an example with the word `{PLACEHOLDER}` in it exactly once, like "
 			              f"`Aria: {PLACEHOLDER}`.")
-		prefix, suffix = parsed
+		return Interview.check_trigger_parts(parsed[0], parsed[1], uid, guild_id, exclude_id)
+
+	# ============================================================
+	@staticmethod
+	def check_trigger_parts(prefix: str | None, suffix: str | None, uid: int, guild_id: int,
+	                        exclude_id: int | None = None) -> tuple[tuple[str | None, str | None] | None, str | None] :
+		"""Checks a prefix and suffix given separately; returns like check_trigger."""
+		prefix, suffix = (prefix or "").strip() or None, (suffix or "").strip() or None
 		if not prefix and not suffix :
 			return None, f"Put something before or after `{PLACEHOLDER}`, like `Aria: {PLACEHOLDER}`."
 		if len(prefix or "") > TRIGGER_LIMIT or len(suffix or "") > TRIGGER_LIMIT :
 			return None, f"A prefix or suffix can be at most {TRIGGER_LIMIT} characters."
 		if CharacterTransactions().trigger_taken(uid, guild_id, prefix, suffix, exclude_id) :
 			return None, "Another of your characters on this server already uses that. Please pick something else."
-		return parsed, None
+		return (prefix, suffix), None
 
 	# ============================================================
 	@staticmethod
@@ -841,6 +869,8 @@ class Interview :
 			return "Type **buy** or **roll**."
 		if draft.answers.get("stat_method") != method :
 			draft.answers.pop("stats", None)
+			draft.answers.pop("stat_work", None)
+			draft.answers.pop("stat_assign", None)
 		draft.answers["stat_method"] = method
 		return None
 
@@ -909,6 +939,160 @@ class Interview :
 		DraftTransactions().save(draft)
 		return Reply(f"{message}\nIn your bag: {Interview._basket_text(draft, Interview._basket(draft))}\n"
 		             f"Add another item, **remove** one, or type **done**.")
+
+	# == pasting a whole sheet ==
+
+	# ============================================================
+	@staticmethod
+	def _builtins(draft: Drafts) -> set[str] :
+		"""The interview's own questions a pasted sheet can answer for this draft."""
+		builtins = {SheetPaste.NAME, SheetPaste.PROXY, SheetPaste.PREFIX, SheetPaste.SUFFIX}
+		if Choices.species(draft.guild_id, Access.from_dict(draft.answers.get("access"))) :
+			builtins.add(SheetPaste.SPECIES)
+		if OccupationTransactions().get_all(draft.guild_id) :
+			builtins.add(SheetPaste.OCCUPATION)
+		return builtins
+
+	# ============================================================
+	@staticmethod
+	def _paste_threshold(draft: Drafts) -> int :
+		"""A long answer can mention a label or two in passing, so reading it as a sheet takes one more."""
+		if draft.step.startswith("field:") :
+			sheet_field = SheetFieldTransactions().get(int(draft.step.split(":", 1)[1]))
+			if sheet_field is not None and sheet_field.type == LONG :
+				return SheetPaste.SHEET_THRESHOLD + 1
+		return SheetPaste.SHEET_THRESHOLD
+
+	# ============================================================
+	@staticmethod
+	def template(draft: Drafts) -> list[str] :
+		"""The server's sheet as blank code blocks to copy, fill in and paste back."""
+		return SheetPaste.template(SheetFieldTransactions().get_all(draft.guild_id), Interview._builtins(draft))
+
+	# ============================================================
+	@staticmethod
+	def _step_done(draft: Drafts, step: str, fields: dict) -> bool :
+		"""Whether a step needs no asking after a paste. Optional questions count as done: they can still be
+		answered from the summary."""
+		answers = draft.answers
+		if step == "name" :
+			return bool(answers.get("name"))
+		if step == "trigger" :
+			return bool(answers.get("prefix") or answers.get("suffix"))
+		if step == "avatar" :
+			return bool(answers.get("avatar_id"))
+		if step == "species" :
+			return answers.get("species_id") is not None
+		if step == "occupation" :
+			return answers.get("occupation_id") is not None
+		if step.startswith("field:") :
+			sheet_field = fields.get(step.split(":", 1)[1])
+			return sheet_field is None or not sheet_field.required or bool(answers["fields"].get(str(sheet_field.id)))
+		if step == "stat_method" :
+			return bool(answers.get("stats"))
+		if step == "stats" :
+			return bool(answers.get("stats"))
+		if step == "gear" :
+			return "gear" in answers
+		return False
+
+	# ============================================================
+	@staticmethod
+	async def _paste(draft: Drafts, entries: list, attachments: list, store_image) -> Reply :
+		"""Fills the draft from a pasted sheet, then asks only what is still missing.
+
+		Every answer goes through the same checks as when it is typed on its own; one that fails is reported and
+		left to be asked.
+		"""
+		answers = draft.answers
+		fields = {str(sheet_field.id) : sheet_field for sheet_field in Sheet.questions(draft.guild_id)}
+		filled, refused, extras = [], [], []
+		trigger = {}
+		for entry in entries :
+			if not entry.value :
+				continue
+			kind = entry.target[0] if entry.target else None
+			problem = None
+			if kind == SheetPaste.FIELD :
+				sheet_field = fields.get(str(entry.target[1]))
+				if sheet_field is None :
+					continue
+				value, problem = SheetPaste.coerce(sheet_field, entry.value)
+				if problem is None :
+					answers["fields"][str(sheet_field.id)] = value
+					filled.append(sheet_field.label)
+			elif kind == SheetPaste.NAME :
+				problem = Interview._answer_name(draft, " ".join(entry.value.split()))
+				if problem is None :
+					filled.append("Name")
+			elif kind == SheetPaste.SPECIES :
+				problem = Interview._answer_species(draft, " ".join(entry.value.split()))
+				if problem is None :
+					filled.append("Species")
+			elif kind == SheetPaste.OCCUPATION :
+				problem = Interview._answer_occupation(draft, " ".join(entry.value.split()))
+				if problem is None :
+					filled.append("Occupation")
+			elif kind in (SheetPaste.PROXY, SheetPaste.PREFIX, SheetPaste.SUFFIX) :
+				trigger[kind] = (entry.label, " ".join(entry.value.split()))
+			elif Interview._is_new(draft) :
+				extras.append({"key" : entry.label[:100], "value" : entry.value})
+			else :
+				refused.append(f"**{entry.label}**: not on this server's sheet. Add it with `/character add_info`.")
+			if problem :
+				refused.append(f"**{entry.label}**: {problem}")
+
+		if trigger :
+			if SheetPaste.PROXY in trigger :
+				label, value = trigger[SheetPaste.PROXY]
+				parsed, problem = Interview.check_trigger(value, draft.uid, draft.guild_id, draft.target_id)
+			else :
+				label = "Prefix" if SheetPaste.PREFIX in trigger else "Suffix"
+				parsed, problem = Interview.check_trigger_parts(trigger.get(SheetPaste.PREFIX, ("", ""))[1],
+				                                                trigger.get(SheetPaste.SUFFIX, ("", ""))[1],
+				                                                draft.uid, draft.guild_id, draft.target_id)
+			if parsed is not None :
+				answers["prefix"], answers["suffix"] = parsed
+				filled.append("Proxy")
+			else :
+				refused.append(f"**{label}**: {problem}")
+
+		if attachments and store_image is not None and not answers.get("avatar_id") and ImageStorage.configured() :
+			try :
+				answers["avatar_id"] = await store_image(attachments[0])
+				filled.append("Picture")
+			except ImageError as e :
+				refused.append(f"**Picture**: {e}")
+
+		if extras :
+			kept = {extra["key"].lower() : extra for extra in answers.get("extras") or []}
+			kept |= {extra["key"].lower() : extra for extra in extras}
+			answers["extras"] = list(kept.values())
+
+		# Ask only what is still missing, in the usual order, then the stats, gear and summary.
+		queue = Interview._queue(draft.guild_id, draft.kind, answers, draft.uid)
+		if draft.kind == EDIT and answers.get("stats_required") and not answers.get("stats") :
+			queue.insert(len(queue) - 1, "stats")
+		answers["queue"] = [step for step in queue
+		                    if step == "summary" or not Interview._step_done(draft, step, fields)]
+		answers.pop("returning", None)
+		draft.step = answers["queue"][0]
+		DraftTransactions().save(draft)
+
+		lines = ["**I read your sheet.**"]
+		if filled :
+			lines.append(f"Filled in {len(filled)} answer{'s' if len(filled) != 1 else ''}: "
+			             f"{Interview._shorten(', '.join(filled), 600)}.")
+		if extras :
+			lines.append(f"Not on this server's sheet, so kept as extra fields: "
+			             f"{Interview._shorten(', '.join(extra['key'] for extra in extras), 300)}.")
+		if refused :
+			lines.append("Couldn't use these, so I'll ask again where it's needed:")
+			lines += [f"- {Interview._shorten(line, 300)}" for line in refused]
+		if draft.step != "summary" :
+			lines.append("A few more questions and you're done. Optional questions you left out can be added from "
+			             "the summary.")
+		return Reply("\n".join(lines) + "\n\n" + Interview.prompt(draft))
 
 	# == submitting ==
 

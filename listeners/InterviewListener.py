@@ -10,9 +10,9 @@ from database.transactions.DraftTransactions import DraftTransactions
 from database.transactions.SpeciesTransactions import SpeciesTransactions
 
 
+# Also keeps species in step with the tags on their forum posts.
 class InterviewListener(commands.Cog) :
-	"""Passes DMs to the character or species interview of the member who sent them, and keeps species in step with
-	the tags on their forum posts."""
+	"""Passes DMs to the character or species interview of the member who sent them."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

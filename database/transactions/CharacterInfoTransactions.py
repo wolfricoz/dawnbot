@@ -4,13 +4,11 @@ from database.database import CharacterInfo, SheetFields
 from database.transactions.DatabaseTransactions import DatabaseTransactions
 
 
+# Sheet answers belong to one of the server's sheet questions (sheet_field_id) and are shown in the order of the sheet.
+# Extra fields are added by the player, have no sheet_field_id, and are shown after the answers in the order of their
+# position, starting at 1. Keys are unique per character.
 class CharacterInfoTransactions(DatabaseTransactions) :
-	"""The fields on a character sheet.
-
-	There are two kinds. Sheet answers belong to one of the server's sheet questions (sheet_field_id) and are shown in
-	the order of the sheet. Extra fields are added by the player, have no sheet_field_id, and are shown after the
-	answers in the order of their position, starting at 1. Keys are unique per character.
-	"""
+	"""The fields on a character sheet: sheet answers and the player's extra fields."""
 
 	# ============================================================
 	def get_all(self, character_id: int) -> list[CharacterInfo] :

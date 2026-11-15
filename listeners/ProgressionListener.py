@@ -13,9 +13,9 @@ TOO_SHORT = (f"Your message is too short, please make it longer than {MINIMUM_PO
              f"No XP has been awarded and your post has been removed.")
 
 
+# Currency belongs to characters and is earned by posting as one (see the ProxyListener).
 class ProgressionListener(commands.Cog) :
-	"""Awards members XP for posts in the XP channels and keeps members registered. Currency belongs to characters
-	and is earned by posting as one (see the ProxyListener)."""
+	"""Awards members XP for posts in the XP channels and keeps members registered."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

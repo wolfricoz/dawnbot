@@ -62,13 +62,10 @@ def extract_datetime_from_logfile(filename) :
 	return None
 
 
+# The Discord library (and some libraries) may emit logs where the format style or args are not consistent; this
+# formatter falls back to stringifying the message to avoid crashing the logging machinery.
 class SafeFormatter(logging.Formatter) :
-	"""A logging.Formatter subclass that avoids TypeError on mixed %-format args.
-
-	The Discord library (and some libraries) may emit logs where the format style
-	or args are not consistent; this formatter falls back to stringifying the
-	message to avoid crashing the logging machinery.
-	"""
+	"""A logging.Formatter that does not raise TypeError on mixed %-format args."""
 	def format(self, record: logging.LogRecord) -> str :
 		try :
 			return super().format(record)
@@ -79,13 +76,10 @@ class SafeFormatter(logging.Formatter) :
 			return super().format(record)
 
 
+# The discord gateway sometimes produces log records where mapping-style tokens (e.g., '%(sid)s') and tuple-style args
+# are mixed, causing formatting errors. This filter attempts a best-effort pre-render to avoid TypeErrors later.
 class GatewayPreFormatFilter(logging.Filter) :
-	"""Filter to pre-format known discord.gateway heartbeat warnings.
-
-	The discord gateway sometimes produces log records where mapping-style tokens
-	(e.g., '%(sid)s') and tuple-style args are mixed causing formatting errors.
-	This filter attempts a best-effort pre-render to avoid TypeErrors later.
-	"""
+	"""Pre-formats known discord.gateway heartbeat warnings."""
 	def filter(self, record: logging.LogRecord) -> bool :
 		if record.name == "discord.gateway" :
 			# If mapping style tokens present but args is a tuple, render safely.

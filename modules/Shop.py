@@ -54,9 +54,7 @@ def balances_text(guild_id: int, characters: list[Characters]) -> str :
 
 @app_commands.guild_only()
 class Shop(commands.GroupCog, name="Shop", group_name="shop") :
-	"""The server's gear shop. Browse the weapons and armor your characters can buy, look at an item, and buy it
-	with a character's currency. Some items need a server level or a role and show as unavailable until you have it;
-	event and staff items aren't sold and are only given out by staff."""
+
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

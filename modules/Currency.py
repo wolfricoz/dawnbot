@@ -67,10 +67,8 @@ async def find_own_character(interaction: discord.Interaction, name: str,
 
 
 @app_commands.guild_only()
-class Currency(commands.GroupCog, name="Currency", group_name="currency") :
-	"""Your characters' currency. Each character has its own: it starts with the server's starting amount and earns
-	more when you post as it in the roleplay channels. You can't move currency between your characters; staff can
-	give or take it."""
+class Currency(commands.GroupCog, name="currency", group_name="currency", description="Shows how much currency you have.") :
+
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

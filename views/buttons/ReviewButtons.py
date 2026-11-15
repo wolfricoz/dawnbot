@@ -14,11 +14,10 @@ class DenyReason(discord.ui.Modal, title="Deny") :
 		await CharacterFlow.decide(interaction, approve=False, reason=self.reason.value)
 
 
+# Persistent: registered with bot.add_view in setup_hook. The character is found through the card's message id, so the
+# buttons keep working after a restart.
 class ReviewButtons(discord.ui.View) :
-	"""Approve / Deny under a character's review card. Persistent: registered with bot.add_view in setup_hook.
-
-	The character is found through the card's message id, so the buttons keep working after a restart.
-	"""
+	"""Approve / Deny under a character's review card."""
 
 	def __init__(self) :
 		super().__init__(timeout=None)

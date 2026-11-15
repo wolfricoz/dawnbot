@@ -80,6 +80,8 @@ class CharacterFlow :
 			await ImageStorage.delete(interaction.client, avatar_id)
 			return await CharacterFlow.respond(interaction, DMS_CLOSED)
 		await CharacterFlow.respond(interaction, "I sent you a DM, let's continue there.")
+		# A respec starts at the stats step.
+		await CharacterFlow.send_stat_picker(interaction.user)
 
 	# ============================================================
 	@staticmethod
@@ -111,15 +113,37 @@ class CharacterFlow :
 		guild = bot.get_guild(draft.guild_id)
 		member = guild.get_member(message.author.id) if guild else None
 		access = Access.of(member) if member is not None else None
+		step_before = draft.step
 		reply = await Interview.answer(draft, await CharacterFlow._text_of(message), images, store_image, access)
-		await CharacterFlow.send_dm(message.author, reply.text)
+		await CharacterFlow.deliver(bot, message.author, reply, step_before)
+
+	# ============================================================
+	@staticmethod
+	async def send_stat_picker(user: discord.abc.Messageable, step_before: str | None = None) -> None :
+		"""Sends the SPECIAL menus when the user's interview has just reached the stats step."""
+		from classes.characters import StatPanel
+		from views.multiselect import StatPicker
+
+		draft = DraftTransactions().get(user.id)
+		if StatPanel.is_open(draft) and step_before != "stats" :
+			await StatPicker.send(user, draft)
+
+	# ============================================================
+	@staticmethod
+	async def deliver(bot: discord.Client, user: discord.User | discord.Member, reply, step_before: str | None) -> None :
+		"""Sends the interview's reply and carries out what it decided: removing pictures, posting the review card,
+		updating the forum post, or showing the SPECIAL menus for the next question."""
+		await CharacterFlow.send_dm(user, reply.text)
 		for image_id in reply.discard_images :
 			await ImageStorage.delete(bot, image_id)
-		if not reply.finished or reply.character is None :
+		if not reply.finished :
+			await CharacterFlow.send_stat_picker(user, step_before)
+			return
+		if reply.character is None :
 			return
 		if reply.outcome in (CREATED, RESUBMITTED, REVIEW) :
 			if not await CharacterFlow.post_review(bot, reply.character) :
-				await CharacterFlow.send_dm(message.author,
+				await CharacterFlow.send_dm(user,
 				                            "I could not reach the server's review channel, so staff have not seen "
 				                            "this yet. Please let the server's staff know.")
 		if reply.outcome in (APPLIED, REVIEW) :

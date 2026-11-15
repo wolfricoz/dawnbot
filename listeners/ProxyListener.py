@@ -7,6 +7,7 @@ from discord_py_utilities.messages import send_message
 from classes.kernel.ConfigData import ConfigData
 from classes.progression.Progression import Progression
 from classes.proxy.Proxy import Proxy
+from classes.setup.BotSetup import BotSetup
 from database.transactions.CharacterTransactions import CharacterTransactions
 from database.transactions.ProxyTransactions import ProxyTransactions
 from resources.configs.ConfigMapping import ConfigMapping
@@ -103,6 +104,9 @@ class ProxyListener(commands.Cog) :
 		if not isinstance(channel, (discord.TextChannel, discord.ForumChannel)) :
 			return
 		if Progression.is_tracked(channel) :
+			return
+		# /config setup asks about (or decides) roleplay channels itself.
+		if BotSetup.is_creating(channel.guild.id) :
 			return
 		modlog = await ConfigData().get_channel(channel.guild, ConfigMapping.MODLOG, optional=True)
 		if modlog is None :

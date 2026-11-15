@@ -9,8 +9,9 @@ FIELDS = ["name", "description", "max_holders", "min_level", "role_id", "staff_o
 HOLDING_STATES = ["pending", "approved"]
 
 
+# Names are unique per server, compared without case; positions start at 1.
 class OccupationTransactions(DatabaseTransactions) :
-	"""The occupations of a server. Names are unique per server, compared without case; positions start at 1."""
+	"""The occupations of a server."""
 
 	# ============================================================
 	def get_all(self, guild_id: int) -> list[Occupations] :

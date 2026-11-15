@@ -8,8 +8,14 @@ from discord.app_commands import Choice
 from discord.ext import commands
 from translate import Translator
 
+from classes.characters.ImageStorage import ImageStorage
+from classes.characters.Special import STATS, Special
+from classes.combat.AutoComplete import AutoComplete
+from classes.dice.Dice import Dice, MAX_AMOUNT, MAX_SIDES, MIN_SIDES, Modifier
+from classes.dice.DiceCard import DiceCard
 from classes.kernel.ConfigData import ConfigData
 from data.languages import LANGUAGES
+from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 
 
@@ -37,38 +43,59 @@ class Tools(commands.Cog) :
 		                   f"Brief summary of what happened: (Post below!)")
 
 	# ============================================================
-	@app_commands.command(name="dice", description="rolls a dice for you!")
-	@app_commands.choices(modifier=[Choice(name=str(x), value=x) for x in range(-10, 11)])
-	async def dice(self, interaction: discord.Interaction, dicetype: int, modifier: Choice[int] = 0,
-	               title: str = "No goal given.", amount: int = 1) :
+	@app_commands.command(name="dice", description="rolls dice for you, optionally as one of your characters")
+	@app_commands.autocomplete(character=AutoComplete().approved_character)
+	@app_commands.choices(stat=[Choice(name=stat.capitalize(), value=stat) for stat in STATS])
+	@app_commands.describe(dicetype="How many sides each die has, e.g. 20 for a d20",
+	                       modifier="A bonus or penalty on top of the stat, added once to the total",
+	                       title="What you are trying to do; shown as the title",
+	                       amount="How many dice to roll",
+	                       character="Roll as one of your approved characters",
+	                       stat="The character's SPECIAL stat that adds its modifier")
+	async def dice(self, interaction: discord.Interaction, dicetype: app_commands.Range[int, MIN_SIDES, MAX_SIDES],
+	               modifier: app_commands.Range[int, -50, 50] = 0, title: app_commands.Range[str, 1, 200] = None,
+	               amount: app_commands.Range[int, 1, MAX_AMOUNT] = 1, character: str = None,
+	               stat: Choice[str] = None) :
 		"""
-		Rolls one or more dice with an optional modifier. Dice of 100 sides or more triple the modifier.
+		Rolls one or more dice and posts the result with a line of story text that depends on how the roll went.
+
+		Pick one of your approved characters to roll as them, and a SPECIAL stat to add its modifier: the stat minus the
+		server's starting stat value (5 by default), so 5 adds nothing, 10 adds +5 and 1 adds -4. The modifier option
+		comes on top. Modifiers are added once to the total, and dice of 100 sides or more triple them. Rolling every die
+		on its highest side is a critical success; every die on 1 is a critical failure.
 		"""
-		logging.debug(f"{interaction.user.name} rolled dicetype: {dicetype}, modifier: {modifier}, title: {title}, amount: {amount}")
-		if isinstance(modifier, Choice) :
-			modifier = modifier.value
-		await interaction.response.defer(thinking=False, ephemeral=True)
-		if dicetype < 2 :
-			return await interaction.followup.send("Please choose a dice with at least 2 sides!")
-		if dicetype > 1000 :
-			return await interaction.followup.send("Please choose a dice with less than 1000 sides!")
-		if amount > 50 :
-			return await interaction.followup.send("you can roll up to 50 dice!")
-		results = []
-		text_results = []
-		if dicetype >= 100 :
-			modifier *= 3
-		for _ in range(amount) :
-			result = random.randint(1, dicetype)
-			results.append(result + modifier)
-			text_results.append(f"{result + modifier} ({result}+{modifier})")
+		stat = stat.value if isinstance(stat, Choice) else stat
+		logging.debug(f"{interaction.user.name} rolled {amount}d{dicetype} modifier {modifier} character {character} "
+		              f"stat {stat}: {title}")
+		if (problem := Dice.check(dicetype, amount)) is not None :
+			return await interaction.response.send_message(problem, ephemeral=True)
+		if stat and not character :
+			return await interaction.response.send_message("Pick a character to roll with a stat.", ephemeral=True)
 
-		await interaction.followup.send("The dice has been cast..")
-		embed = discord.Embed(title=title,
-		                      description=f"You roll {amount}d{dicetype}{'+' if modifier >= 0 else ''}{modifier}: {', '.join(text_results)} \n(total: {sum(results)})")
-		embed.set_footer(text=f"{interaction.user.name}")
+		record = None
+		modifiers = []
+		if character :
+			record = CharacterTransactions().get(interaction.user.id, interaction.guild_id, character)
+			if record is None :
+				return await interaction.response.send_message(f"You have no character called {character}.",
+				                                               ephemeral=True)
+			if record.state != APPROVED :
+				return await interaction.response.send_message(f"{record.name} has not been approved by staff yet.",
+				                                               ephemeral=True)
+			if stat :
+				value = getattr(record, stat)
+				base = Special.rules(interaction.guild_id).base
+				modifiers.append(Modifier(f"{stat.capitalize()} {value}", Dice.stat_modifier(value, base)))
+		modifiers.append(Modifier("Bonus", modifier))
 
-		await interaction.channel.send(f"{interaction.user.mention}", embed=embed)
+		# Fetching a stored avatar can take a moment.
+		await interaction.response.defer(thinking=True)
+		avatar = await ImageStorage.url(self.bot, record.avatar_id) if record else None
+		roll = Dice.roll(dicetype, amount, modifiers)
+		embed = DiceCard.embed(roll, roller=interaction.user.display_name, goal=title,
+		                       character_name=record.name if record else None, stat=stat,
+		                       icon_url=avatar or interaction.user.display_avatar.url, thumbnail_url=avatar)
+		await interaction.followup.send(embed=embed)
 
 	# ============================================================
 	@app_commands.command(name="coinflip", description="flips a coin for you!")

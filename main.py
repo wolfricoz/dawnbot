@@ -29,6 +29,7 @@ from project.data import BOT_NAME, VERSION
 from views.buttons.CombatInitiatedButtons import CombatInitiatedButtons
 from views.buttons.ReviewButtons import ReviewButtons
 from views.buttons.RoleplayChannelPrompt import RoleplayChannelButton
+from views.multiselect.StatPicker import StatButton, StatSelect
 from views.buttons.SpeciesReviewButtons import SpeciesReviewButtons
 
 # Exceptions caused by a server's own setup (missing Discord permissions, an unset
@@ -66,7 +67,7 @@ database.database().create()
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-activity = discord.Activity(type=discord.ActivityType.watching, name="over RMR")
+activity = discord.Activity(type=discord.ActivityType.playing, name="Gamemaster Ultimate")
 bot = commands.Bot(command_prefix=env('PREFIX', '?'), case_insensitive=False, intents=intents, activity=activity)
 
 
@@ -154,7 +155,7 @@ async def setup_hook() :
 	bot.add_view(CombatInitiatedButtons())
 	bot.add_view(ReviewButtons())
 	bot.add_view(SpeciesReviewButtons())
-	bot.add_dynamic_items(RoleplayChannelButton)
+	bot.add_dynamic_items(RoleplayChannelButton, StatSelect, StatButton)
 
 	directories = ["modules", "listeners", "tasks"]
 	loaded = []

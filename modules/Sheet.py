@@ -5,9 +5,13 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.characters import SheetPaste
+from classes.characters.Access import Access
 from classes.characters.Card import chunk_text
+from classes.characters.Choices import Choices
 from classes.characters.Sheet import CHOICE, INFO, MAX_FIELDS, Sheet as CharacterSheet, TYPES
 from classes.kernel.ServerSync import sync_server
+from database.transactions.OccupationTransactions import OccupationTransactions
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
 from views.buttons.Confirm import ask, double_confirm
 
@@ -182,6 +186,26 @@ class Sheet(commands.GroupCog, name="Sheet", group_name="sheet") :
 		for chunk in chunk_text("\n".join(lines).strip(), 4000) :
 			await interaction.followup.send(embed=discord.Embed(title="Character sheet", description=chunk),
 			                                ephemeral=True)
+
+	# ============================================================
+	@app_commands.command(name="template")
+	async def template(self, interaction: discord.Interaction) :
+		"""
+		Gives you the server's character sheet as blank text to copy. Fill it in wherever you like, then paste it into
+		the DM from `/character create` (or `/character edit`) in one message: the bot fills in what it can and only
+		asks what is missing. Questions marked with * are required.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		builtins = {SheetPaste.NAME, SheetPaste.PROXY}
+		if Choices.species(interaction.guild_id, Access.of(interaction.user)) :
+			builtins.add(SheetPaste.SPECIES)
+		if OccupationTransactions().get_all(interaction.guild_id) :
+			builtins.add(SheetPaste.OCCUPATION)
+		blocks = SheetPaste.template(SheetFieldTransactions().get_all(interaction.guild_id), builtins)
+		await interaction.followup.send("Copy this, fill it in, and paste it into the DM from `/character create` in "
+		                                "one message. Leave out what you don't know yet.", ephemeral=True)
+		for block in blocks :
+			await interaction.followup.send(block, ephemeral=True)
 
 	# ============================================================
 	@app_commands.command(name="reset")

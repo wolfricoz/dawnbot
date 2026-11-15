@@ -8,13 +8,11 @@ from classes.kernel.ServerSync import sync_server
 from resources.configs.ConfigMapping import ConfigMapping
 
 
+# The channel id is part of the button's id, so the buttons keep working after a restart (registered with
+# bot.add_dynamic_items in setup_hook).
 class RoleplayChannelButton(discord.ui.DynamicItem[discord.ui.Button],
                             template=r"rpchannel:(?P<answer>yes|no):(?P<channel_id>\d+)") :
-	"""Yes / No on the "add this new channel to the roleplay channels?" question in the modlog.
-
-	The channel id is part of the button's id, so the buttons keep working after a restart (registered with
-	bot.add_dynamic_items in setup_hook).
-	"""
+	"""Yes / No on the "add this new channel to the roleplay channels?" question in the modlog."""
 
 	def __init__(self, answer: str, channel_id: int) :
 		super().__init__(discord.ui.Button(

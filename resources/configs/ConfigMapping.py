@@ -2,7 +2,7 @@ from enum import StrEnum
 
 
 class ConfigMapping(StrEnum) :
-	"""This is the mapping for the config keys, this way we can avoid typos and have a single source of truth for the config keys."""
+	"""The config keys in one place, so they are never mistyped."""
 
 	# === Progression ===
 	XP_CHANNELS = "XP_CHANNELS"
