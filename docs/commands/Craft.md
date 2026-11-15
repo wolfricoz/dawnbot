@@ -53,7 +53,7 @@ Crafting from recipes, projects worked on in downtime, and salvage.
 > Makes a cursed item a normal one again.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -64,7 +64,7 @@ Crafting from recipes, projects worked on in downtime, and salvage.
 > Adds a recipe. Materials are catalog items of kind material (the fantasy recipe pack brings a set).
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -75,7 +75,7 @@ Crafting from recipes, projects worked on in downtime, and salvage.
 > Removes a recipe; projects using it are abandoned when next worked on.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -86,7 +86,7 @@ Crafting from recipes, projects worked on in downtime, and salvage.
 > Sets (or, without a table, clears) the roll table a bad failure on this recipe rolls.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -97,7 +97,7 @@ Crafting from recipes, projects worked on in downtime, and salvage.
 > Sets the materials salvaging an item can give (each comes out on a coin flip).
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -109,7 +109,7 @@ Crafting from recipes, projects worked on in downtime, and salvage.
 > matching gear pack first (/armory import), since recipes make catalog items.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

@@ -9,8 +9,9 @@ from views.combat.Pickers import Field, Form, reply
 
 # ============================================================
 def may_summarise(chronicle_id: int, member) -> bool :
-	permissions = getattr(member, "guild_permissions", None)
-	if permissions and permissions.manage_messages :
+	from classes.kernel.GMRole import is_gm
+
+	if is_gm(member) :
 		return True
 	for entry in SceneTransactions().chronicle_characters(chronicle_id) :
 		character = CharacterTransactions().get_by_id(entry.character_id)

@@ -19,7 +19,7 @@ Factions and the standing characters have with them.
 > Adds a faction. Rivals lose half of what a character gains with this one.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -30,7 +30,7 @@ Factions and the standing characters have with them.
 > Changes a faction. `rivals` replaces its rival list.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -41,7 +41,7 @@ Factions and the standing characters have with them.
 > Removes a faction and everyone's standing with it.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -69,7 +69,7 @@ Factions and the standing characters have with them.
 > as they are.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -81,7 +81,19 @@ Factions and the standing characters have with them.
 > Disliked; Vilified characters can't buy it, and a tier can be required.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
+
+---
+
+### `occupation`
+
+**Usage:** `/faction occupation <occupation> <faction> <tier>`
+
+> A character needs at least this standing with the faction to take the occupation. New characters are Neutral
+> everywhere, so a higher tier can only be reached by changing occupation later.
+>
+> **Permissions:**
+> - `Manage Messages`, or the GM role
 
 ---
 

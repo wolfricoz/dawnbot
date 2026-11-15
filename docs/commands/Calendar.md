@@ -40,7 +40,7 @@ The in-world calendar: set it up, add holidays and set birthdays.
 > Adds an event, announced in the announcement channel when the in-world date reaches it.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -51,7 +51,7 @@ The in-world calendar: set it up, add holidays and set birthdays.
 > Removes an event.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

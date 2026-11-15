@@ -6,6 +6,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.world import Calendar, Weather
 from classes.world.Calendar import Date
 from classes.world.WorldFlow import WorldFlow
@@ -46,7 +47,7 @@ class Time(commands.GroupCog, name="Time", group_name="time") :
 
 	# ============================================================
 	@app_commands.command(name="advance", description="Moves in-world time forward (or back with a negative amount)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.choices(unit=UNIT_CHOICES)
 	@app_commands.describe(amount="How much; negative moves time back", unit="Parts of the day, days, weeks, months "
 	                                                                          "or years")
@@ -57,7 +58,7 @@ class Time(commands.GroupCog, name="Time", group_name="time") :
 		announcement channel.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		moved = WorldFlow.move(interaction.guild_id, amount, unit.value)
 		if moved is None :
@@ -68,7 +69,7 @@ class Time(commands.GroupCog, name="Time", group_name="time") :
 
 	# ============================================================
 	@app_commands.command(name="set", description="Sets the in-world date and time of day")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.choices(part=PART_CHOICES)
 	@app_commands.describe(year="The year", month="The month (a number)", day="The day", part="The time of day")
 	async def set_date(self, interaction: discord.Interaction, year: app_commands.Range[int, -100000, 100000],
@@ -78,7 +79,7 @@ class Time(commands.GroupCog, name="Time", group_name="time") :
 		Jumps to a date without announcing the events in between.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		problem = WorldFlow.set_date(interaction.guild_id, Date(year, month, day, part.value if part else 1))
 		if problem :

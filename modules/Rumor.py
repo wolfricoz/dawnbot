@@ -10,6 +10,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.combat.AutoComplete import AutoComplete
 from classes.flavor.RumorFlow import RumorFlow, TRUTHS
 from database.transactions.FlavorTransactions import FlavorTransactions
@@ -50,7 +51,7 @@ class Rumor(commands.GroupCog, name="Rumor", group_name="rumor") :
 
 	# ============================================================
 	@app_commands.command(name="plant", description="Plants a rumor as a GM, marked true or false")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.choices(truth=TRUTH_CHOICES)
 	@app_commands.describe(text="The rumor", truth="Whether it is true (hidden from players)",
 	                       secret="Never posted: it can only be overheard", location="Where it is going round")
@@ -60,20 +61,20 @@ class Rumor(commands.GroupCog, name="Rumor", group_name="rumor") :
 		Plants a rumor. Characters who overhear it with a strong success get a hint about its truth.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		await RumorFlow.post(interaction, text, location, None, planted=True, truth=truth.value, secret=secret)
 
 	# ============================================================
 	@app_commands.command(name="mark", description="Marks a rumor true, false or partly true (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.choices(truth=TRUTH_CHOICES)
 	async def mark(self, interaction: discord.Interaction, rumor: int, truth: Choice[str]) :
 		"""
 		Marks whether a rumor is true; players only learn it from hints.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = FlavorTransactions().rumor(rumor)
 		if record is None or record.guild_id != interaction.guild_id :
@@ -83,13 +84,13 @@ class Rumor(commands.GroupCog, name="Rumor", group_name="rumor") :
 
 	# ============================================================
 	@app_commands.command(name="pin", description="Keeps a rumor from fading, or lets it fade again (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	async def pin(self, interaction: discord.Interaction, rumor: int, pinned: bool = True) :
 		"""
 		Pinned rumors never fade.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = FlavorTransactions().rumor(rumor)
 		if record is None or record.guild_id != interaction.guild_id :
@@ -99,26 +100,26 @@ class Rumor(commands.GroupCog, name="Rumor", group_name="rumor") :
 
 	# ============================================================
 	@app_commands.command(name="block", description="Stops a member posting rumors, or lets them again (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	async def block(self, interaction: discord.Interaction, member: discord.Member, blocked: bool = True) :
 		"""
 		Blocks (or unblocks) a member from /rumor post.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		FlavorTransactions().set_blocked(interaction.guild_id, member.id, blocked)
 		await reply(interaction, f"{member.display_name} {'can no longer' if blocked else 'can'} post rumors.")
 
 	# ============================================================
 	@app_commands.command(name="list", description="Lists the rumors going round, with authors and truth (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	async def list_rumors(self, interaction: discord.Interaction) :
 		"""
 		Lists live rumors with their number, author, truth and how often they were overheard.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		rumors = FlavorTransactions().live(interaction.guild_id, datetime.now(timezone.utc))
 		if not rumors :

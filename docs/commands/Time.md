@@ -28,7 +28,7 @@ In-world time: see the date and time, and move it forward or back.
 > announcement channel.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -39,7 +39,7 @@ In-world time: see the date and time, and move it forward or back.
 > Jumps to a date without announcing the events in between.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

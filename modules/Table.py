@@ -13,6 +13,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.combat.AutoComplete import AutoComplete
 from classes.tables import TablePacks, Tables
 from classes.tables.TableFlow import EVERYONE, STAFF, TableFlow
@@ -110,7 +111,7 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 
 	# ============================================================
 	@app_commands.command(name="create", description="Creates a roll table")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.choices(visibility=VISIBILITY_CHOICES)
 	@app_commands.describe(name="The table's name, used to roll it and in [[name]]",
 	                       luck="Rolling as a character shifts the roll by 2 x their Luck modifier toward the end",
@@ -135,7 +136,7 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 		twice their Luck modifier. A `deck` is drawn from with /omen draw instead (one card per entry, `Name: meaning`).
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		guild_id = interaction.guild_id
 		if RollTableTransactions().find(guild_id, name) is not None :
@@ -165,7 +166,7 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 
 	# ============================================================
 	@app_commands.command(name="edit", description="Changes a roll table")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(table=table_autocomplete)
 	@app_commands.choices(visibility=VISIBILITY_CHOICES)
 	@app_commands.describe(table="The table to change",
@@ -181,7 +182,7 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 		and upload it here.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		guild_id = interaction.guild_id
 		record = RollTableTransactions().find(guild_id, table)
@@ -221,14 +222,14 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 
 	# ============================================================
 	@app_commands.command(name="remove", description="Deletes a roll table")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(table=table_autocomplete)
 	async def remove(self, interaction: discord.Interaction, table: str) :
 		"""
 		Deletes a table after asking. Tables that roll it with [[name]] show its name instead from then on.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = RollTableTransactions().find(interaction.guild_id, table)
 		if record is None :
@@ -303,7 +304,7 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 
 	# ============================================================
 	@app_commands.command(name="import", description="Copies a table pack into this server")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(pack=pack_autocomplete)
 	@app_commands.describe(pack="The pack to copy, like fantasy")
 	async def import_pack(self, interaction: discord.Interaction, pack: str) :
@@ -313,7 +314,7 @@ class Table(commands.GroupCog, name="Table", group_name="table") :
 		/armory import and /bestiary import.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		try :
 			added, skipped, missing = TablePacks.import_into(interaction.guild_id, pack, interaction.user.id)

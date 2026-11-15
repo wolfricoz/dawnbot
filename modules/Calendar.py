@@ -9,6 +9,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.combat.AutoComplete import AutoComplete
 from classes.world import Calendar as CalendarRules
 from classes.world.WorldFlow import WorldFlow
@@ -115,7 +116,7 @@ class Calendar(commands.GroupCog, name="Calendar", group_name="calendar") :
 
 	# ============================================================
 	@event.command(name="add", description="Adds a holiday or event to the calendar")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.describe(name="What it is called", month="The month (a number)", day="The day",
 	                       year="Only in this year (leave empty for every year)", description="What happens")
 	async def event_add(self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100],
@@ -126,7 +127,7 @@ class Calendar(commands.GroupCog, name="Calendar", group_name="calendar") :
 		Adds an event, announced in the announcement channel when the in-world date reaches it.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		calendar = WorldTransactions().calendar(interaction.guild_id)
 		if calendar is None :
@@ -144,13 +145,13 @@ class Calendar(commands.GroupCog, name="Calendar", group_name="calendar") :
 
 	# ============================================================
 	@event.command(name="remove", description="Removes an event from the calendar")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	async def event_remove(self, interaction: discord.Interaction, name: str) :
 		"""
 		Removes an event.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		event = WorldTransactions().find_event(interaction.guild_id, name)
 		if event is None :

@@ -1,6 +1,6 @@
 """checks and roll tables: GM checks with their rolls, roll tables with their entries, and rolls made on tables
 
-Phase A of design/roleplay-tools.md. Comes before 0022_drop_legacy_combat, which waits until the old tables have been
+Phase A of design/roleplay-tools.md. Comes before 0023_drop_legacy_combat, which waits until the old tables have been
 imported.
 
 Revision ID: 0016_checks_tables

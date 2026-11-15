@@ -47,6 +47,7 @@ class ConfigMapping(StrEnum) :
 
 	# === Roleplay tools ===
 	GM_ROLL_LOG = "GM_ROLL_LOG"
+	GM_ROLE = "GM_ROLE"
 	TIME_FLOW = "TIME_FLOW"
 	WEATHER_HOURS = "WEATHER_HOURS"
 	WEATHER_EFFECTS = "WEATHER_EFFECTS"
@@ -301,6 +302,7 @@ docs = {
 	ConfigMapping.ABILITY_FORUM      : "Optional: the forum where approved abilities are posted. Tags on an ability's post can restrict who may learn it; see /tagrule.",
 
 	# == roleplay tools ==
+	ConfigMapping.GM_ROLE            : "Optional: the role of the server's game masters. Members with it run the roleplay tools like staff (tables, locations, rumors, recipes and the rest; not /gm or fights), and it is pinged when an encounter on the road needs a GM.",
 	ConfigMapping.GM_ROLL_LOG        : "Optional: a channel where every secret roll is copied (secret and passive checks, secret /dice rolls and secret table rolls), so the server can audit them.",
 
 	ConfigMapping.TIME_FLOW          : "How in-world time moves: `manual` (the default; staff move it with /time advance) or a ratio of in-world days to real days, such as `1:1`, `2:1` or `1:4`.",

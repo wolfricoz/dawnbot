@@ -37,7 +37,19 @@ Once a day: work, study, craft or carouse.
 > characters read omens for others (/omen read).
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
+
+---
+
+### `flavor`
+
+**Usage:** `/downtime flavor <occupation> <outcome> <line>`
+
+> Adds a flavor line shown when a character of this occupation has that result at work; one is picked at random.
+> Without a line, that result's lines are cleared and the default line is used again.
+>
+> **Permissions:**
+> - `Manage Messages`, or the GM role
 
 ---
 

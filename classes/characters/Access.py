@@ -17,7 +17,25 @@ LEVEL = "level"
 STAFF_ONLY = "staff_only"
 # Hidden from members altogether; only staff give it out (used for event gear and species).
 EVENT = "event"
-KINDS = [ROLE, LEVEL, STAFF_ONLY, EVENT]
+# A character's standing with a faction (value: faction id x 10 + tier index, see classes/economy/FactionFlow.py).
+REPUTATION = "reputation"
+KINDS = [ROLE, LEVEL, STAFF_ONLY, EVENT, REPUTATION]
+
+
+# ============================================================
+def reputation_value(faction_id: int, tier: str) -> int :
+	from classes.economy.FactionFlow import TIERS
+
+	return int(faction_id) * 10 + TIERS.index(tier)
+
+
+# ============================================================
+def reputation_parts(value: int) -> tuple[int, str] :
+	"""(faction id, tier) of a reputation requirement."""
+	from classes.economy.FactionFlow import TIERS
+
+	faction_id, tier_index = divmod(int(value or 0), 10)
+	return faction_id, TIERS[min(tier_index, len(TIERS) - 1)]
 
 
 @dataclass
@@ -31,6 +49,19 @@ class Access :
 	role_ids: set[int] = field(default_factory=set)
 	level: int = 0
 	staff: bool = False
+	# A character's standing with factions ({faction id: value}); without one, standing counts as 0 (a new
+	# character's), so reputation requirements above Neutral lock.
+	standings: dict | None = None
+
+	# ============================================================
+	def for_character(self, character_id: int | None) -> "Access" :
+		"""This access with a character's standings (a new character's, all 0, when character_id is None)."""
+		from dataclasses import replace
+
+		from database.transactions.EconomyTransactions import EconomyTransactions
+
+		standings = EconomyTransactions().standings(character_id) if character_id else {}
+		return replace(self, standings=standings)
 
 	# ============================================================
 	@staticmethod
@@ -66,7 +97,23 @@ class Access :
 				return f"needs server level {requirement.value}"
 			if requirement.kind in (STAFF_ONLY, EVENT) :
 				return "is only given out by staff"
+			if requirement.kind == REPUTATION :
+				problem = Access.reputation_problem(requirement.value, self.standings)
+				if problem :
+					return problem
 		return None
+
+	# ============================================================
+	@staticmethod
+	def reputation_problem(value: int, standings: dict | None) -> str | None :
+		from classes.economy.FactionFlow import meets
+		from database.transactions.EconomyTransactions import EconomyTransactions
+
+		faction_id, tier = reputation_parts(value)
+		if meets((standings or {}).get(faction_id, 0), tier) :
+			return None
+		faction = EconomyTransactions().faction(faction_id)
+		return f"needs {tier.capitalize()} standing with {faction.name if faction else 'a faction'}"
 
 	# ============================================================
 	@staticmethod
@@ -94,4 +141,7 @@ class Access :
 			requirements.append(Requirement(LEVEL, occupation.min_level))
 		if occupation.staff_only :
 			requirements.append(Requirement(STAFF_ONLY))
+		if getattr(occupation, "faction_id", None) and getattr(occupation, "faction_tier", None) :
+			requirements.append(Requirement(REPUTATION, reputation_value(occupation.faction_id,
+			                                                             occupation.faction_tier)))
 		return requirements

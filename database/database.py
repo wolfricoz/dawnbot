@@ -213,6 +213,9 @@ class Occupations(Base) :
 	table_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	flavor: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 	seer: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+	# A faction standing (a tier, see classes/economy/FactionFlow.py) a character needs to take the occupation.
+	faction_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	faction_tier: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
 	__table_args__ = (
 		Index('uq_occupation_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -900,6 +903,8 @@ class Locations(Base) :
 	table_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("roll_tables.id", ondelete="SET NULL"),
 	                                             nullable=True)
 	tags: Mapped[list] = mapped_column(JSON, default=list)
+	# The faction that holds the place: carousing here gains a little standing with it.
+	faction_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
 
 # hours is the in-world travel time.
@@ -1270,6 +1275,8 @@ class CraftProjects(Base) :
 	                                              nullable=True)
 	days_done: Mapped[int] = mapped_column(Integer, default=0)
 	masterwork: Mapped[bool] = mapped_column(Boolean, default=False)
+	# A bad failure on the way leaves a flaw: a flawed weapon or armor comes out cursed (unless also masterwork).
+	flawed: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 	state: Mapped[str] = mapped_column(String(16), default="working")
 	reserved: Mapped[list] = mapped_column(JSON, default=list)
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

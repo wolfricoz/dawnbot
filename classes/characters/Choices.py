@@ -64,6 +64,8 @@ class Choices :
 		character_id is the character being edited; it does not count against the occupation it already holds.
 		"""
 		choices = []
+		# Faction requirements read the character's standing (a new character's is 0 everywhere).
+		access = access.for_character(character_id)
 		for occupation in OccupationTransactions().get_all(guild_id) :
 			holders = len(OccupationTransactions().holders(occupation.id, exclude_character=character_id))
 			locked = access.check(Access.for_occupation(occupation))

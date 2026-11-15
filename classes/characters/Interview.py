@@ -212,6 +212,9 @@ class Interview :
 		if len(Special.rules(guild_id).methods) > 1 :
 			steps.append("stat_method")
 		steps.append("stats")
+		if Interview._languages_available(guild_id) :
+			# After the stats: Intelligence decides how many languages a character picks.
+			steps.append("languages")
 		if Gear.shop_items(guild_id, Access.from_dict(answers["access"])) :
 			steps.append("gear")
 		return steps + ["summary"]
@@ -261,6 +264,8 @@ class Interview :
 			        f"Type **buy** or **roll**.")
 		if step == "stats" :
 			return Interview._stats_prompt(draft)
+		if step == "languages" :
+			return Interview._languages_prompt(draft)
 		if step == "gear" :
 			return Interview._gear_prompt(draft)
 		return Interview._summary(draft)
@@ -516,6 +521,9 @@ class Interview :
 					value += f" (rolled, {draft.rerolls} rerolls)"
 			first = "stat_method" if "stat_method" in answers.get("queue", []) else "stats"
 			items.append((first, "SPECIAL", value))
+		if Interview._is_new(draft) and Interview._languages_available(draft.guild_id) :
+			names = [language.name for language in Interview._chosen_languages(draft)]
+			items.append(("languages", "Languages", ", ".join(names) or "none yet (pick later with /language pick)"))
 		if Interview._is_new(draft) :
 			# Shown while the catalog has something to pick, or something was picked before it emptied.
 			basket = Interview._basket(draft)
@@ -603,6 +611,10 @@ class Interview :
 			answers["occupation_id"] = None
 			Interview._advance(draft)
 			return Reply(Interview.prompt(draft))
+		if command == "skip" and step == "languages" :
+			answers["languages"] = []
+			Interview._advance(draft)
+			return Reply(Interview.prompt(draft))
 		if command == "skip" and not step.startswith("field:") and step != "gear" :
 			return Reply("This one cannot be skipped. Type **back** to return to the previous question."
 			             if step != "summary" else "Type the number of an answer to change it, **submit**, or **cancel**.")
@@ -645,6 +657,8 @@ class Interview :
 				DraftTransactions().save(draft)
 				return Reply(Interview.prompt(draft))
 			problem = Interview._answer_stats(draft, text)
+		elif step == "languages" :
+			problem = Interview._answer_languages(draft, text)
 		elif step == "gear" :
 			return Interview._answer_gear(draft, text, command)
 
@@ -825,6 +839,80 @@ class Interview :
 			return options[int(text) - 1]
 		return next((option for option in options if name(option).lower() == text.lower()), None)
 
+	# == languages ==
+
+	# ============================================================
+	@staticmethod
+	def _languages_available(guild_id: int) -> bool :
+		from database.transactions.LanguageTransactions import LanguageTransactions
+
+		return any(not language.common for language in LanguageTransactions().get_all(guild_id))
+
+	# ============================================================
+	@staticmethod
+	def _language_options(draft: Drafts) -> list :
+		"""The languages a new character can pick: not the common one, nor its species' own."""
+		from database.transactions.LanguageTransactions import LanguageTransactions
+
+		species = Interview._species(draft)
+		own = {int(language_id) for language_id in (species.language_ids or [])} if species else set()
+		return [language for language in LanguageTransactions().get_all(draft.guild_id)
+		        if not language.common and language.id not in own]
+
+	# ============================================================
+	@staticmethod
+	def _language_slots(draft: Drafts) -> int :
+		from classes.kernel import RoleplaySettings
+		from classes.language.Languages import starting_slots
+
+		base = Special.rules(draft.guild_id).base
+		intelligence = (draft.answers.get("stats") or {}).get("intelligence", base)
+		return starting_slots(RoleplaySettings.number(draft.guild_id, ConfigMapping.LANGUAGE_SLOTS), intelligence, base)
+
+	# ============================================================
+	@staticmethod
+	def _chosen_languages(draft: Drafts) -> list :
+		"""The picked languages that can still be picked, at most as many as the stats allow."""
+		options = {language.id : language for language in Interview._language_options(draft)}
+		chosen = [options[language_id] for language_id in draft.answers.get("languages") or [] if language_id in options]
+		return chosen[:Interview._language_slots(draft)]
+
+	# ============================================================
+	@staticmethod
+	def _languages_prompt(draft: Drafts) -> str :
+		slots = Interview._language_slots(draft)
+		options = Interview._language_options(draft)
+		lines = [f"**Which languages does {draft.answers.get('name', 'your character')} speak?**",
+		         f"Everyone speaks the common language. Pick up to **{slots}** more (1 plus 1 for every 2 Intelligence "
+		         f"above the start), separated by commas, by number or name. Type **skip** to pick them later with "
+		         f"/language pick."]
+		species = Interview._species(draft)
+		if species is not None and species.language_ids :
+			lines.append(f"As a {species.name}, it already speaks its species' languages.")
+		lines += [f"{number}. {language.name}" + (f": {language.description[:80]}" if language.description else "")
+		          for number, language in enumerate(options, start=1)]
+		chosen = Interview._chosen_languages(draft)
+		if chosen :
+			lines.append(f"Currently: {', '.join(language.name for language in chosen)}")
+		return "\n".join(lines)
+
+	# ============================================================
+	@staticmethod
+	def _answer_languages(draft: Drafts, text: str) -> str | None :
+		options = Interview._language_options(draft)
+		picked = []
+		for part in [piece.strip() for piece in text.split(",") if piece.strip()] :
+			language = Interview._pick(options, part, lambda option : option.name)
+			if language is None :
+				return f"{part} isn't one of the languages. Use the numbers or names from the list."
+			if language.id not in picked :
+				picked.append(language.id)
+		slots = Interview._language_slots(draft)
+		if len(picked) > slots :
+			return f"{draft.answers.get('name', 'Your character')} can pick {slots}; you picked {len(picked)}."
+		draft.answers["languages"] = picked
+		return None
+
 	# ============================================================
 	@staticmethod
 	def _answer_species(draft: Drafts, text: str) -> str | None :
@@ -998,6 +1086,8 @@ class Interview :
 			return bool(answers.get("stats"))
 		if step == "gear" :
 			return "gear" in answers
+		if step == "languages" :
+			return "languages" in answers
 		return False
 
 	# ============================================================
@@ -1207,6 +1297,12 @@ class Interview :
 			character = CharacterTransactions().update(character.id, imported_from=answers["imported_from"])
 		if answers.get("extras") :
 			CharacterInfoTransactions().replace_extras(character.id, answers["extras"])
+		if answers.get("languages") :
+			from classes.language.LanguageFlow import START as LANGUAGE_START
+			from database.transactions.LanguageTransactions import LanguageTransactions
+
+			for language in Interview._chosen_languages(draft) :
+				LanguageTransactions().teach(character.id, language.id, "fluent", LANGUAGE_START)
 		if starting :
 			CurrencyTransactions().log(character.id, draft.guild_id, starting, START, None)
 		labels = {str(sheet_field.id) : sheet_field.label for sheet_field in Sheet.questions(draft.guild_id)}

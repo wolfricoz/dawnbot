@@ -192,6 +192,13 @@ class TestCrafting(EconomyCase) :
 		outcome, lines, finished = Crafting.work(self.character, EconomyTransactions().project(project.id),
 		                                         rng=FixedRng(15))
 		self.assertTrue(finished)
+		# The crit made it masterwork and the bad failure left a flaw: they cancel out.
+		names = [entry.name for entry in CharacterGearTransactions().get_all(self.character.id) if entry.kind == "weapon"]
+		self.assertEqual(names, ["Arming Sword"])
+		self.stock(self.iron, 2)
+		clean = Crafting.start_project(self.character, recipe)
+		Crafting.work(self.character, clean, rng=FixedRng(20))
+		Crafting.work(self.character, EconomyTransactions().project(clean.id), rng=FixedRng(15))
 		self.assertTrue(any(entry.name == "Masterwork Arming Sword"
 		                    for entry in CharacterGearTransactions().get_all(self.character.id)))
 

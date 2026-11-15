@@ -45,7 +45,7 @@ In-character letters between characters, delivered after a while.
 > the text never shows here.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -57,7 +57,7 @@ In-character letters between characters, delivered after a while.
 > recipient sees.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

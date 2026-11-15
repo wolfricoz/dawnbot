@@ -10,6 +10,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.characters.Special import STATS
 from classes.combat.AutoComplete import AutoComplete
 from classes.economy import Crafting, RecipePacks
@@ -192,14 +193,14 @@ class Craft(commands.GroupCog, name="Craft", group_name="craft") :
 
 	# ============================================================
 	@app_commands.command(name="uncurse", description="Lifts the curse from a character's item (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(character=member_characters, item=owned_autocomplete)
 	async def uncurse(self, interaction: discord.Interaction, member: discord.Member, character: str, item: str) :
 		"""
 		Makes a cursed item a normal one again.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = CharacterTransactions().get(member.id, interaction.guild_id, character)
 		try :
@@ -215,7 +216,7 @@ class Craft(commands.GroupCog, name="Craft", group_name="craft") :
 
 	# ============================================================
 	@recipe.command(name="add", description="Adds a recipe")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(result=item_autocomplete, tool=item_autocomplete)
 	@app_commands.choices(stat=STAT_CHOICES)
 	@app_commands.describe(name="The recipe's name", result="The catalog item it makes",
@@ -233,7 +234,7 @@ class Craft(commands.GroupCog, name="Craft", group_name="craft") :
 		Adds a recipe. Materials are catalog items of kind material (the fantasy recipe pack brings a set).
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		guild_id = interaction.guild_id
 		item = GearItemTransactions().find(guild_id, result)
@@ -260,14 +261,14 @@ class Craft(commands.GroupCog, name="Craft", group_name="craft") :
 
 	# ============================================================
 	@recipe.command(name="remove", description="Removes a recipe")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(recipe=recipe_autocomplete)
 	async def recipe_remove(self, interaction: discord.Interaction, recipe: str) :
 		"""
 		Removes a recipe; projects using it are abandoned when next worked on.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = EconomyTransactions().find_recipe(interaction.guild_id, recipe)
 		if record is None :
@@ -277,14 +278,14 @@ class Craft(commands.GroupCog, name="Craft", group_name="craft") :
 
 	# ============================================================
 	@recipe.command(name="mishap", description="Sets the roll table a recipe rolls on a bad failure")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(recipe=recipe_autocomplete)
 	async def recipe_mishap(self, interaction: discord.Interaction, recipe: str, table: str = None) :
 		"""
 		Sets (or, without a table, clears) the roll table a bad failure on this recipe rolls.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = EconomyTransactions().find_recipe(interaction.guild_id, recipe)
 		found = RollTableTransactions().find(interaction.guild_id, table) if table else None
@@ -296,7 +297,7 @@ class Craft(commands.GroupCog, name="Craft", group_name="craft") :
 
 	# ============================================================
 	@recipe.command(name="salvage", description="Sets what salvaging a catalog item gives")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(item=item_autocomplete)
 	@app_commands.describe(materials="Like: Iron Ingot x2, Leather Strip (empty: can't be salvaged)")
 	async def recipe_salvage(self, interaction: discord.Interaction, item: str, materials: str = None) :
@@ -304,7 +305,7 @@ class Craft(commands.GroupCog, name="Craft", group_name="craft") :
 		Sets the materials salvaging an item can give (each comes out on a coin flip).
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = GearItemTransactions().find(interaction.guild_id, item)
 		if record is None :
@@ -321,7 +322,7 @@ class Craft(commands.GroupCog, name="Craft", group_name="craft") :
 
 	# ============================================================
 	@recipe.command(name="import", description="Copies a recipe pack's materials and recipes into this server")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(pack=pack_autocomplete)
 	async def recipe_import(self, interaction: discord.Interaction, pack: str) :
 		"""
@@ -329,7 +330,7 @@ class Craft(commands.GroupCog, name="Craft", group_name="craft") :
 		matching gear pack first (/armory import), since recipes make catalog items.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		try :
 			added, skipped, missing = RecipePacks.import_into(interaction.guild_id, pack)

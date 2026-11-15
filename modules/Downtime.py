@@ -10,7 +10,9 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.characters.Special import STATS
+from classes.checks import Checks
 from classes.combat.AutoComplete import AutoComplete
 from classes.economy import Downtime as DowntimeRules
 from classes.economy.DowntimeFlow import DowntimeFlow
@@ -24,6 +26,9 @@ ACTIVITY_CHOICES = [Choice(name="Work: earn your occupation's pay", value=Downti
                     Choice(name="Craft: a day on a crafting project", value=DowntimeRules.CRAFT),
                     Choice(name="Carouse: spend a little, hear a rumor", value=DowntimeRules.CAROUSE)]
 STAT_CHOICES = [Choice(name=stat.capitalize(), value=stat) for stat in STATS]
+FLAVOR_CHOICES = [Choice(name=label, value=outcome) for outcome, label in
+                  ((Checks.CRIT, "Critical success"), (Checks.STRONG, "Strong success"), (Checks.SUCCESS, "Success"),
+                   (Checks.FAILURE, "Failure"), (Checks.BAD, "Bad failure"), (Checks.FUMBLE, "Fumble"))]
 
 
 # ============================================================
@@ -80,7 +85,7 @@ class Downtime(commands.GroupCog, name="Downtime", group_name="downtime") :
 
 	# ============================================================
 	@app_commands.command(name="occupation", description="Sets what downtime work pays for an occupation (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(occupation=occupation_autocomplete, table=table_autocomplete)
 	@app_commands.choices(stat=STAT_CHOICES)
 	@app_commands.describe(pay="What a day pays (empty: WORK_PAY)", stat="The stat the work rolls",
@@ -93,7 +98,7 @@ class Downtime(commands.GroupCog, name="Downtime", group_name="downtime") :
 		characters read omens for others (/omen read).
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = OccupationTransactions().find(interaction.guild_id, occupation)
 		if record is None :
@@ -114,6 +119,35 @@ class Downtime(commands.GroupCog, name="Downtime", group_name="downtime") :
 		await reply(interaction, f"**{record.name}**: pays {updated.pay if updated.pay is not None else 'WORK_PAY'}, "
 		                         f"rolls {(updated.work_stat or 'strength').capitalize()}"
 		                         f"{', seer' if updated.seer else ''}.")
+
+	# ============================================================
+	@app_commands.command(name="flavor", description="Adds a line to how an occupation's work day reads (staff)")
+	@gm_only()
+	@app_commands.autocomplete(occupation=occupation_autocomplete)
+	@app_commands.choices(outcome=FLAVOR_CHOICES)
+	@app_commands.describe(occupation="The occupation", outcome="Which result the line is for",
+	                       line="The line (leave empty to clear that result's lines)")
+	async def flavor(self, interaction: discord.Interaction, occupation: str, outcome: Choice[str],
+	                 line: app_commands.Range[str, 1, 200] = None) :
+		"""
+		Adds a flavor line shown when a character of this occupation has that result at work; one is picked at random.
+		Without a line, that result's lines are cleared and the default line is used again.
+
+		**Permissions:**
+		- `Manage Messages`, or the GM role
+		"""
+		record = OccupationTransactions().find(interaction.guild_id, occupation)
+		if record is None :
+			return await reply(interaction, f"There is no occupation called {occupation}.")
+		flavor = dict(record.flavor or {})
+		if line is None :
+			flavor.pop(outcome.value, None)
+			text = f"Cleared the {outcome.name.lower()} lines of {record.name}."
+		else :
+			flavor[outcome.value] = (flavor.get(outcome.value) or [])[:19] + [line]
+			text = f"{record.name} has {len(flavor[outcome.value])} {outcome.name.lower()} lines now."
+		OccupationTransactions().update(record.id, flavor=flavor)
+		await reply(interaction, text)
 
 
 async def setup(bot) :

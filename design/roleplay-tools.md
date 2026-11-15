@@ -2,7 +2,8 @@
 
 Status: proposal, 15 November 2026; Rico answered the open questions the same day (section 16). **All six phases are
 built** on branch `feature/combat`: phase A (migration `0016_checks_tables`, section 20) and phases B to F (migrations
-`0017_world` to `0021_rumors_omens`, section 21). `0022_drop_legacy_combat` was renumbered so it stays last. The doc
+`0017_world` to `0021_rumors_omens`, section 21), and the pieces first left out (migration `0022_roleplay_extras`,
+section 22). `0023_drop_legacy_combat` was renumbered so it stays last. The doc
 covers the 15 tools picked from the idea list: languages, scenes and post order, the chronicle, calendar and weather,
 locations and travel, rumors, GM checks, secret rolls, roll tables, the job board, faction reputation, downtime,
 crafting, letters and omens. Not picked: idle-channel prompts, the memorial wall and the relationship web.
@@ -424,7 +425,7 @@ Choices made while building, beyond (or instead of) sections 1 to 15. Settings a
 | Weather | Per region (or the server's own outside any region). A location whose climate differs from its region's reads the region's weather at the same place on its own ladder. Forced weather keeps until the weather would change next. |
 | Presence | From `proxy_messages`: a character is at the location of its last post within `PRESENCE_DAYS`. A thread counts as its channel's location. Passive checks use the same setting now. |
 | Travel | Origin is the channel's location, else where the character last posted. Without a route travel is instant with the destination's danger. Encounters post the route's (or destination's) table card at the destination, with its Grant and Start fight buttons; without a table the GM settles it. No GM-role ping (there is no GM role). |
-| Not built | The "Set up location" button on the new-channel prompt. |
+| New channels | The new-channel prompt in `MODLOG` has a **Set up location** button (staff or GM role) that makes the channel a location named after it; it stays after answering Yes or No. |
 
 ### Phase C: scenes and the chronicle
 
@@ -452,7 +453,9 @@ Choices made while building, beyond (or instead of) sections 1 to 15. Settings a
 |---|---|
 | Commands | `/faction add | edit | remove | list | standing | give | item` (standing changes are `/faction give`, not `/gm rep`), `/job post | cancel | list`, `/downtime spend | occupation`, `/craft recipes | make | projects | salvage | uncurse`, `/craft recipe add | remove | mishap | salvage | import`. |
 | Shop | `Gear.buy` checks a faction item's tier and Vilified standing and prices it by standing. |
-| Not built | Tag requirements of kind `reputation`, occupation faction requirements, carousing's faction standing, and per-occupation flavor lines (default lines are used). |
+| Requirements | Forum tags can need faction standing (`/tagrule add kind:reputation faction tier`): checked against the character when it buys the item or learns the ability, and against a new character's Neutral standing when a species is picked. Occupations can need standing too (`/faction occupation`). |
+| Carousing | +1 standing with the faction that holds the location (`/location set faction:`), on top of the rumor. |
+| Flavor lines | `/downtime flavor` adds lines per occupation and outcome; one is picked at random, the default line otherwise. |
 | Jobs | Forum thread per job; its name carries the state (🟢 open, 🟡 taken, ✅ done, ❌ failed, ⚪ cancelled) instead of forum tags, and finished jobs are locked. Partial success pays half and half the standing; items only on success. Player jobs hold `currency × slots` in escrow and refund what isn't paid out. |
 | Downtime | Rolls count toward bad-roll protection. Occupation pay, stat, crit table and seer are set with `/downtime occupation`. |
 | Crafting | Materials are catalog items of kind `material` and stack (`character_gear.quantity`). Projects set their ingredients aside up front; a bad failure takes a day of progress back, a crit on any day makes the result masterwork; projects don't make cursed items. Salvage keeps each listed material on a coin flip. The fantasy recipe pack (`resources/data/recipes/fantasy.json`) adds 11 materials (two of them tools), 11 recipes and salvage lists for the fantasy gear pack. |
@@ -471,3 +474,21 @@ New code: `classes/world/`, `classes/scenes/`, `classes/language/`, `classes/eco
 `views/economy/`, the cogs in `modules/` and `tasks/WorldTask.py`; data in `resources/data/decks/` and
 `resources/data/recipes/`. Tests: `test_world.py`, `test_scenes.py`, `test_languages.py`, `test_economy.py`,
 `test_flavor.py`.
+
+## 22. The pieces built afterwards
+
+Rico asked for the pieces section 21 listed as not built, and for a GM role (16 November 2026). Migration
+`0022_roleplay_extras` adds `occupations.faction_id` and `faction_tier`, `locations.faction_id` and
+`craft_projects.flawed`.
+
+| Topic | Decision |
+|---|---|
+| GM role | `/config gmrole` sets `GM_ROLE`. Its members run the roleplay tools as staff do: every roleplay command that needed Manage Messages, and the tools' own staff checks (checks, scenes, jobs, table rewards, chronicle summaries, reading every language). It doesn't give `/gm`, fight GM powers or `/config`. It is pinged on travel encounters. |
+| Location button | See phase B: **Set up location** on the new-channel prompt. |
+| Reputation tags | A tag rule of kind `reputation` stores `faction id × 10 + tier index`. Members' access counts standing as 0 (a new character's) unless a character is known, so the shop lists such items as locked for members, and buying with a character that qualifies works. |
+| Occupation standing | `/faction occupation <occupation> <faction> <tier>`; checked when the occupation is picked (a new character is Neutral) and when an existing character changes occupation. |
+| Carousing and flavor | See phase E. |
+| Cursed projects | A bad failure on a project still takes a day back and now leaves a flaw. A flawed weapon or armor comes out cursed, a masterwork one plain (crit and flaw cancel), and other results aren't affected. |
+| Job tags | Posting a job adds Open, Taken, Done, Failed and Cancelled tags to the job board when the bot may (Manage Channels, and room under Discord's 20 tags), and each job thread carries its state's tag; the emoji stays in the thread name. |
+| Interview languages | New characters (and imports) pick their starting languages in the interview, after the stats, from the server's languages minus the common one and the species' own; **skip** leaves them for `/language pick`. The summary shows them and they are taught on submit (trimmed if the stats changed). |
+| Kept as they are | Command placement differs from the spec's names in places (`/faction give` for `/gm rep`, `/calendar birthday`, `/chronicle character`, `/language grant`, `/letter intercept`, `/dice … secret` for `/gm roll`, `/craft uncurse`); the spec's names would duplicate these commands. |

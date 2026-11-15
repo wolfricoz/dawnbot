@@ -147,8 +147,9 @@ class LanguageFlow :
 		if segments is None :
 			return "That post isn't in another language."
 		table = LanguageFlow.table(guild_id)
-		permissions = getattr(member, "guild_permissions", None)
-		staff = bool(permissions and permissions.manage_messages)
+		from classes.kernel.GMRole import is_gm
+
+		staff = is_gm(member)
 		fluency = LanguageFlow.reader_fluency(guild_id, member.id)
 		used = {segment.language for segment in segments if segment.language}
 		if not staff and not any(language in fluency for language in used) :

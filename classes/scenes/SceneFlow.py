@@ -31,9 +31,10 @@ class SceneFlow :
 	# ============================================================
 	@staticmethod
 	def runs(scene: SceneRecord, member) -> bool :
-		"""The host or staff."""
-		permissions = getattr(member, "guild_permissions", None)
-		return member.id == scene.host_uid or bool(permissions and permissions.manage_messages)
+		"""The host, staff or the GM role."""
+		from classes.kernel.GMRole import is_gm
+
+		return member.id == scene.host_uid or is_gm(member)
 
 	# ============================================================
 	@staticmethod

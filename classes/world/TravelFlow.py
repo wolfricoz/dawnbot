@@ -80,18 +80,21 @@ class TravelFlow :
 			return
 		if not roll or not roll.get("encounter") :
 			return
+		from classes.kernel import GMRole
+
 		table = RollTableTransactions().get(roll.get("table_id"))
-		heading = f"⚠️ Trouble on the road for **{character.name}** (<@{character.uid}>)."
+		# The GM role (when the server has one) is pinged: an encounter needs a GM.
+		gm, allowed = GMRole.mention(guild.id)
+		heading = f"⚠️ {gm}Trouble on the road for **{character.name}** (<@{character.uid}>)."
 		if table is None :
 			try :
-				await channel.send(f"{heading} The GM decides what waits for them.",
-				                   allowed_mentions=discord.AllowedMentions.none())
+				await channel.send(f"{heading} The GM decides what waits for them.", allowed_mentions=allowed)
 			except discord.HTTPException :
 				pass
 			return
 		from classes.tables.TableFlow import TableFlow
 
-		await TableFlow.post_roll(channel, table, character.uid, character, heading)
+		await TableFlow.post_roll(channel, table, character.uid, character, heading, allowed)
 
 	# ============================================================
 	@staticmethod

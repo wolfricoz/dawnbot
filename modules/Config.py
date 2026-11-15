@@ -448,6 +448,27 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 		                                        ephemeral=True)
 
 	# ============================================================
+	@app_commands.command(name='gmrole')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.describe(role="The game masters' role (leave empty to remove it)")
+	async def gmrole(self, interaction: Interaction, role: discord.Role = None) :
+		"""
+		Sets the role of the server's game masters. Members with it run the roleplay tools as staff do (roll tables,
+		calendar and time, weather, locations, languages, letters in transit, factions, jobs, recipes, rumors), and
+		the role is pinged when an encounter on the road needs a GM. It doesn't give /gm or fight GM powers.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		self._prepare(interaction.guild)
+		if role is None :
+			ConfigData().remove_key(interaction.guild.id, ConfigMapping.GM_ROLE)
+			return await interaction.response.send_message("The GM role was removed.", ephemeral=True)
+		ConfigData().add_key(interaction.guild.id, ConfigMapping.GM_ROLE, role.id, overwrite=True)
+		await interaction.response.send_message(f"{role.mention} is the GM role now.", ephemeral=True,
+		                                        allowed_mentions=discord.AllowedMentions.none())
+
+	# ============================================================
 	@app_commands.command(name='view')
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def view(self, interaction: Interaction) :
@@ -468,6 +489,8 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 			# get_key reads "0" and "1" as off and on, so whole-number settings are read as numbers.
 			value = config.get_int(guild.id, key) if key in number_settings else config.get_key(guild.id, key)
 			lines.append(f"**{key.lower()}:** {value}")
+		gm_role = config.get_int(guild.id, ConfigMapping.GM_ROLE)
+		lines.append(f"**gm_role:** {f'<@&{gm_role}>' if gm_role else 'not set'}")
 		for key in roleplay_settings :
 			lines.append(f"**{key.lower()}:** {RoleplaySettings.shown(guild.id, key)}")
 		levels = LevelTransactions().get_all(guild.id)

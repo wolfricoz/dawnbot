@@ -235,6 +235,19 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 
 ---
 
+### `gmrole`
+
+**Usage:** `/config gmrole <role>`
+
+> Sets the role of the server's game masters. Members with it run the roleplay tools as staff do (roll tables,
+> calendar and time, weather, locations, languages, letters in transit, factions, jobs, recipes, rumors), and
+> the role is pinged when an encounter on the road needs a GM. It doesn't give /gm or fight GM powers.
+>
+> **Permissions:**
+> - `Manage Server`
+
+---
+
 ### `view`
 
 **Usage:** `/config view`

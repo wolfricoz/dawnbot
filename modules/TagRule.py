@@ -6,11 +6,22 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
-from classes.characters.Access import EVENT, KINDS, LEVEL, ROLE, STAFF_ONLY
+from classes.characters.Access import EVENT, KINDS, LEVEL, REPUTATION, ROLE, STAFF_ONLY, reputation_parts, \
+	reputation_value
+from classes.economy.FactionFlow import TIERS
+from database.transactions.EconomyTransactions import EconomyTransactions
 from database.transactions.TagRuleTransactions import TagRuleTransactions
 
 KIND_HELP = {ROLE : "needs a role", LEVEL : "needs a server level", STAFF_ONLY : "only staff give it out",
-             EVENT : "hidden; only staff give it out"}
+             EVENT : "hidden; only staff give it out", REPUTATION : "needs standing with a faction"}
+TIER_CHOICES = [Choice(name=tier.capitalize(), value=tier) for tier in TIERS]
+
+
+# ============================================================
+async def faction_autocomplete(interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+	return [Choice(name=faction.name[:100], value=faction.name[:100])
+	        for faction in EconomyTransactions().factions(interaction.guild_id)
+	        if current.lower() in faction.name.lower()][:25]
 
 
 @app_commands.guild_only()
@@ -39,14 +50,19 @@ class TagRule(commands.GroupCog, name="TagRule", group_name="tagrule") :
 	# ============================================================
 	@app_commands.command(name="add")
 	@app_commands.checks.has_permissions(manage_guild=True)
-	@app_commands.autocomplete(tag=_tags)
-	@app_commands.choices(kind=[Choice(name=f"{kind}: {KIND_HELP[kind]}", value=kind) for kind in KINDS])
+	@app_commands.autocomplete(tag=_tags, faction=faction_autocomplete)
+	@app_commands.choices(kind=[Choice(name=f"{kind}: {KIND_HELP[kind]}", value=kind) for kind in KINDS],
+	                      tier=TIER_CHOICES)
+	@app_commands.describe(faction="reputation: the faction", tier="reputation: the standing needed at least")
 	async def add(self, interaction: discord.Interaction, forum: discord.ForumChannel, tag: str, kind: Choice[str],
-	              role: discord.Role = None, level: app_commands.Range[int, 1, 1000] = None) :
+	              role: discord.Role = None, level: app_commands.Range[int, 1, 1000] = None, faction: str = None,
+	              tier: Choice[str] = None) :
 		"""
 		Links a forum tag to a requirement. Kinds: role (members need `role`), level (members need server `level`:
-		the number of level roles they have reached), staff_only (only staff can give it out) and event (hidden from
-		members; only staff can give it out). A tag can have one rule of each kind.
+		the number of level roles they have reached), staff_only (only staff can give it out), event (hidden from
+		members; only staff can give it out) and reputation (the character needs at least `tier` standing with
+		`faction`; checked when a character buys the item or learns the ability, and against a new character's
+		Neutral standing when a species is picked). A tag can have one rule of each kind.
 
 		**Permissions:**
 		- `Manage Server`
@@ -60,6 +76,11 @@ class TagRule(commands.GroupCog, name="TagRule", group_name="tagrule") :
 			if role is None :
 				return await interaction.followup.send("Pick the role members need in `role`.")
 			value = role.id
+		elif kind.value == REPUTATION :
+			record = EconomyTransactions().find_faction(interaction.guild_id, faction or "")
+			if record is None or tier is None :
+				return await interaction.followup.send("A reputation rule needs a `faction` and a `tier`.")
+			value = reputation_value(record.id, tier.value)
 		elif kind.value == LEVEL :
 			if level is None :
 				return await interaction.followup.send("Set the server level members need in `level`.")
@@ -107,6 +128,10 @@ class TagRule(commands.GroupCog, name="TagRule", group_name="tagrule") :
 	# ============================================================
 	@staticmethod
 	def describe(kind: str, value: int | None) -> str :
+		if kind == REPUTATION :
+			faction_id, tier = reputation_parts(value)
+			faction = EconomyTransactions().faction(faction_id)
+			return f"needs {tier.capitalize()} standing with {faction.name if faction else 'a removed faction'}"
 		return {ROLE : f"needs the <@&{value}> role", LEVEL : f"needs server level {value}",
 		        STAFF_ONLY : "only staff give it out", EVENT : "hidden; only staff give it out"}[kind]
 

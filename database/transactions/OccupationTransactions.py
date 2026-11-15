@@ -4,7 +4,7 @@ from database.database import Characters, Occupations
 from database.transactions.DatabaseTransactions import DatabaseTransactions
 
 # Columns add() and update() accept as keyword arguments.
-FIELDS = ["name", "description", "max_holders", "min_level", "role_id", "staff_only", "pay", "work_stat", "table_id", "flavor", "seer"]
+FIELDS = ["name", "description", "max_holders", "min_level", "role_id", "staff_only", "pay", "work_stat", "table_id", "flavor", "seer", "faction_id", "faction_tier"]
 # Characters in these states hold their occupation's place; retired and denied ones free it.
 HOLDING_STATES = ["pending", "approved"]
 

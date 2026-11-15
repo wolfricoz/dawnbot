@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.combat.AutoComplete import AutoComplete
 from classes.language.LetterFlow import LetterFlow
 from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
@@ -87,21 +88,21 @@ class Letter(commands.GroupCog, name="Letter", group_name="letter") :
 
 	# ============================================================
 	@app_commands.command(name="transit", description="Lists the letters on their way (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	async def transit(self, interaction: discord.Interaction) :
 		"""
 		Lists letters in transit: who wrote to whom and when they arrive. Subjects show only when interception is on;
 		the text never shows here.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		lines = LetterFlow.transit_lines(interaction.guild_id)
 		await reply(interaction, "\n".join(lines)[:2000] if lines else "No letters are on their way.")
 
 	# ============================================================
 	@app_commands.command(name="intercept", description="Reads, holds, releases or destroys a letter in transit (GM)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.choices(action=ACTION_CHOICES)
 	@app_commands.describe(letter="The letter's number from /letter transit", action="What to do with it")
 	async def intercept(self, interaction: discord.Interaction, letter: int, action: Choice[str]) :
@@ -110,7 +111,7 @@ class Letter(commands.GroupCog, name="Letter", group_name="letter") :
 		recipient sees.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		await LetterFlow.intercept(interaction, letter, action.value)
 

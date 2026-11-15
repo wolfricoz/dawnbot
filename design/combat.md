@@ -3,7 +3,7 @@
 Status: built on branch `feature/combat` from the team proposal ("Dawnbot combat system proposal" in Google Docs,
 15 November 2026). Migrations `0011_combat` (new tables and columns), `0012_bestiary_special` (bestiary entries built
 from SPECIAL), `0013_passive_abilities` (active and passive abilities), `0014_bad_streak` (bad-roll protection),
-`0015_ability_effects` (abilities built from catalog effects) and `0022_drop_legacy_combat` (drops the old global armor,
+`0015_ability_effects` (abilities built from catalog effects) and `0023_drop_legacy_combat` (drops the old global armor,
 weapon, NPC and monster tables; import them first with `/armory import legacy` and `/bestiary import legacy`).
 
 The Google Doc holds the reasoning and the open questions. This file is the source of truth for what was built,

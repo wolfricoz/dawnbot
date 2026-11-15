@@ -152,6 +152,8 @@ class Gear :
 		"""
 		if item.guild_id != character.guild_id :
 			return None, "That item is not sold on this server."
+		# Reputation tags on the item's post read this character's standing.
+		access = access.for_character(character.id)
 		locked = Gear.lock_reason(item, access)
 		if locked :
 			return None, f"{item.name} {locked}."
