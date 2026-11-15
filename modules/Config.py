@@ -10,8 +10,12 @@ from classes.kernel.ConfigData import ConfigData
 from classes.kernel.Queue import Queue
 from classes.kernel.ServerSync import sync_server
 from classes.progression.Progression import Progression
+from classes.setup.BotSetup import BotSetup
+from classes.setup.GuidedSetup import GuidedSetup
+from classes.support.PermissionNotice import PermissionNotice, humanise
 from database.transactions.LevelTransactions import LevelTransactions
 from resources.configs.ConfigMapping import ConfigMapping, channels, choice_settings, number_settings, settings
+from views.buttons.Confirm import ask
 
 
 class Config(commands.GroupCog, name="Config", group_name="config") :
@@ -41,6 +45,52 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 			await report_channel.send(f"Finished counting {count} messages in {channel.mention}", silent=True)
 		except discord.HTTPException :
 			pass
+
+	# ============================================================
+	@app_commands.command(name='setup')
+	@app_commands.choices(mode=[
+		Choice(name="guided: walks you through every channel and setting", value="guided"),
+		Choice(name="auto: creates the channels for you", value="auto"),
+	])
+	@app_commands.checks.has_permissions(manage_guild=True)
+	async def setup_command(self, interaction: Interaction, mode: Choice[str]) :
+		"""
+		Sets up the roleplay features: the character review, bot log, characters, species, gear, level-up and
+		timeline channels, the roleplay channels and the main character, species and gear settings.
+
+		`guided` walks you through it one step at a time: for each channel you pick one, let the bot create it, or
+		skip; then you choose the settings and can import a ready-made gear pack. Every answer is saved straight away.
+
+		`auto` creates every channel that is not set yet, in a hidden **Roleplay Staff** category, a read-only
+		**Roleplay Info** category and a **Roleplay** category. Channels that are already set, or that already exist
+		under the default name, are kept. Settings keep their values.
+
+		Both end with what is still missing (such as permissions) and what to do next.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		guild = interaction.guild
+		self._prepare(guild)
+		if mode.value == "guided" :
+			return await GuidedSetup(self.bot, interaction).run()
+
+		if missing := BotSetup.missing_auto_permissions(guild) :
+			await PermissionNotice().notify(guild, missing, source="command", user=interaction.user)
+			return await send_response(interaction, f"To create the channels I need {', '.join(humanise(missing))}; "
+			                                        f"a notice with the details has been sent. `/config setup guided` "
+			                                        f"lets you pick existing channels instead.", ephemeral=True)
+		if not await ask(interaction, BotSetup.describe_plan(guild), "Set it up") :
+			return await interaction.followup.send("Setup cancelled; nothing was changed.", ephemeral=True)
+		try :
+			report = await BotSetup.auto(guild)
+		except discord.HTTPException as e :
+			logging.warning(f"Auto setup stopped in {guild.name}: {e}", exc_info=True)
+			return await interaction.followup.send(
+				f"Setup stopped part-way because Discord refused a change: {e.text or e}. What was made so far is "
+				f"kept; run it again once that is fixed.", embed=BotSetup.summary(guild), ephemeral=True)
+		logging.info(f"{interaction.user.name} ran auto setup in {guild.name}")
+		await interaction.followup.send(embed=BotSetup.summary(guild, report), ephemeral=True)
 
 	# ============================================================
 	@app_commands.command(name='roles')

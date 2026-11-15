@@ -12,6 +12,23 @@ nav_order: 6
 Server settings: XP (roleplay) channels, level roles, characters, currency and the channels the bot posts in.
 
 
+### `setup`
+
+**Usage:** `/config setup <mode>`
+
+> Sets up the roleplay features: the character review, bot log, characters, species, gear, level-up and timeline channels, the roleplay channels and the main character, species and gear settings.
+>
+> `guided` walks you through it one step at a time: for each channel you pick one, let the bot create it, or skip; then you choose the settings and can import a ready-made gear pack. Every answer is saved straight away.
+>
+> `auto` creates every channel that is not set yet, in a hidden **Roleplay Staff** category, a read-only **Roleplay Info** category and a **Roleplay** category. Channels that are already set, or that already exist under the default name, are kept. Settings keep their values.
+>
+> Both end with what is still missing (such as permissions) and what to do next.
+
+**Permissions:**
+- `Manage Server`
+
+---
+
 ### `roles`
 
 **Usage:** `/config roles <option> <role> <xp_required>`
