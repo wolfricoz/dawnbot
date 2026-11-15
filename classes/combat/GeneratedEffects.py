@@ -235,7 +235,7 @@ def magic_effects(theme: Theme) -> list[Effect] :
 			    on_hit=theme.heavy)
 	if "A" in theme.groups and t :
 		add("burst", f"{A} Burst", BLAST, 2, f"a burst of {n}, dodged for half", type=t)
-		add("nova", f"{A} Nova", BLAST, 3, f"a nova of {n}", WEAK, type=t, steps=1)
+		add("nova", f"{A} Nova", BLAST, 4, f"a nova of {n}", WEAK, type=t, steps=1)
 		add("storm", f"{A} Storm", BLAST, 4, f"a storm of {n}", NORMAL, type=t, steps=1, on_fail=theme.light)
 		if theme.light :
 			add("wave", f"{A} Wave", BLAST, 3, f"a wave of {n} that leaves targets {_label(theme.light)}", type=t,

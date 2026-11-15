@@ -217,7 +217,7 @@ class TestAbilityRules(unittest.TestCase) :
 		self.assertEqual(Effects.ap_cost("normal", effects + [EffectCatalog.get("blood_price")]), 6)
 		self.assertEqual(Effects.target_limit(effects), 3)
 		self.assertEqual(Effects.dice("normal", effects[0], effects), "2d6")
-		self.assertEqual(Effects.dice("strong", EffectCatalog.get("magic_missile"), []), "3d8")
+		self.assertEqual(Effects.dice("strong", EffectCatalog.get("magic_missile"), []), "2d8")
 		self.assertEqual(Effects.dice("cantrip", EffectCatalog.get("bolt"), [EffectCatalog.get("empowered_spell")]),
 		                 "2d8")
 		# Blasts roll a die step below the tier's (half on a save is still damage).

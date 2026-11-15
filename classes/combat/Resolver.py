@@ -135,9 +135,10 @@ class Resolver :
 		return self.finish_action(actor)
 
 	# ============================================================
-	def resolve_and_use(self, actor: Combatant, ability: dict, target: Combatant) -> None :
-		"""Uses an ability on one target without the turn checks (automatic moves)."""
-		self._use_ability(actor, ability, [target])
+	def resolve_and_use(self, actor: Combatant, ability: dict, targets: Combatant | list[Combatant]) -> None :
+		"""Uses an ability on one target or several (up to its limit) without the turn checks (automatic moves)."""
+		targets = targets if isinstance(targets, list) else [targets]
+		self._use_ability(actor, ability, targets[:max(1, int(ability.get("targets") or 1))])
 		self.check_victory()
 
 	# ============================================================

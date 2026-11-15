@@ -279,7 +279,7 @@ ACTIVE_EFFECTS = [
 
 	# == Force & telekinesis ==
 	attack("magic_missile", "Magic Missile", M, FORCE_CAT, 3, "darts of force that rarely miss", ARCANE, hits=3,
-	       accuracy=2),
+	       accuracy=1),
 	attack("telekinesis", "Telekinesis", M, FORCE_CAT, 3, "slams the target with your mind", BLUNT, on_hit=C.PRONE),
 	attack("force_lance", "Force Lance", M, FORCE_CAT, 3, "a lance of pure force", ARCANE, ignore_dt=True),
 	blast("force_wave", "Force Wave", M, FORCE_CAT, 3, "a wave of force", ARCANE, save="strength",
@@ -419,7 +419,7 @@ ACTIVE_EFFECTS = [
 	attack("knife_throw", "Knife Throw", P, ARCHERY_CAT, 2, "a thrown blade", PIERCING, accuracy=1, requires="thrown"),
 	attack("hunters_mark", "Hunter's Mark", P, ARCHERY_CAT, 3, "marks the prey for the whole party", PIERCING,
 	       on_hit=C.MARKED, requires="ranged"),
-	attack("ricochet", "Ricochet", P, ARCHERY_CAT, 3, "a trick shot off the walls", BLUNT, accuracy=4, steps=-1,
+	attack("ricochet", "Ricochet", P, ARCHERY_CAT, 3, "a trick shot off the walls", BLUNT, accuracy=2, steps=-1,
 	       hits=2, requires="ranged"),
 
 	# == Tactics & leadership ==

@@ -217,9 +217,21 @@ AP of 0 was tried and overshot: three Cantrips a turn won 64% to 88%); Precise a
 3 (at cost 2 the accuracy came free); self Armor, Guard, Iron Skin and Grit Teeth last two turns longer, since unspent AP
 already becomes AC. The latest report is `design/balance-report.md`.
 
+**Balance pass 2** (2026-11-15): every hit of a multi-hit attack is a dice step lower per hit after the first (three-hit
+attacks such as Magic Missile and Whirlwind dropped a step; two-hit ones are unchanged); Magic Missile gives +1 to hit
+(was +2) and Ricochet +2 (was +4); Novas cost 4 (was 3). Measured before the change: Magic Missile 82% → 67%, Ricochet
+74% → 63%, Novas 64–68% → about 58%.
+
+**NPC abilities**: automatic NPCs pick an ability by situation rather than only attacking (see
+`classes/combat/Autopilot.py`): bringing back a downed ally, then healing one below half HP, control on the toughest
+enemy not yet under it (or immune to it), cleansing a controlled ally, damage (area abilities preferred against several
+enemies), a summon, buffs on whoever lacks them, then debuffs and dispels. They never break their own concentration
+while it still holds something, and fall back on weapons when nothing is worth it. Players' autopilot still only uses
+weapons (and heals on "support").
+
 | Mechanic | What it does |
 |---|---|
-| attack | `d20 + stat modifier` against AC; a hit deals dice + modifier − DT. Options: fixed damage type, extra hits (one dice step lower each), ignores DT, drain (heals the user half), a condition on a hit, execute (+1 die at half HP or less), accuracy, wider crits. |
+| attack | `d20 + stat modifier` against AC; a hit deals dice + modifier − DT. Options: fixed damage type, extra hits (every hit a dice step lower per hit after the first: two hits one step, three hits two), ignores DT, drain (heals the user half), a condition on a hit, execute (+1 die at half HP or less), accuracy, wider crits. |
 | blast | The target saves (`d20 + stat`) against `10 + modifier + DC bonus`; a failed save takes the dice (one step below the tier's, since a blast always does something), a passed one half. Can add a condition on a failed save. |
 | afflict | Save or the condition for the tier's turns. A save failed by 5 or more also triggers the ability's damage type. |
 | doom | Save or doomed: takes the dice when it runs out. |

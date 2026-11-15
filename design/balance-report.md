@@ -2,14 +2,12 @@
 
 2005 effects, 200 fights each. A hero that only attacks wins 48% of the time. Run `python -m classes.combat.Balance` to make a new one; see classes/combat/Balance.py for the method.
 
-13 too strong, 9 too weak, 480 worse than attacking.
+7 too strong, 9 too weak, 483 worse than attacking.
 
 ## Cantrip (1561 effects, median win rate 48%)
 
 | Effect | Realm | AP | Win rate | Rounds | Verdict |
 |---|---|---|---|---|---|
-| Magic Missile (`magic_missile`) | magic | 4 | 81% | 3.3 | too strong |
-| Ricochet (`ricochet`) | physical | 4 | 76% | 4.8 | too strong |
 | Earth Barrage (`earth_barrage`) | magic | 4 | 72% | 4.6 | too strong |
 | Double Sling Stone (`sling_double`) | physical | 4 | 72% | 4.5 | too strong |
 | Sand Barrage (`sand_barrage`) | magic | 4 | 71% | 4.6 | too strong |
@@ -410,18 +408,14 @@
 | Overexertion (`overexertion`) | physical | 2 | 12% | 2.7 | too weak |
 | Widened (`widened`) | magic | 5 | 12% | 6.4 | too weak |
 | Sweeping (`sweeping`) | physical | 5 | 12% | 6.8 | too weak |
-| *1159 others within range* | | | | | |
+| *1161 others within range* | | | | | |
 
 ## Weak (375 effects, median win rate 48%)
 
 | Effect | Realm | AP | Win rate | Rounds | Verdict |
 |---|---|---|---|---|---|
-| Ash Nova (`ash_nova`) | magic | 4 | 74% | 3.9 | too strong |
-| Solar Nova (`solar_nova`) | magic | 4 | 72% | 3.9 | too strong |
-| Spore Nova (`spore_nova`) | magic | 4 | 72% | 4.1 | too strong |
-| Water Nova (`water_nova`) | magic | 4 | 71% | 4.4 | too strong |
-| Venom Nova (`venom_nova`) | magic | 4 | 70% | 4.4 | too strong |
-| Chain Nova (`chain_nova`) | magic | 4 | 70% | 4.4 | too strong |
+| Cure Wounds (`cure_wounds`) | magic | 4 | 69% | 5.8 | too strong |
+| Bomb (`bomb`) | physical | 4 | 68% | 4.0 | too strong |
 | Sand Wisp (`sand_summon`) | magic | 4 | 42% | 4.9 | worse than attacking |
 | Dread Torment (`dread_torment`) | magic | 5 | 42% | 5.1 | worse than attacking |
 | Disarming Scythe Reap (`scythe_disarming`) | physical | 5 | 42% | 6.1 | worse than attacking |
@@ -434,8 +428,10 @@
 | Crystal Familiar (`crystal_summon`) | magic | 4 | 42% | 4.6 | worse than attacking |
 | Spectral Singer (`song_summon`) | magic | 4 | 42% | 5.0 | worse than attacking |
 | Shadow Smite (`shadow_smite`) | magic | 5 | 42% | 5.6 | worse than attacking |
+| Dream Nova (`dream_nova`) | magic | 5 | 42% | 5.3 | worse than attacking |
 | Chaos Smite (`chaos_smite`) | magic | 5 | 42% | 5.4 | worse than attacking |
 | Chaos Imp (`chaos_summon`) | magic | 4 | 42% | 4.7 | worse than attacking |
+| Bone Nova (`bone_nova`) | magic | 5 | 42% | 5.2 | worse than attacking |
 | Disarming Horn Gore (`horn_disarming`) | physical | 5 | 42% | 6.4 | worse than attacking |
 | Revivify (`revivify`) | magic | 4 | 42% | 4.8 | worse than attacking |
 | Spark Sprite (`lightning_summon`) | magic | 4 | 42% | 4.8 | worse than attacking |
@@ -472,6 +468,7 @@
 | Chain Smite (`chain_smite`) | magic | 5 | 40% | 5.7 | worse than attacking |
 | Stunning Lance Charge (`lance_stunning`) | physical | 5 | 40% | 5.9 | worse than attacking |
 | Disarming Rifle Round (`rifle_disarming`) | physical | 5 | 40% | 6.4 | worse than attacking |
+| Psychic Nova (`psychic_nova`) | magic | 5 | 39% | 5.2 | worse than attacking |
 | Rune Torment (`rune_torment`) | magic | 5 | 39% | 5.3 | worse than attacking |
 | Ink Smite (`ink_smite`) | magic | 5 | 39% | 5.4 | worse than attacking |
 | Shock Baton (`shock_baton`) | physical | 5 | 38% | 6.2 | worse than attacking |
@@ -502,7 +499,7 @@
 | Arcane Torment (`arcane_torment`) | magic | 5 | 35% | 5.0 | worse than attacking |
 | Bow Volley (`bow_volley`) | physical | 4 | 34% | 4.8 | worse than attacking |
 | Rebound (`mirror_ward`) | magic | 5 | 34% | 5.5 | worse than attacking |
-| *289 others within range* | | | | | |
+| *290 others within range* | | | | | |
 
 ## Normal (69 effects, median win rate 63%)
 

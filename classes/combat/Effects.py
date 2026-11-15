@@ -9,9 +9,10 @@ a passive lowers the character's AP every turn by the cost of its effects.
 An active effect has a mechanic, which is what the engine does with it, and parameters, which tune it:
 
 - attack: an attack roll against AC; a hit deals the tier's dice (moved up or down by `steps`) + the stat modifier.
-  Parameters: `type` (damage type; None uses the ability's), `hits` (separate attacks, one dice step lower each),
-  `ignore_dt`, `drain` (heals the user for half the damage), `on_hit` (a condition the target gets on a hit, no save),
-  `execute` (one more die against targets at half HP or less), `accuracy` (to hit bonus), `crit` (crit range wider).
+  Parameters: `type` (damage type; None uses the ability's), `hits` (separate attacks, each a dice step lower per
+  extra hit), `ignore_dt`, `drain` (heals the user for half the damage), `on_hit` (a condition the target gets on a
+  hit, no save), `execute` (one more die against targets at half HP or less), `accuracy` (to hit bonus), `crit`
+  (crit range wider).
 - blast: the target saves (`save`, a stat) against the DC; a failed save takes the dice (one step below the tier's,
   since a blast always does something), a passed one half.
   `on_fail` adds a condition to a failed save.
@@ -338,7 +339,8 @@ def dice_steps(effects: list[Effect]) -> int :
 
 # ============================================================
 def dice(tier: str, effect: Effect | dict, effects: list[Effect] | None = None) -> str :
-	"""An effect's dice: the tier's, moved by its own steps and the ability's modifiers; extra hits are a step lower."""
+	"""An effect's dice: the tier's, moved by its own steps and the ability's modifiers; extra hits and blasts are
+	lower (see effect_steps)."""
 	params = effect.params if isinstance(effect, Effect) else effect.get("params") or {}
 	mechanic = effect.mechanic if isinstance(effect, Effect) else effect.get("mechanic")
 	steps = int(params.get("steps") or 0) + (dice_steps(effects) if effects else 0)
@@ -347,8 +349,9 @@ def dice(tier: str, effect: Effect | dict, effects: list[Effect] | None = None) 
 
 # ============================================================
 def effect_steps(mechanic: str | None, params: dict) -> int :
-	"""Dice steps an effect takes by its nature: extra hits are a step lower each, and so are blasts."""
-	steps = -1 if int(params.get("hits") or 1) > 1 else 0
+	"""Dice steps an effect takes by its nature: each hit after the first takes one step off every hit (two hits are a
+	step lower, three hits two), and blasts are a step lower."""
+	steps = -(max(1, int(params.get("hits") or 1)) - 1)
 	return steps + (BLAST_STEPS if mechanic == BLAST else 0)
 
 

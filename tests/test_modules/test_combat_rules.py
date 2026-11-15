@@ -197,3 +197,77 @@ class TestBalanceSimulator(unittest.TestCase) :
 		self.assertTrue(all(0 <= result.wins <= 1 for result in results))
 		text = Balance.report(baseline, results, 20)
 		self.assertIn("# Effect balance report", text)
+
+
+class TestNpcAbilities(unittest.TestCase) :
+
+	def setup(self, *keys_by_ability, behavior: str = "aggressive") :
+		from classes.combat.State import AUTO
+
+		fight = duel()
+		fight.combatants.append(fighter(3, 1, "Rook"))
+		fight.combatants.append(fighter(4, 2, "Thug"))
+		mage = fight.combatant(2)
+		mage.controller, mage.behavior, mage.ap_max = AUTO, behavior, 20
+		mage.stats["abilities"] = [ability(number + 10, f"Ability {number}", "spell", "normal", list(keys))
+		                           for number, keys in enumerate(keys_by_ability)]
+		return fight, mage
+
+	def test_control_goes_on_the_toughest_enemy(self) :
+		from classes.combat.Autopilot import Autopilot
+
+		fight, mage = self.setup(["hold_person"], ["fire_bolt"])
+		fight.combatant(1).hp = 30
+		fight.combatant(3).hp = 12
+		ability, targets = Autopilot(engine(fight)).ability_move(mage, "aggressive")
+		self.assertEqual((ability["name"], [target.name for target in targets]), ("Ability 0", ["Ayla"]))
+		C.add(fight.combatant(1).conditions, C.STUNNED, turns=1)
+		C.add(fight.combatant(3).conditions, C.STUNNED, turns=1)
+		ability, targets = Autopilot(engine(fight)).ability_move(mage, "aggressive")
+		self.assertEqual(ability["name"], "Ability 1")
+		self.assertEqual(targets[0].name, "Rook")
+
+	def test_healing_reviving_and_buffing(self) :
+		from classes.combat.Autopilot import Autopilot
+		from classes.combat.State import DOWNED
+
+		fight, mage = self.setup(["cure_wounds"], ["bless"], ["fire_bolt"])
+		thug = fight.combatant(4)
+		pilot = Autopilot(engine(fight))
+		ability, targets = pilot.ability_move(mage, "aggressive")
+		self.assertEqual(ability["name"], "Ability 2")
+		ability, targets = pilot.ability_move(mage, "support")
+		self.assertEqual(ability["name"], "Ability 2")
+		thug.hp = 5
+		ability, targets = pilot.ability_move(mage, "aggressive")
+		self.assertEqual((ability["name"], targets[0].name), ("Ability 0", "Thug"))
+		thug.hp, thug.state = 0, DOWNED
+		ability, targets = pilot.ability_move(mage, "aggressive")
+		self.assertEqual((ability["name"], targets[0].name), ("Ability 0", "Thug"))
+
+	def test_concentration_and_area_targets(self) :
+		from classes.combat.Autopilot import Autopilot
+
+		fight, mage = self.setup(["haste"], ["bless"], ["fireball", "widened"])
+		run = engine(fight)
+		pilot = Autopilot(run)
+		ability, targets = pilot.ability_move(mage, "aggressive")
+		self.assertEqual(ability["name"], "Ability 2")
+		self.assertEqual(sorted(target.name for target in targets), ["Ayla", "Rook"])
+		mage.stats["abilities"] = mage.stats["abilities"][:2]
+		run.start()
+		mage.ap = 20
+		run.resolve_and_use(mage, mage.abilities[0], [mage])
+		# Concentrating on Haste: Bless would break it, so the mage holds off.
+		self.assertIsNone(pilot.ability_move(mage, "aggressive"))
+
+	def test_a_whole_automatic_turn(self) :
+		from classes.combat.Autopilot import Autopilot
+
+		fight, mage = self.setup(["hold_person"], ["fire_bolt"])
+		run = engine(fight, 1, 1, 15, 4, 15, 4, 15, 4)
+		run.start()
+		mage.ap, mage.acted = 20, False
+		Autopilot(run).take_turn(mage)
+		self.assertTrue(any("uses **Ability 0**" in line for line in run.outcome.lines))
+		self.assertTrue(any("uses **Ability 1**" in line for line in run.outcome.lines))
