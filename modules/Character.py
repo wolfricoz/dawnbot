@@ -16,7 +16,6 @@ from classes.characters.Retirement import Retirement
 from classes.characters.Special import STATS, Special
 from classes.combat import Rules
 from classes.combat.AutoComplete import AutoComplete
-from classes.combat.Legendary import Legendary
 from classes.combat.Proficiency import Proficiency
 from classes.kernel.ConfigData import ConfigData
 from classes.progression.Progression import Progression
@@ -499,34 +498,6 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		if updated is not None :
 			logging.info(f"{interaction.user.name} set armor proficiency {level.value} on character {character.id}")
 		await interaction.followup.send(text)
-
-	# ============================================================
-	@app_commands.command(name="legendary", description="Staff: makes a character legendary, or ends it")
-	@app_commands.checks.has_permissions(manage_messages=True)
-	async def legendary(self, interaction: discord.Interaction, member: discord.Member, name: str, legendary: bool) :
-		"""
-		Makes a member's character legendary, or takes the status away. Legendary characters have doubled stat
-		limits (20, or 26 with a species that allows 13), get extra points to spend (`legendary_points`, 5 by
-		default) and one extra ability slot. Taking the status away lowers stats above the normal limits and takes
-		the extra points back.
-
-		**Permissions:**
-		- `Manage Messages`
-		"""
-		character = CharacterTransactions().get(member.id, interaction.guild_id, name)
-		if character is None :
-			return await CharacterFlow.respond(interaction, f"{member.display_name} has no character called {name}.")
-		question = f"Make **{character.name}** legendary?" if legendary else \
-			f"Take legendary status from **{character.name}**? Stats above the normal limits are lowered."
-		if not await ask(interaction, question, "Make legendary" if legendary else "Remove") :
-			return
-		updated, text = Legendary.grant(character, interaction.user.id) if legendary else Legendary.remove(character)
-		if updated is not None :
-			logging.info(f"{interaction.user.name} set legendary={legendary} on character {character.id} in "
-			             f"{interaction.guild.name}")
-			if updated.state == APPROVED :
-				await ForumPost.sync(self.bot, updated)
-		await interaction.followup.send(text, ephemeral=True)
 
 async def setup(bot) :
 	await bot.add_cog(Character(bot))

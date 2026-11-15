@@ -1,7 +1,8 @@
-"""Legendary characters: staff give the status to a character, which doubles its stat limits (10 becomes 20, a species'
-13 becomes 26), gives it LEGENDARY_POINTS extra points to spend (5 by default) and one extra ability slot.
+"""Legendary characters: GMs give the status to a character (/gm legendary grant), which doubles its stat limits (10
+becomes 20, a species' 13 becomes 26), gives it LEGENDARY_POINTS extra points to spend (5 by default) and one extra
+ability slot.
 
-Removing the status lowers stats above the normal limits and returns those points, then takes the legendary points back:
+GMs take it away with /gm legendary take. Removing the status lowers stats above the normal limits and returns those points, then takes the legendary points back:
 from unspent points first, then from the highest stats.
 """
 from datetime import datetime, timezone
@@ -63,12 +64,27 @@ class Legendary :
 
 	# ============================================================
 	@staticmethod
+	def lowered(character: Characters, stats: dict[str, int]) -> list[str] :
+		"""The stats that removal changes, as "Strength 13 → 10"."""
+		return [f"{stat.capitalize()} {getattr(character, stat)} → {value}" for stat, value in stats.items()
+		        if value != getattr(character, stat)]
+
+	# ============================================================
+	@staticmethod
+	def preview(character: Characters) -> str :
+		"""What taking the status away would do, shown before a GM confirms it."""
+		stats, unspent = Legendary.removal(character)
+		changed = Legendary.lowered(character, stats)
+		lowered = f"lowers {', '.join(changed)}" if changed else "doesn't lower any stats"
+		return f"This {lowered} and leaves {unspent} unspent point{'s' if unspent != 1 else ''}."
+
+	# ============================================================
+	@staticmethod
 	def remove(character: Characters) -> tuple[Characters | None, str] :
 		if not character.legendary :
 			return None, f"{character.name} is not legendary."
 		stats, unspent = Legendary.removal(character)
-		changed = [f"{stat.capitalize()} {getattr(character, stat)} → {value}" for stat, value in stats.items()
-		           if value != getattr(character, stat)]
+		changed = Legendary.lowered(character, stats)
 		updated = CharacterTransactions().update(character.id, legendary=False, legendary_points=0, legendary_by=None,
 		                                         legendary_at=None, unspent_points=unspent, **stats)
 		text = f"{character.name} is no longer legendary. Unspent points: {unspent}."

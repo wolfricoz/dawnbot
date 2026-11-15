@@ -1,4 +1,5 @@
-"""Game master tools: giving and taking characters' gear and currency. GMs are staff (Manage Messages)."""
+"""Game master tools: giving and taking characters' gear, currency, abilities and legendary status. GMs are staff
+(Manage Messages)."""
 import logging
 
 import discord
@@ -6,6 +7,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.combat.Legendary import Legendary
 from classes.combat.Proficiency import Proficiency
 from classes.gear.Gear import Gear
 from database.database import CharacterGear, Characters, GearItems
@@ -15,6 +17,7 @@ from database.transactions.CharacterTransactions import CharacterTransactions
 from database.transactions.GearItemTransactions import GearItemTransactions
 from modules.Currency import balance_text
 from modules.Gear import PROFICIENCY_CHOICES, entry_choices, find_entry, refresh_post, unmet_warning
+from views.buttons.Confirm import ask
 
 
 @app_commands.guild_only()
@@ -24,6 +27,7 @@ class GM(commands.GroupCog, name="GM", group_name="gm") :
 	gear = app_commands.Group(name="gear", description="Give or take characters' gear")
 	currency = app_commands.Group(name="currency", description="Give or take characters' currency")
 	ability = app_commands.Group(name="ability", description="Grant or take characters' abilities")
+	legendary = app_commands.Group(name="legendary", description="Grant or take characters' legendary status")
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -309,6 +313,60 @@ class GM(commands.GroupCog, name="GM", group_name="gm") :
 			return await interaction.followup.send(f"{record.name} doesn't know {ability}.", ephemeral=True)
 		await interaction.followup.send(f"{record.name} no longer knows **{found.name}**.", ephemeral=True)
 		await refresh_post(self.bot, record.id)
+
+	# == legendary ==
+
+	# ============================================================
+	@legendary.command(name="grant")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(character=_characters)
+	async def legendary_grant(self, interaction: discord.Interaction, member: discord.Member, character: str) :
+		"""
+		Makes a member's character legendary. Legendary characters have doubled stat limits (20, or 26 with a species
+		that allows 13), get extra points to spend (`LEGENDARY_POINTS`, 5 by default) and one extra ability slot.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		record = await self._character(interaction, member, character)
+		if record is None :
+			return
+		updated, text = Legendary.grant(record, interaction.user.id)
+		if updated is not None :
+			logging.info(f"GM {interaction.user.name} made character {record.id} legendary in {interaction.guild.name}")
+			await refresh_post(self.bot, record.id)
+		await interaction.followup.send(text, ephemeral=True)
+
+	# ============================================================
+	@legendary.command(name="take")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(character=_characters)
+	async def legendary_take(self, interaction: discord.Interaction, member: discord.Member, character: str) :
+		"""
+		Takes legendary status away from a member's character. Stats above the normal limits are lowered and those
+		points returned, then the extra legendary points are taken back: from unspent points first, then from the
+		highest stats. You'll see exactly what changes before you confirm.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		record = await self._character(interaction, member, character)
+		if record is None :
+			return
+		if not record.legendary :
+			return await interaction.followup.send(f"{record.name} is not legendary.", ephemeral=True)
+		question = f"Take legendary status from **{record.name}**? {Legendary.preview(record)}"
+		if not await ask(interaction, question, "Take legendary status") :
+			return
+		# Read it again: the character may have changed while the question was open.
+		updated, text = Legendary.remove(CharacterTransactions().get_by_id(record.id))
+		if updated is not None :
+			logging.info(f"GM {interaction.user.name} took legendary status from character {record.id} in "
+			             f"{interaction.guild.name}")
+			await refresh_post(self.bot, record.id)
+		await interaction.followup.send(text, ephemeral=True)
 
 async def setup(bot) :
 	await bot.add_cog(GM(bot))

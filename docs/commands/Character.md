@@ -180,17 +180,3 @@ Create and manage your characters. New characters and most changes are reviewed 
 
 ---
 
-### `legendary`
-
-**Usage:** `/character legendary <member> <name> <legendary>`
-
-> Makes a member's character legendary, or takes the status away. Legendary characters have doubled stat
-> limits (20, or 26 with a species that allows 13), get extra points to spend (`legendary_points`, 5 by
-> default) and one extra ability slot. Taking the status away lowers stats above the normal limits and takes
-> the extra points back.
->
-> **Permissions:**
-> - `Manage Messages`
-
----
-

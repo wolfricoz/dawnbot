@@ -46,6 +46,21 @@ class TestLegendary(DatabaseTestCase) :
 		self.assertIn("Strength 13 → 10", text)
 		self.assertIsNone(Legendary.remove(updated)[0])
 
+	def test_preview_shows_what_removal_changes_without_changing_it(self) :
+		character = self.add_character(strength=10)
+		character, _ = Legendary.grant(character, USER_ID)
+		character, _ = Special.spend(character, "strength", 3)
+		self.assertEqual(Legendary.preview(character), "This lowers Strength 13 → 10 and leaves 0 unspent points.")
+		unchanged = CharacterTransactions().get_by_id(character.id)
+		self.assertTrue(unchanged.legendary)
+		self.assertEqual(unchanged.strength, 13)
+
+	def test_preview_when_no_stats_drop(self) :
+		character = self.add_character(strength=10)
+		character, _ = Legendary.grant(character, USER_ID)
+		character = CharacterTransactions().update(character.id, unspent_points=6)
+		self.assertEqual(Legendary.preview(character), "This doesn't lower any stats and leaves 1 unspent point.")
+
 	def test_removal_takes_owed_points_from_the_highest_stats(self) :
 		character = self.add_character(strength=9, agility=8)
 		character, _ = Legendary.grant(character, USER_ID)

@@ -37,7 +37,7 @@ including the choices made while building that the doc left open.
 | Downed | At 0 HP a combatant is downed and cannot act until revived. A side with no one standing loses. Automatic moves and NPCs never target downed combatants. |
 | Lethal | `COMBAT_LETHAL`: `off`, `gm` (default; staff can start a fight as lethal) or `agreed` (each player confirms when joining). In a lethal fight a downed combatant rolls `d20 + END modifier` against 10 (12 when END is 0 or below) at the start of each of its turns: 3 successes is stable, 3 failures is dying, and the GM confirms the death. A confirmed death retires the character (the doc leaves the final status open). |
 | After the fight | HP is not carried over. The GM can hand out XP and currency to the winning characters. |
-| Legendary | `characters.legendary`: stat limits double (10 → 20, species 13 → 26), `LEGENDARY_POINTS` extra points (default 5) and one extra ability slot. Removing the status lowers stats above the normal limit, returns those points, then takes the legendary points back (from unspent points first, then from the highest stats). |
+| Legendary | `characters.legendary`, set with `/gm legendary grant` and `/gm legendary take`: stat limits double (10 → 20, species 13 → 26), `LEGENDARY_POINTS` extra points (default 5) and one extra ability slot. Removing the status lowers stats above the normal limit, returns those points, then takes the legendary points back (from unspent points first, then from the highest stats). |
 | Abilities | Built from parts (kind, tier, stat, effect, damage type, optional area and second condition), reviewed by staff in `CHARACTER_REVIEW`, posted to `ABILITY_FORUM` when set. Created with `/ability create` (slash options and a modal) rather than a DM interview. |
 | Magic schools | A standard set per server plus player-made schools reviewed by staff. A school sets the casting stat (Intelligence or Charisma). |
 | Ability slots | Spellcasters: 6 spells (1 Cantrip, 2 Weak, 2 Normal, 1 Strong). Others: 3 abilities, at most 1 Strong. Not both, unless event-granted. Legendary characters get one extra slot of any tier. Event-granted abilities (`/gm ability grant`) do not count. |
@@ -180,8 +180,8 @@ below 15%), support (revives and heals allies first). Player autopilot: weakest,
 - `/bestiary add | edit | remove | list | view` (Manage Messages).
 - `/ability create | edit | list | view | learn | forget`, `/school create | list | view`.
 - `/damagetype add | edit | remove | list | reset` (Manage Server).
-- `/gear proficiency`, `/character armor_proficiency`, `/character legendary` (staff).
-- `/gm gear proficiency`, `/gm ability grant | take`.
+- `/gear proficiency`, `/character armor_proficiency` (staff).
+- `/gm gear proficiency`, `/gm ability grant | take`, `/gm legendary grant | take`.
 
 ## 6. Code map
 

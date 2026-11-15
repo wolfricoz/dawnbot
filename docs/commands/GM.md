@@ -9,7 +9,8 @@ nav_order: 14
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-Game master tools: giving and taking characters' gear and currency. GMs are staff (Manage Messages).
+Game master tools: giving and taking characters' gear, currency, abilities and legendary status. GMs are staff
+(Manage Messages).
 
 
 ### `gear grant`
@@ -111,6 +112,31 @@ Game master tools: giving and taking characters' gear and currency. GMs are staf
 **Usage:** `/gm ability take <member> <character> <ability>`
 
 > Takes an ability away from a member's character, event or not.
+>
+> **Permissions:**
+> - `Manage Messages`
+
+---
+
+### `legendary grant`
+
+**Usage:** `/gm legendary grant <member> <character>`
+
+> Makes a member's character legendary. Legendary characters have doubled stat limits (20, or 26 with a species
+> that allows 13), get extra points to spend (`LEGENDARY_POINTS`, 5 by default) and one extra ability slot.
+>
+> **Permissions:**
+> - `Manage Messages`
+
+---
+
+### `legendary take`
+
+**Usage:** `/gm legendary take <member> <character>`
+
+> Takes legendary status away from a member's character. Stats above the normal limits are lowered and those
+> points returned, then the extra legendary points are taken back: from unspent points first, then from the
+> highest stats. You'll see exactly what changes before you confirm.
 >
 > **Permissions:**
 > - `Manage Messages`
