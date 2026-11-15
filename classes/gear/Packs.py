@@ -9,6 +9,7 @@ import os
 import re
 
 from classes.characters.Special import STATS
+from classes.combat import Rules
 from classes.gear.Gear import ARMOR, KINDS, WEAPON
 from database.database import GearItems
 from database.transactions.GearItemTransactions import GearItemTransactions
@@ -23,15 +24,19 @@ REQUIREMENT_MAX = 13
 NAME_LIMIT = 100
 TEXT_FIELDS = ["description", "effect", "effect_met", "effect_unmet"]
 
-# The combat values per kind, and what combat uses when an item leaves one out.
-WEAPON_COMBAT = {"dice" : "1d6", "modifier" : "", "hitmodifier" : 0}
-# The same numbers combat uses for a character without armor (CombatCache.DEFAULT_ARMOR).
-ARMOR_COMBAT = {"hp" : 75, "ap" : 25, "ac" : 12, "hitchance" : 0}
+# The combat values per kind (see design/combat.md), and what combat uses when an item leaves one out.
+WEAPON_COMBAT = {"type" : None, "dice" : "1d6", "attack_stat" : "strength", "damage_stat" : "strength", "hit_mod" : 0,
+                 "range" : Rules.MELEE, "properties" : []}
+ARMOR_COMBAT = dict(Rules.ARMOR_DEFAULTS)
 COMBAT_DEFAULTS = {WEAPON : WEAPON_COMBAT, ARMOR : ARMOR_COMBAT}
-DICE = re.compile(r"([1-9]\d?)d([1-9]\d{0,2})")
-MODIFIER_TYPES = ["damage", "dice"]
-# What staff can pick as a weapon's modifier: none, or a stat added to the damage or turned into extra dice.
-MODIFIERS = [""] + [f"{kind}:{stat}" for kind in MODIFIER_TYPES for stat in STATS]
+# Weapons may also set their own AP cost.
+OPTIONAL_KEYS = {WEAPON : {"ap"}, ARMOR : set()}
+# Keys of the old shape (before the combat round); values in it are converted.
+LEGACY_KEYS = {WEAPON : {"modifier", "hitmodifier"}, ARMOR : {"hp", "ap", "hitchance"}}
+DICE = Rules.DICE
+HIT_LIMIT = 10
+AC_LIMIT = 10
+AP_LIMIT = 10
 
 
 class Packs :
@@ -212,26 +217,87 @@ class Packs :
 
 	# ============================================================
 	@staticmethod
-	def combat_for(kind: str, current: dict | None, changes: dict) -> dict :
-		"""An item's combat values: current (or the defaults for its kind) with changes applied. Changes set to None
-		are left alone. Raises ValueError for values of the other kind, or of the wrong type.
+	def normalise(kind: str, combat: dict | None) -> dict :
+		"""An item's combat values in the current shape, with old values converted."""
+		if kind == WEAPON :
+			weapon = Rules.normalise_weapon(combat)
+			values = {key : weapon[key] for key in WEAPON_COMBAT}
+			if weapon.get("ap") :
+				values["ap"] = weapon["ap"]
+			return values
+		return {key : value for key, value in Rules.normalise_armor(combat).items() if key in ARMOR_COMBAT}
 
-		Weapons: dice like `1d8`, modifier `damage:<stat>` / `dice:<stat>` / empty, hitmodifier a whole number.
-		Armor: hp, ap, ac and hitchance, whole numbers.
+	# ============================================================
+	@staticmethod
+	def combat_for(kind: str, current: dict | None, changes: dict) -> dict :
+		"""An item's combat values: current (converted to the current shape, or the defaults) with changes applied.
+		Changes set to None are left alone. Changes in the old shape are converted as a whole. Raises ValueError for
+		values of the other kind, or of the wrong type.
+
+		Weapons: type (a damage type's name), dice like `1d8`, attack_stat, damage_stat (a stat or none), hit_mod,
+		range (melee or ranged), properties and optionally ap. Armor: armor_class, ac, dt, hit_mod, ability_hit_mod.
 		"""
 		defaults = COMBAT_DEFAULTS[kind]
-		combat = dict(defaults) | {key : value for key, value in (current or {}).items() if key in defaults}
+		combat = Packs.normalise(kind, current) if current else dict(defaults)
+		changes = dict(changes or {})
+		allowed = set(defaults) | OPTIONAL_KEYS[kind]
+		legacy = LEGACY_KEYS[kind]
+		if changes and legacy & changes.keys() and not (allowed - {"dice", "ac", "ap"}) & changes.keys() :
+			for key in changes :
+				if key not in allowed | legacy :
+					raise ValueError(f"{key} is not a combat value.")
+			Packs._legacy_check(changes)
+			changes = Packs.normalise(kind, changes)
 		for key, value in changes.items() :
 			if value is None :
 				continue
-			if key not in defaults :
+			if key not in allowed :
 				other = WEAPON if kind == ARMOR else ARMOR
-				if key in COMBAT_DEFAULTS[other] :
+				if key in COMBAT_DEFAULTS[other] or key in OPTIONAL_KEYS[other] or key in LEGACY_KEYS[other] :
 					raise ValueError(f"{key} is only for {'weapons' if other == WEAPON else 'armor'}, and this item "
 					                 f"is {'a weapon' if kind == WEAPON else 'armor'}.")
 				raise ValueError(f"{key} is not a combat value.")
 			combat[key] = Packs._combat_value(key, value)
+		if kind == WEAPON and combat.get("ap") is None :
+			combat.pop("ap", None)
 		return combat
+
+	# ============================================================
+	@staticmethod
+	def _legacy_check(changes: dict) -> None :
+		"""Checks values in the old shape before they are converted."""
+		if changes.get("dice") is not None :
+			Packs._combat_value("dice", changes["dice"])
+		modifier = changes.get("modifier")
+		if modifier is not None :
+			if not isinstance(modifier, str) :
+				raise ValueError("modifier must be text.")
+			text = modifier.strip().lower()
+			if text not in ("", "none", "-") and (":" not in text or text.split(":", 1)[0] not in ("damage", "dice")
+			                                      or text.split(":", 1)[1] not in STATS) :
+				raise ValueError(f"modifier must be damage:<stat>, dice:<stat> or none, not {modifier!r}.")
+		for key in ("hitmodifier", "hp", "ap", "ac", "hitchance") :
+			value = changes.get(key)
+			if value is None :
+				continue
+			if not Packs._is_int(value) :
+				raise ValueError(f"{key} must be a whole number, not {value!r}.")
+			if key in ("hp", "ap", "ac") and value < 0 :
+				raise ValueError(f"{key} cannot be below 0.")
+
+	# ============================================================
+	@staticmethod
+	def parse_properties(value) -> list[str] :
+		"""Properties from a list or from text like `light, thrown`. Raises ValueError for unknown ones."""
+		if isinstance(value, str) :
+			parts = [part.strip().lower().replace(" ", "_").replace("-", "_") for part in re.split(r"[,;]", value)]
+			value = [part for part in parts if part and part != "none"]
+		if not isinstance(value, list) :
+			raise ValueError("properties must be a list, like light, thrown.")
+		unknown = [str(part) for part in value if part not in Rules.PROPERTIES]
+		if unknown :
+			raise ValueError(f"Unknown properties: {', '.join(unknown)}. Use {', '.join(Rules.PROPERTIES)}.")
+		return list(dict.fromkeys(value))
 
 	# ============================================================
 	@staticmethod
@@ -241,19 +307,59 @@ class Packs :
 			if text is None or not DICE.fullmatch(text) :
 				raise ValueError(f"dice must look like 1d8 or 2d6, not {value!r}.")
 			return text
-		if key == "modifier" :
-			if not isinstance(value, str) :
-				raise ValueError("modifier must be text.")
-			text = value.strip().lower()
-			text = "" if text in ("none", "-") else text
-			if text not in MODIFIERS :
-				raise ValueError(f"modifier must be damage:<stat>, dice:<stat> or none, not {value!r}.")
-			return text
+		if key == "type" :
+			if value is None or (isinstance(value, str) and value.strip().lower() in ("", "none", "-")) :
+				return None
+			if not isinstance(value, str) or len(value.strip()) > 50 :
+				raise ValueError("type must be the name of a damage type.")
+			return value.strip()
+		if key in ("attack_stat", "damage_stat") :
+			text = value.strip().lower() if isinstance(value, str) else ""
+			if key == "damage_stat" and (value is None or text in ("", "none", "-")) :
+				return None
+			stat = Packs.stat(text)
+			if stat is None :
+				raise ValueError(f"{key} must be a SPECIAL stat, not {value!r}.")
+			return stat
+		if key == "range" :
+			if value not in Rules.RANGES :
+				raise ValueError(f"range must be {' or '.join(Rules.RANGES)}, not {value!r}.")
+			return value
+		if key == "properties" :
+			return Packs.parse_properties(value)
+		if key == "armor_class" :
+			if value not in Rules.ARMOR_CLASSES :
+				raise ValueError(f"armor_class must be one of {', '.join(Rules.ARMOR_CLASSES)}, not {value!r}.")
+			return value
 		if not Packs._is_int(value) :
 			raise ValueError(f"{key} must be a whole number, not {value!r}.")
-		if key in ("hp", "ap", "ac") and value < 0 :
-			raise ValueError(f"{key} cannot be below 0.")
+		if key in ("hit_mod", "ability_hit_mod") and not -HIT_LIMIT <= value <= HIT_LIMIT :
+			raise ValueError(f"{key} must be between -{HIT_LIMIT} and {HIT_LIMIT}.")
+		if key in ("ac", "dt") and not 0 <= value <= AC_LIMIT :
+			raise ValueError(f"{key} must be between 0 and {AC_LIMIT}.")
+		if key == "ap" and not 1 <= value <= AP_LIMIT :
+			raise ValueError(f"ap must be between 1 and {AP_LIMIT}.")
 		return value
+
+	# ============================================================
+	@staticmethod
+	def refresh_into(guild_id: int, name: str) -> list[GearItems] :
+		"""Rewrites the combat values of the server's items that came from a pack with the pack's current values (for
+		catalogs imported before the combat round). Other fields, and items renamed since, are left alone.
+
+		@return: the items updated.
+		"""
+		pack = Packs.load(name)
+		values = {item["name"].lower() : item for item in pack["items"]}
+		updated = []
+		transactions = GearItemTransactions()
+		for item in transactions.get_all(guild_id) :
+			source = values.get(item.name.lower())
+			if source is None or item.pack != name or source["kind"] != item.kind :
+				continue
+			if item.combat != source["combat"] :
+				updated.append(transactions.update(item.id, combat=source["combat"]))
+		return updated
 
 	# ============================================================
 	@staticmethod

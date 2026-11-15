@@ -1,5 +1,5 @@
 from classes.characters.Access import Access, EVENT, LEVEL, STAFF_ONLY
-from classes.combat.CombatCache import CombatCache, DEFAULT_ARMOR
+from classes.combat.Loadout import Loadout
 from classes.gear.Gear import ARMOR, CREATION, Gear, GRANTED, SHOP, WEAPON
 from classes.kernel.ConfigData import ConfigData
 from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST, OWNED, SOLD
@@ -139,15 +139,14 @@ class TestEquipping(GearTestCase) :
 		self.assertIn("broken", Gear.equip(CharacterGearTransactions().get(leather.id))[1])
 
 	def test_combat_uses_the_equipped_armor(self) :
-		self.assertEqual(CombatCache.equipped_armor(self.character), DEFAULT_ARMOR)
+		self.assertEqual(Loadout.character_stats(self.character)["armor"]["name"], "No armor")
 		Gear.equip(Gear.grant(self.character, self.plate, 1))
-		armor = CombatCache.equipped_armor(self.character)
-		self.assertEqual((armor["name"], armor["hp"], armor["ap"], armor["ac"], armor["hitchance"]),
-		                 ("Plate", 120, 40, 18, 0))
+		armor = Loadout.character_stats(self.character)["armor"]
+		# Old-style values are converted by their AC: 18 is heavy armor, +3 AC, DT 3.
+		self.assertEqual((armor["name"], armor["armor_class"], armor["ac"], armor["dt"]), ("Plate", "heavy", 3, 3))
 		Gear.equip(Gear.grant(self.character, self.leather, 1))
-		armor = CombatCache.equipped_armor(self.character)
-		# Leather only sets its AC; the rest comes from the default armor.
-		self.assertEqual((armor["hp"], armor["ac"]), (DEFAULT_ARMOR["hp"], 13))
+		armor = Loadout.character_stats(self.character)["armor"]
+		self.assertEqual((armor["armor_class"], armor["ac"], armor["dt"]), ("light", 1, 0))
 
 	def test_creation_source_is_kept(self) :
 		entry = CharacterGearTransactions().add(self.character.id, self.sword.id, "Sword", WEAPON, CREATION, 100)

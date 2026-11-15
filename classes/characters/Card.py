@@ -113,6 +113,18 @@ class Card :
 
 	# ============================================================
 	@staticmethod
+	def abilities_text(character: Characters) -> str :
+		"""The abilities the character knows, one per line, like `Firebolt (Weak spell)`."""
+		from database.transactions.AbilityTransactions import AbilityTransactions
+
+		lines = []
+		for link, ability in AbilityTransactions().known(character.id) :
+			note = " · event" if link.event else ("" if ability.state == "approved" else f" · {ability.state}")
+			lines.append(f"{ability.name} ({ability.tier.capitalize()} {ability.kind}{note})")
+		return "\n".join(lines)[:1024]
+
+	# ============================================================
+	@staticmethod
 	def embeds(character: Characters, avatar_url: str | None = None, show_state: bool = True,
 	           infos: list[CharacterInfo] | None = None) -> list[discord.Embed] :
 		"""The character as one or more embeds; a long sheet continues in further embeds, one per message."""
@@ -122,11 +134,14 @@ class Card :
 		chunks = chunk_text(text, DESCRIPTION_LIMIT)
 		color = STATE_COLORS.get(character.state, discord.Color.blurple())
 
-		first = discord.Embed(title=character.name[:256], description=chunks[0] or None, color=color)
+		legendary = bool(getattr(character, "legendary", False))
+		title = f"🌟 {character.name}" if legendary else character.name
+		first = discord.Embed(title=title[:256], description=chunks[0] or None, color=color)
 		if avatar_url :
 			first.set_thumbnail(url=avatar_url)
 		first.add_field(name="SPECIAL", value=Card.stats_text(character), inline=False)
-		first.add_field(name="Level", value=f"{character.level} ({character.xp} XP)")
+		first.add_field(name="Level", value=f"{character.level} ({character.xp} XP)"
+		                                    + (" · Legendary" if legendary else ""))
 		if character.unspent_points :
 			first.add_field(name="Unspent points", value=str(character.unspent_points))
 		currency_name = ConfigData().get_key(character.guild_id, ConfigMapping.CURRENCY_NAME)
@@ -141,6 +156,9 @@ class Card :
 		gear = Card.gear_text(character)
 		if gear :
 			first.add_field(name="Gear", value=gear, inline=False)
+		abilities = Card.abilities_text(character)
+		if abilities :
+			first.add_field(name="Abilities", value=abilities, inline=False)
 		if show_state :
 			first.set_footer(text=STATE_LABELS.get(character.state, character.state))
 

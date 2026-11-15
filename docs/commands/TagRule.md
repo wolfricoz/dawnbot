@@ -2,7 +2,7 @@
 layout: default
 title: TagRule
 parent: Commands
-nav_order: 18
+nav_order: 21
 ---
 
 <h1>TagRule</h1>
@@ -18,11 +18,11 @@ post has that tag follows it. Retag a post to change who may pick it.
 **Usage:** `/tagrule add <forum> <tag> <kind> <role> <level>`
 
 > Links a forum tag to a requirement. Kinds: role (members need `role`), level (members need server `level`:
-the number of level roles they have reached), staff_only (only staff can give it out) and event (hidden from
-members; only staff can give it out). A tag can have one rule of each kind.
-
-**Permissions:**
-- `Manage Server`
+> the number of level roles they have reached), staff_only (only staff can give it out) and event (hidden from
+> members; only staff can give it out). A tag can have one rule of each kind.
+>
+> **Permissions:**
+> - `Manage Server`
 
 ---
 
@@ -31,9 +31,9 @@ members; only staff can give it out). A tag can have one rule of each kind.
 **Usage:** `/tagrule remove <forum> <tag> <kind>`
 
 > Removes a tag's rule of one kind, or all its rules when you leave `kind` out.
-
-**Permissions:**
-- `Manage Server`
+>
+> **Permissions:**
+> - `Manage Server`
 
 ---
 

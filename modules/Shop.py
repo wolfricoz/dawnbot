@@ -1,5 +1,8 @@
-"""The shop: browsing the server's gear catalog and buying gear for your characters. The rules live in
-classes/gear/Gear.py."""
+"""The server's gear shop. Browse the weapons and armor your characters can buy, look at an item, and buy it
+with a character's currency. Some items need a server level or a role and show as unavailable until you have it;
+event and staff items aren't sold and are only given out by staff.
+"""
+# The rules live in classes/gear/Gear.py.
 import logging
 
 import discord

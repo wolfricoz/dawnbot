@@ -2,7 +2,7 @@
 layout: default
 title: Tools
 parent: Commands
-nav_order: 20
+nav_order: 23
 ---
 
 <h1>Tools</h1>
@@ -46,9 +46,9 @@ Roleplay tools: dice, coin flips, scene endings and translation.
 **Usage:** `/purge <role>`
 
 > Kicks every member who has the given (inactivity) role, after DMing them a one-time invite back.
-
-**Permissions:**
-- `Manage Server`
+>
+> **Permissions:**
+> - `Manage Server`
 
 ---
 

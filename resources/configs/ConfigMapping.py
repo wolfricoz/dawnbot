@@ -33,6 +33,17 @@ class ConfigMapping(StrEnum) :
 	GEAR_FORUM = "GEAR_FORUM"
 	ECONOMY = "ECONOMY"
 	RETIRE_THREAD = "RETIRE_THREAD"
+	LEGENDARY_POINTS = "LEGENDARY_POINTS"
+
+	# === Combat ===
+	COMBAT_PACING = "COMBAT_PACING"
+	COMBAT_ASYNC_TIMER = "COMBAT_ASYNC_TIMER"
+	COMBAT_LIVE_TIMER = "COMBAT_LIVE_TIMER"
+	COMBAT_PVP = "COMBAT_PVP"
+	COMBAT_LETHAL = "COMBAT_LETHAL"
+	COMBAT_LEVEL_BONUS = "COMBAT_LEVEL_BONUS"
+	ABILITY_CREATION = "ABILITY_CREATION"
+	ABILITY_FORUM = "ABILITY_FORUM"
 
 	# === Moderation ===
 	MODLOG = "MODLOG"
@@ -50,6 +61,7 @@ channels = [
 	ConfigMapping.CHARACTER_REVIEW,
 	ConfigMapping.SPECIES_FORUM,
 	ConfigMapping.GEAR_FORUM,
+	ConfigMapping.ABILITY_FORUM,
 	ConfigMapping.MODLOG,
 ]
 
@@ -70,10 +82,18 @@ settings = [
 	ConfigMapping.SPECIES_CREATION,
 	ConfigMapping.ECONOMY,
 	ConfigMapping.RETIRE_THREAD,
+	ConfigMapping.LEGENDARY_POINTS,
+	ConfigMapping.COMBAT_PACING,
+	ConfigMapping.COMBAT_ASYNC_TIMER,
+	ConfigMapping.COMBAT_LIVE_TIMER,
+	ConfigMapping.COMBAT_LETHAL,
+	ConfigMapping.ABILITY_CREATION,
 ]
 
 toggles = [
 	ConfigMapping.PROXY_OUTSIDE_RP,
+	ConfigMapping.COMBAT_PVP,
+	ConfigMapping.COMBAT_LEVEL_BONUS,
 ]
 
 defaults = {
@@ -93,6 +113,14 @@ defaults = {
 	ConfigMapping.SPECIES_CREATION   : "everyone",
 	ConfigMapping.ECONOMY            : "economy",
 	ConfigMapping.RETIRE_THREAD      : "lock",
+	ConfigMapping.LEGENDARY_POINTS   : 5,
+	ConfigMapping.COMBAT_PACING      : "async",
+	ConfigMapping.COMBAT_ASYNC_TIMER : 12,
+	ConfigMapping.COMBAT_LIVE_TIMER  : 3,
+	ConfigMapping.COMBAT_PVP         : "ENABLED",
+	ConfigMapping.COMBAT_LETHAL      : "gm",
+	ConfigMapping.COMBAT_LEVEL_BONUS : "DISABLED",
+	ConfigMapping.ABILITY_CREATION   : "everyone",
 }
 
 # Settings that are whole numbers, with the lowest and highest value /config accepts.
@@ -105,6 +133,9 @@ number_settings = {
 	ConfigMapping.LEVEL_BASE        : (1, 1000000),
 	ConfigMapping.POINTS_PER_LEVEL  : (0, 10),
 	ConfigMapping.STARTING_CURRENCY : (0, 1000000000),
+	ConfigMapping.LEGENDARY_POINTS  : (0, 50),
+	ConfigMapping.COMBAT_ASYNC_TIMER : (1, 168),
+	ConfigMapping.COMBAT_LIVE_TIMER : (1, 60),
 }
 
 # Settings with a fixed set of values.
@@ -114,6 +145,9 @@ choice_settings = {
 	ConfigMapping.SPECIES_CREATION   : ["everyone", "staff", "off"],
 	ConfigMapping.ECONOMY            : ["economy", "free"],
 	ConfigMapping.RETIRE_THREAD      : ["lock", "delete"],
+	ConfigMapping.COMBAT_PACING      : ["async", "live", "choose"],
+	ConfigMapping.COMBAT_LETHAL      : ["off", "gm", "agreed"],
+	ConfigMapping.ABILITY_CREATION   : ["everyone", "staff", "off"],
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -158,6 +192,18 @@ docs = {
 	ConfigMapping.GEAR_FORUM         : "Optional: the forum where the gear catalog is posted, one post per item. Tags on an item's post can restrict who may buy it; see /tagrule.",
 	ConfigMapping.RETIRE_THREAD      : "What happens to a retired character's post in the character channel: `lock` (the default; the forum thread is locked and archived, and opened again if the character returns) or `delete`.",
 	ConfigMapping.ECONOMY            : "`economy` (the default): characters buy gear with their currency and sell it for 30% of what they paid. `free`: all gear costs nothing and selling returns nothing.",
+
+	ConfigMapping.LEGENDARY_POINTS   : "How many extra SPECIAL points a character gets when staff make it legendary (default 5). Legendary characters also have doubled stat limits and one extra ability slot.",
+
+	# == combat ==
+	ConfigMapping.COMBAT_PACING      : "How fights run: `async` (the default; each side gets a phase with a long timer), `live` (each combatant gets a short turn in Sequence order) or `choose` (whoever starts the fight picks).",
+	ConfigMapping.COMBAT_ASYNC_TIMER : "Hours each side gets per phase in async fights (default 12). When it runs out, those who did not act get an automatic move.",
+	ConfigMapping.COMBAT_LIVE_TIMER  : "Minutes each combatant gets per turn in live fights (default 3).",
+	ConfigMapping.COMBAT_PVP         : "Whether members can challenge each other with /combat challenge (default on).",
+	ConfigMapping.COMBAT_LETHAL      : "Whether fights can kill characters: `off`, `gm` (the default; staff can start a fight as lethal) or `agreed` (lethal fights need every player to accept when they join).",
+	ConfigMapping.COMBAT_LEVEL_BONUS : "Whether characters get +1 to hit at levels 4, 8, 12 and 16 (default off).",
+	ConfigMapping.ABILITY_CREATION   : "Who can create abilities, spells and magic schools: `everyone` (the default), `staff` (Manage Messages) or `off`.",
+	ConfigMapping.ABILITY_FORUM      : "Optional: the forum where approved abilities are posted. Tags on an ability's post can restrict who may learn it; see /tagrule.",
 
 	# == moderation ==
 	ConfigMapping.MODLOG        : "The staff channel for bot notices, such as missing permissions.",

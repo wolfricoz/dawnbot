@@ -2,16 +2,14 @@
 layout: default
 title: GM
 parent: Commands
-nav_order: 12
+nav_order: 14
 ---
 
 <h1>GM</h1>
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-Game master tools for staff: grant, take, lose or break a character's gear (event and staff-only items too),
-and give or take a character's currency. Every change is logged, and currency changes show in the character's
-/currency history.
+Game master tools: giving and taking characters' gear and currency. GMs are staff (Manage Messages).
 
 
 ### `gear grant`
@@ -19,10 +17,10 @@ and give or take a character's currency. Every change is logged, and currency ch
 **Usage:** `/gm gear grant <member> <character> <item>`
 
 > Gives a member's character an item from the catalog for free, including event and staff-only items that
-aren't sold in the shop. Requirements like server level or roles don't apply.
-
-**Permissions:**
-- `Manage Messages`
+> aren't sold in the shop. Requirements like server level or roles don't apply.
+>
+> **Permissions:**
+> - `Manage Messages`
 
 ---
 
@@ -31,10 +29,10 @@ aren't sold in the shop. Requirements like server level or roles don't apply.
 **Usage:** `/gm gear take <member> <character> <item>`
 
 > Removes an item from a member's character entirely, as if it never had it, for fixing mistakes. Nothing is
-refunded. To take gear away in the story, use /gm gear lose or /gm gear break instead.
-
-**Permissions:**
-- `Manage Messages`
+> refunded. To take gear away in the story, use /gm gear lose or /gm gear break instead.
+>
+> **Permissions:**
+> - `Manage Messages`
 
 ---
 
@@ -43,9 +41,9 @@ refunded. To take gear away in the story, use /gm gear lose or /gm gear break in
 **Usage:** `/gm gear lose <member> <character> <item>`
 
 > Marks an item of a member's character as lost. It leaves the inventory but stays in its history.
-
-**Permissions:**
-- `Manage Messages`
+>
+> **Permissions:**
+> - `Manage Messages`
 
 ---
 
@@ -54,9 +52,21 @@ refunded. To take gear away in the story, use /gm gear lose or /gm gear break in
 **Usage:** `/gm gear break <member> <character> <item>`
 
 > Marks an item of a member's character as broken. It leaves the inventory but stays in its history.
+>
+> **Permissions:**
+> - `Manage Messages`
 
-**Permissions:**
-- `Manage Messages`
+---
+
+### `gear proficiency`
+
+**Usage:** `/gm gear proficiency <member> <character> <item> <tier>`
+
+> Sets or changes how well a member's character handles one of its weapons. The limit of two Good or Excellent
+> weapons still applies.
+>
+> **Permissions:**
+> - `Manage Messages`
 
 ---
 
@@ -65,10 +75,10 @@ refunded. To take gear away in the story, use /gm gear lose or /gm gear break in
 **Usage:** `/gm currency give <member> <character> <amount> <note>`
 
 > Gives a member's character currency, for example as an event reward. The optional `note` shows in the
-character's /currency history.
-
-**Permissions:**
-- `Manage Messages`
+> character's /currency history.
+>
+> **Permissions:**
+> - `Manage Messages`
 
 ---
 
@@ -77,10 +87,33 @@ character's /currency history.
 **Usage:** `/gm currency take <member> <character> <amount> <note>`
 
 > Takes currency from a member's character, for example as a fine. A character can't go below 0. The optional
-`note` shows in the character's /currency history.
+> `note` shows in the character's /currency history.
+>
+> **Permissions:**
+> - `Manage Messages`
 
-**Permissions:**
-- `Manage Messages`
+---
+
+### `ability grant`
+
+**Usage:** `/gm ability grant <member> <character> <ability>`
+
+> Grants a member's character an ability as an event reward. Event abilities skip the slot limits and the rule
+> against mixing spells and abilities, and work even if the ability hasn't been approved.
+>
+> **Permissions:**
+> - `Manage Messages`
+
+---
+
+### `ability take`
+
+**Usage:** `/gm ability take <member> <character> <ability>`
+
+> Takes an ability away from a member's character, event or not.
+>
+> **Permissions:**
+> - `Manage Messages`
 
 ---
 

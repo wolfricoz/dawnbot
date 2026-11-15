@@ -37,6 +37,9 @@ The forum (or channel) where approved species are posted. Tags on a species' pos
 ### GEAR_FORUM
 Optional: the forum where the gear catalog is posted, one post per item. Tags on an item's post can restrict who may buy it; see /tagrule.
 
+### ABILITY_FORUM
+Optional: the forum where approved abilities are posted. Tags on an ability's post can restrict who may learn it; see /tagrule.
+
 ### MODLOG
 The staff channel for bot notices, such as missing permissions.
 <h2>Settings</h2>
@@ -88,7 +91,31 @@ Who can create species with /species create: `everyone` (the default), `staff` (
 
 ### RETIRE_THREAD
 What happens to a retired character's post in the character channel: `lock` (the default; the forum thread is locked and archived, and opened again if the character returns) or `delete`.
+
+### LEGENDARY_POINTS
+How many extra SPECIAL points a character gets when staff make it legendary (default 5). Legendary characters also have doubled stat limits and one extra ability slot.
+
+### COMBAT_PACING
+How fights run: `async` (the default; each side gets a phase with a long timer), `live` (each combatant gets a short turn in Sequence order) or `choose` (whoever starts the fight picks).
+
+### COMBAT_ASYNC_TIMER
+Hours each side gets per phase in async fights (default 12). When it runs out, those who did not act get an automatic move.
+
+### COMBAT_LIVE_TIMER
+Minutes each combatant gets per turn in live fights (default 3).
+
+### COMBAT_LETHAL
+Whether fights can kill characters: `off`, `gm` (the default; staff can start a fight as lethal) or `agreed` (lethal fights need every player to accept when they join).
+
+### ABILITY_CREATION
+Who can create abilities, spells and magic schools: `everyone` (the default), `staff` (Manage Messages) or `off`.
 <h2>Toggles</h2>
 
 ### PROXY_OUTSIDE_RP
 Whether members can post as their characters outside the XP channels (default off). Posts there earn no XP and have no minimum length.
+
+### COMBAT_PVP
+Whether members can challenge each other with /combat challenge (default on).
+
+### COMBAT_LEVEL_BONUS
+Whether characters get +1 to hit at levels 4, 8, 12 and 16 (default off).

@@ -1,3 +1,6 @@
+"""The archive holds channels set aside by /template restore. Archived channels are named
+"<old category>・<channel>" and hidden from everyone until they are restored; /template archivepurge deletes them.
+"""
 import logging
 
 import discord

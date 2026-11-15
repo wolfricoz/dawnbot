@@ -10,7 +10,7 @@ SOLD = "sold"
 STATUSES = [OWNED, LOST, BROKEN, SOLD]
 
 # Columns update() accepts as keyword arguments.
-FIELDS = ["equipped", "status", "changed_by", "price_paid"]
+FIELDS = ["equipped", "status", "changed_by", "price_paid", "proficiency"]
 
 
 class CharacterGearTransactions(DatabaseTransactions) :

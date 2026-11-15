@@ -299,7 +299,10 @@ class Interview :
 	# ============================================================
 	@staticmethod
 	def _limits(draft: Drafts) -> dict :
-		return SpeciesRules.limits(Interview._species(draft), Special.rules(draft.guild_id))
+		"""The stat limits for the draft: its species', doubled when it edits a legendary character."""
+		target = CharacterTransactions().get_by_id(draft.target_id) if draft.target_id else None
+		return SpeciesRules.limits(Interview._species(draft), Special.rules(draft.guild_id),
+		                           legendary=bool(target is not None and getattr(target, "legendary", False)))
 
 	# ============================================================
 	@staticmethod

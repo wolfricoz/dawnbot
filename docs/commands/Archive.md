@@ -2,7 +2,7 @@
 layout: default
 title: Archive
 parent: Commands
-nav_order: 1
+nav_order: 2
 ---
 
 <h1>Archive</h1>
@@ -18,10 +18,10 @@ The archive holds channels set aside by /template restore. Archived channels are
 **Usage:** `/archive restore <archive>`
 
 > Moves archived channels back to the category named at the start of their name (recreating it if it is gone),
-gives them their old name and restores who could see them. Restores one archive category, or all of them.
-
-**Permissions:**
-- `Administrator`
+> gives them their old name and restores who could see them. Restores one archive category, or all of them.
+>
+> **Permissions:**
+> - `Administrator`
 
 ---
 

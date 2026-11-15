@@ -1,3 +1,7 @@
+"""Posting as characters. Members post as a character by starting or ending a message with its prefix or
+suffix, or with /character autoproxy. Right-click a post and choose Apps > Edit as character to edit it, react
+with ❌ to delete it, or react with ❓ to find out who wrote it.
+"""
 import logging
 
 import discord

@@ -1,3 +1,5 @@
+"""Server settings: XP (roleplay) channels, level roles, characters, currency and the channels the bot posts in.
+"""
 import logging
 
 import discord

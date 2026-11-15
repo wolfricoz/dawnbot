@@ -1,3 +1,6 @@
+"""Restrictions through forum tags. Link a tag in the species forum to a requirement, and every species whose
+post has that tag follows it. Retag a post to change who may pick it.
+"""
 import discord
 from discord import app_commands
 from discord.app_commands import Choice

@@ -9,7 +9,9 @@ from discord.ext import commands
 
 from classes.characters.CharacterFlow import CharacterFlow
 from classes.characters.ForumPost import ForumPost
+from classes.combat import Rules
 from classes.combat.AutoComplete import AutoComplete
+from classes.combat.Proficiency import Proficiency
 from classes.gear.Gear import ARMOR, Gear as GearRules, SELL_RATE
 from database.database import CharacterGear, Characters, GearItems
 from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST, OWNED
@@ -17,6 +19,9 @@ from database.transactions.CharacterTransactions import APPROVED, CharacterTrans
 from database.transactions.GearItemTransactions import GearItemTransactions
 from modules.Currency import balance_text, find_own_character
 from views.buttons.Confirm import ask
+
+PROFICIENCY_CHOICES = [Choice(name=f"{tier.capitalize()} ({Rules.proficiency_bonus(tier):+d})", value=tier)
+                       for tier in Rules.PROFICIENCY_ORDER]
 
 
 # ============================================================
@@ -74,6 +79,8 @@ def inventory_lines(character: Characters, inventory: list[tuple[CharacterGear, 
 	lines = []
 	for entry, item in owned :
 		parts = [f"**{entry.name}** ({entry.kind})"]
+		if entry.kind == "weapon" :
+			parts.append(Proficiency.label(entry))
 		if entry.equipped :
 			parts.append("worn" if entry.kind == ARMOR else "equipped")
 		unmet = GearRules.unmet_requirements(stats, item) if item is not None else []
@@ -272,6 +279,25 @@ class Gear(commands.GroupCog, name="Gear", group_name="gear") :
 		"""
 		await self._mark(interaction, character, item, BROKEN)
 
+
+	# ============================================================
+	@app_commands.command(name="proficiency")
+	@app_commands.autocomplete(character=AutoComplete().approved_character, item=_owned_items)
+	@app_commands.choices(tier=PROFICIENCY_CHOICES)
+	async def proficiency(self, interaction: discord.Interaction, character: str, item: str, tier: Choice[str]) :
+		"""
+		Sets how well your character handles one of its weapons: Excellent (+1 to hit and a crit range one wider),
+		Good (+1), Average (0), Poor (-1) or Awful (-2). A weapon without a tier counts as Awful. At most two weapons
+		can be Good or Excellent. You set a weapon's tier once; after that a GM can change it.
+		"""
+		record, entry, _ = await self._own_entry(interaction, character, item)
+		if entry is None :
+			return
+		updated, text = Proficiency.set_weapon(entry, tier.value)
+		if updated is not None :
+			logging.info(f"{interaction.user.name} set proficiency {tier.value} on gear {entry.id} of character "
+			             f"{record.id}")
+		await CharacterFlow.respond(interaction, text)
 
 async def setup(bot) :
 	await bot.add_cog(Gear(bot))

@@ -2,7 +2,7 @@
 layout: default
 title: Template
 parent: Commands
-nav_order: 19
+nav_order: 22
 ---
 
 <h1>Template</h1>
@@ -20,9 +20,9 @@ with at most 10 members, and asks for confirmation twice.
 **Usage:** `/template register <name>`
 
 > Saves this server's categories and channels (not their messages or permissions) as one of your templates.
-
-**Permissions:**
-- `Server Owner`
+>
+> **Permissions:**
+> - `Server Owner`
 
 ---
 
@@ -31,11 +31,11 @@ with at most 10 members, and asks for confirmation twice.
 **Usage:** `/template restore <template>`
 
 > Archives every channel that sits in a category, removes those categories and builds the template. Only works
-in servers with at most 10 members (bots not counted) and asks for confirmation twice. Archived channels can
-be brought back with /archive restore.
-
-**Permissions:**
-- `Server Owner`
+> in servers with at most 10 members (bots not counted) and asks for confirmation twice. Archived channels can
+> be brought back with /archive restore.
+>
+> **Permissions:**
+> - `Server Owner`
 
 ---
 
@@ -68,9 +68,9 @@ be brought back with /archive restore.
 **Usage:** `/template archivepurge`
 
 > Permanently deletes every archive category and the channels in it, after asking twice.
-
-**Permissions:**
-- `Server Owner`
+>
+> **Permissions:**
+> - `Server Owner`
 
 ---
 

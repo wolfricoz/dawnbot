@@ -6,13 +6,15 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.combat.Proficiency import Proficiency
 from classes.gear.Gear import Gear
 from database.database import CharacterGear, Characters, GearItems
 from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST
+from database.transactions.AbilityTransactions import AbilityTransactions
 from database.transactions.CharacterTransactions import CharacterTransactions
 from database.transactions.GearItemTransactions import GearItemTransactions
 from modules.Currency import balance_text
-from modules.Gear import entry_choices, find_entry, refresh_post, unmet_warning
+from modules.Gear import PROFICIENCY_CHOICES, entry_choices, find_entry, refresh_post, unmet_warning
 
 
 @app_commands.guild_only()
@@ -21,6 +23,7 @@ class GM(commands.GroupCog, name="GM", group_name="gm") :
 
 	gear = app_commands.Group(name="gear", description="Give or take characters' gear")
 	currency = app_commands.Group(name="currency", description="Give or take characters' currency")
+	ability = app_commands.Group(name="ability", description="Grant or take characters' abilities")
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -167,6 +170,30 @@ class GM(commands.GroupCog, name="GM", group_name="gm") :
 		"""
 		await self._mark(interaction, member, character, item, BROKEN)
 
+	# ============================================================
+	@gear.command(name="proficiency")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(character=_characters, item=_owned)
+	@app_commands.choices(tier=PROFICIENCY_CHOICES)
+	async def gear_proficiency(self, interaction: discord.Interaction, member: discord.Member, character: str,
+	                           item: str, tier: Choice[str]) :
+		"""
+		Sets or changes how well a member's character handles one of its weapons. The limit of two Good or Excellent
+		weapons still applies.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		record, entry = await self._entry(interaction, member, character, item)
+		if entry is None :
+			return
+		updated, text = Proficiency.set_weapon(entry, tier.value, staff=True)
+		if updated is not None :
+			logging.info(f"GM {interaction.user.name} set proficiency {tier.value} on gear {entry.id} of character "
+			             f"{record.id} in {interaction.guild.name}")
+		await interaction.followup.send(text, ephemeral=True)
+
 	# == currency ==
 
 	# ============================================================
@@ -225,6 +252,63 @@ class GM(commands.GroupCog, name="GM", group_name="gm") :
 		                                f"{balance_text(guild_id, updated.currency)}.", ephemeral=True)
 		await refresh_post(self.bot, record.id)
 
+
+	# == abilities ==
+
+	# ============================================================
+	async def _all_abilities(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		return [Choice(name=ability.name[:100], value=ability.name[:100])
+		        for ability in AbilityTransactions().get_all(interaction.guild_id)
+		        if current.lower() in ability.name.lower()][:25]
+
+	# ============================================================
+	@ability.command(name="grant")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(character=_characters, ability=_all_abilities)
+	async def ability_grant(self, interaction: discord.Interaction, member: discord.Member, character: str,
+	                        ability: str) :
+		"""
+		Grants a member's character an ability as an event reward. Event abilities skip the slot limits and the rule
+		against mixing spells and abilities, and work even if the ability hasn't been approved.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		record = await self._character(interaction, member, character)
+		if record is None :
+			return
+		found = AbilityTransactions().find(interaction.guild_id, ability)
+		if found is None :
+			return await interaction.followup.send(f"There is no ability called {ability}.", ephemeral=True)
+		if AbilityTransactions().learn(record.id, found.id, event=True, granted_by=interaction.user.id) is None :
+			return await interaction.followup.send(f"{record.name} already knows {found.name}.", ephemeral=True)
+		logging.info(f"GM {interaction.user.name} granted ability {found.id} to character {record.id} in "
+		             f"{interaction.guild.name}")
+		await interaction.followup.send(f"{record.name} now knows **{found.name}** (event).", ephemeral=True)
+		await refresh_post(self.bot, record.id)
+
+	# ============================================================
+	@ability.command(name="take")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(character=_characters, ability=_all_abilities)
+	async def ability_take(self, interaction: discord.Interaction, member: discord.Member, character: str,
+	                       ability: str) :
+		"""
+		Takes an ability away from a member's character, event or not.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		record = await self._character(interaction, member, character)
+		if record is None :
+			return
+		found = AbilityTransactions().find(interaction.guild_id, ability)
+		if found is None or not AbilityTransactions().forget(record.id, found.id) :
+			return await interaction.followup.send(f"{record.name} doesn't know {ability}.", ephemeral=True)
+		await interaction.followup.send(f"{record.name} no longer knows **{found.name}**.", ephemeral=True)
+		await refresh_post(self.bot, record.id)
 
 async def setup(bot) :
 	await bot.add_cog(GM(bot))

@@ -1,11 +1,12 @@
 import discord
 from discord.ext import commands
 
+from database.transactions.AbilityTransactions import AbilityTransactions
 from database.transactions.GearItemTransactions import GearItemTransactions
 
 
 class GearListener(commands.Cog) :
-	"""Keeps the gear catalog in step with the tags on the items' posts in the gear forum."""
+	"""Keeps the gear catalog (and abilities) in step with the tags on their posts in the gear (or ability) forum."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -24,11 +25,16 @@ class GearListener(commands.Cog) :
 	async def on_raw_thread_update(self, payload: discord.RawThreadUpdateEvent) :
 		"""Stores the tags of an item's post, which decide who may buy it (see /tagrule)."""
 		item = GearItemTransactions().get_by_thread(payload.thread_id)
-		if item is None :
+		if item is not None :
+			tag_ids = self.tags_changed(item, payload.data)
+			if tag_ids is not None :
+				GearItemTransactions().update(item.id, tag_ids=tag_ids)
 			return
-		tag_ids = self.tags_changed(item, payload.data)
-		if tag_ids is not None :
-			GearItemTransactions().update(item.id, tag_ids=tag_ids)
+		ability = AbilityTransactions().get_by_thread(payload.thread_id)
+		if ability is not None :
+			tag_ids = self.tags_changed(ability, payload.data)
+			if tag_ids is not None :
+				AbilityTransactions().update(ability.id, tag_ids=tag_ids)
 
 	# ============================================================
 	@commands.Cog.listener("on_raw_thread_delete")

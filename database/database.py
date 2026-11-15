@@ -8,11 +8,10 @@ import logging
 import os
 import uuid
 from datetime import datetime
-from typing import List
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, JSON, String, \
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, JSON, String, \
 	Text, URL, UniqueConstraint, create_engine, func, text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.pool import NullPool
 from sqlalchemy_utils import create_database, database_exists
 
@@ -276,6 +275,13 @@ class Characters(Timestamps, Base) :
 	imported_from: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	# A global character's sheet can also be viewed on the small servers (fewer than 10 members) its player is in.
 	is_global: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+	# Legendary characters have doubled stat limits; legendary_points is what the status gave, taken back on removal.
+	legendary: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+	legendary_points: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+	legendary_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	legendary_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	# clothing, light, medium or heavy; empty means it is read from the sheet (see Loadout).
+	armor_proficiency: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
 	__table_args__ = (
 		Index('uq_character_uid_guild_name', 'uid', 'guild_id', text('lower(name)'), unique=True),
@@ -400,6 +406,8 @@ class CharacterGear(Base) :
 	source: Mapped[str] = mapped_column(String(16))
 	price_paid: Mapped[int] = mapped_column(BigInteger, default=0)
 	changed_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	# excellent, good, average, poor or awful; empty counts as awful (weapons only).
+	proficiency: Mapped[str | None] = mapped_column(String(16), nullable=True)
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
 	                                             onupdate=func.now())
@@ -442,108 +450,228 @@ class Drafts(Base) :
 	                                             onupdate=func.now())
 
 
-class Armors(Timestamps, Base) :
-	__tablename__ = "armors"
-	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-	name: Mapped[str] = mapped_column(String(255))
-	hp: Mapped[int] = mapped_column(BigInteger, default=75)
-	ap: Mapped[int] = mapped_column(BigInteger, default=25)
-	ac: Mapped[int] = mapped_column(BigInteger, default=12)
-	hitchance: Mapped[int] = mapped_column(BigInteger, default=0)
-	modifier: Mapped[str] = mapped_column(String(255), nullable=True)
+# ============================================================
+# Combat
+# ============================================================
 
-
-class Weapons(Timestamps, Base) :
-	__tablename__ = "weapons"
-	name: Mapped[str] = mapped_column(String(255), primary_key=True)
-	dice: Mapped[str] = mapped_column(String(255))
-	modifier: Mapped[str] = mapped_column(String(255))
-	hitmodifier = mapped_column(BigInteger, default=0)
-
-
-class EntityStats :
-	hp: Mapped[int] = mapped_column(BigInteger)
-	ac: Mapped[int] = mapped_column(BigInteger)
-	attack: Mapped[str] = mapped_column(String(1024), default="1d20")
-	damage: Mapped[str] = mapped_column(String(1024), default="1d12")
-
-
-class Npcs(EntityStats, Timestamps, Base) :
-	__tablename__ = "npcs"
-	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-	name: Mapped[str] = mapped_column(String(255))
-
-
-class Monsters(EntityStats, Timestamps, Base) :
-	__tablename__ = "monsters"
-	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-	name: Mapped[str] = mapped_column(String(255))
-
-
-class CombatInstances(Timestamps, Base) :
+# state is pending (a PvP challenge nobody accepted yet), setup, active, paused or ended. order holds the side ids (async
+# pacing) or combatant ids (live pacing) in the order they act this round, and turn_index points into it. deadline is
+# when the current phase or turn runs out; while paused, paused_seconds holds the time that was left. invites holds
+# {side id: [user ids]} for PvP sides, pending the "Other" actions waiting for the GM, challenge the PvP challenge.
+class CombatInstances(Base) :
+	"""One fight, bound to the thread it runs in."""
 	__tablename__ = "combat_instances"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-	guid: Mapped[str] = mapped_column(String(255), server_default=text("gen_random_uuid()"))
-	channel_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
-	description: Mapped[str] = mapped_column(Text, nullable=True)
-	round: Mapped[int] = mapped_column(BigInteger, default=1)
-	combat_type: Mapped[str] = mapped_column(String(255), nullable=True, default="encounter")
-	active: Mapped[bool] = mapped_column(Boolean, default=True)
-	entities: Mapped[List["CombatInstanceEntities"]] = relationship(
-		"CombatInstanceEntities",
-		back_populates="combat_instance",
-		cascade="all, delete-orphan",
-		lazy="joined"
-	)
+	guid: Mapped[str] = mapped_column(String(64), default=lambda : uuid.uuid4().hex)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	channel_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+	board_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	gm_uid: Mapped[int] = mapped_column(BigInteger)
+	co_gms: Mapped[list] = mapped_column(JSON, default=list)
+	kind: Mapped[str] = mapped_column(String(8), default="pve")
+	state: Mapped[str] = mapped_column(String(16), default="setup")
+	pacing: Mapped[str] = mapped_column(String(8), default="async")
+	lethal: Mapped[bool] = mapped_column(Boolean, default=False)
+	round: Mapped[int] = mapped_column(Integer, default=0)
+	order: Mapped[list] = mapped_column(JSON, default=list)
+	turn_index: Mapped[int] = mapped_column(Integer, default=0)
+	deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	paused_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	title: Mapped[str] = mapped_column(String(100), default="Combat")
+	winner_side_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	late_join: Mapped[bool] = mapped_column(Boolean, default=False)
+	invites: Mapped[dict] = mapped_column(JSON, default=dict)
+	pending: Mapped[list] = mapped_column(JSON, default=list)
+	challenge: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	idle_pinged: Mapped[list] = mapped_column(JSON, default=list)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
+	                                             onupdate=func.now())
+	ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
-class CombatInstanceEntities(Timestamps, Base) :
-	__tablename__ = "combat_instance_entities"
-
+class CombatSides(Base) :
+	"""A side in a fight, such as the party or the enemies."""
+	__tablename__ = "combat_sides"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	instance_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instances.id", ondelete="CASCADE"),
-	                                         nullable=False)
+	                                         index=True)
+	name: Mapped[str] = mapped_column(String(50))
+	position: Mapped[int] = mapped_column(Integer, default=1)
 
-	# Linked to the global users table
-	user_uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), nullable=True)
 
-	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"),
-	                                                 nullable=True)
-	monster_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("monsters.id", ondelete="CASCADE"),
-	                                               nullable=True)
-	npc_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("npcs.id", ondelete="CASCADE"), nullable=True)
+# stats is the snapshot taken when the combatant joined: SPECIAL, level, weapons, armor and abilities (see Loadout).
+# controller is player, gm or auto; behavior is the NPC behavior or the player's autopilot. state is active, downed,
+# stable, dying, fled, dead or removed. weapon_key is the weapon it holds, so switching can cost AP.
+class CombatEntities(Base) :
+	"""A character or NPC taking part in a fight."""
+	__tablename__ = "combat_entities"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	instance_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instances.id", ondelete="CASCADE"),
+	                                         index=True)
+	side_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_sides.id", ondelete="CASCADE"))
+	kind: Mapped[str] = mapped_column(String(16))
+	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                 nullable=True, index=True)
+	uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	bestiary_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("bestiary.id", ondelete="SET NULL"),
+	                                                nullable=True)
+	name: Mapped[str] = mapped_column(String(100))
+	controller: Mapped[str] = mapped_column(String(8), default="player")
+	behavior: Mapped[str] = mapped_column(String(16), default="weakest")
+	stats: Mapped[dict] = mapped_column(JSON, default=dict)
+	hp: Mapped[int] = mapped_column(Integer, default=0)
+	hp_max: Mapped[int] = mapped_column(Integer, default=0)
+	ap: Mapped[int] = mapped_column(Integer, default=0)
+	ap_max: Mapped[int] = mapped_column(Integer, default=0)
+	ac: Mapped[int] = mapped_column(Integer, default=10)
+	dt: Mapped[int] = mapped_column(Integer, default=0)
+	sequence: Mapped[int] = mapped_column(Integer, default=0)
+	conditions: Mapped[list] = mapped_column(JSON, default=list)
+	ability_uses: Mapped[dict] = mapped_column(JSON, default=dict)
+	acted: Mapped[bool] = mapped_column(Boolean, default=False)
+	idle_turns: Mapped[int] = mapped_column(Integer, default=0)
+	state: Mapped[str] = mapped_column(String(16), default="active")
+	death_successes: Mapped[int] = mapped_column(Integer, default=0)
+	death_failures: Mapped[int] = mapped_column(Integer, default=0)
+	last_attacker_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	weapon_key: Mapped[str | None] = mapped_column(String(32), nullable=True)
+	position: Mapped[int] = mapped_column(Integer, default=0)
+	lethal_ok: Mapped[bool] = mapped_column(Boolean, default=False)
 
-	current_hp: Mapped[int] = mapped_column(BigInteger, default=0)
-	current_ap: Mapped[int] = mapped_column(BigInteger, default=0)
-	ac: Mapped[int] = mapped_column(BigInteger, default=0)
 
-	entity_type: Mapped[str] = mapped_column(String(255), nullable=True)
-	remaining_attacks: Mapped[int] = mapped_column(BigInteger, default=1)
-	alive: Mapped[bool] = mapped_column(Boolean, default=True)
-	stunned: Mapped[bool] = mapped_column(Boolean, default=False)
+# snapshot holds the fight as it was before the action, so the GM can undo it.
+class CombatLog(Base) :
+	"""One thing that happened in a fight."""
+	__tablename__ = "combat_log"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	instance_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instances.id", ondelete="CASCADE"),
+	                                         index=True)
+	round: Mapped[int] = mapped_column(Integer, default=0)
+	actor_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	target_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	action: Mapped[str] = mapped_column(String(32))
+	text: Mapped[str] = mapped_column(Text, default="")
+	details: Mapped[dict] = mapped_column(JSON, default=dict)
+	snapshot: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-	combat_instance: Mapped["CombatInstances"] = relationship("CombatInstances", back_populates="entities")
+
+# preset is minion, standard, elite, boss or custom. damage is the dice of its attack, damage_type a damage type's name.
+class Bestiary(Base) :
+	"""An NPC or monster a server's GMs can add to fights."""
+	__tablename__ = "bestiary"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+	preset: Mapped[str] = mapped_column(String(16), default="standard")
+	hp: Mapped[int] = mapped_column(Integer, default=20)
+	ac: Mapped[int] = mapped_column(Integer, default=12)
+	dt: Mapped[int] = mapped_column(Integer, default=1)
+	to_hit: Mapped[int] = mapped_column(Integer, default=2)
+	damage: Mapped[str] = mapped_column(String(16), default="2d6")
+	damage_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+	attack_name: Mapped[str] = mapped_column(String(50), default="Attack")
+	ap: Mapped[int] = mapped_column(Integer, default=7)
+	sequence: Mapped[int] = mapped_column(Integer, default=10)
+	behavior: Mapped[str] = mapped_column(String(16), default="aggressive")
+	ability_ids: Mapped[list] = mapped_column(JSON, default=list)
+	reward_xp: Mapped[int] = mapped_column(Integer, default=0)
+	reward_currency: Mapped[int] = mapped_column(Integer, default=0)
+	creator_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 	__table_args__ = (
-		CheckConstraint(
-			"""
-			(character_id IS NOT NULL AND monster_id IS NULL AND npc_id IS NULL) OR
-			(character_id IS NULL AND monster_id IS NOT NULL AND npc_id IS NULL) OR
-			(character_id IS NULL AND monster_id IS NULL AND npc_id IS NOT NULL)
-			""",
-			name="chk_single_entity_source"
-		),
+		Index('uq_bestiary_guild_name', 'guild_id', text('lower(name)'), unique=True),
 	)
 
 
-class CombatInstanceLogs(Timestamps, Base) :
-	__tablename__ = "combat_instance_log"
+# trigger is strong_hit or always. effect is {"kind": "condition", "condition": "bleeding", "turns": 2},
+# {"kind": "ignore_dt"}, {"kind": "arc"}, {"kind": "cleanse"} or {"kind": "none"}.
+class DamageTypes(Base) :
+	"""A damage type a server's weapons, spells and abilities can have, with the effect a strong hit adds."""
+	__tablename__ = "damage_types"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-	instance_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instances.id", ondelete="CASCADE"),
-	                                         nullable=False)
-	attacker_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"))
-	defender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("combat_instance_entities.id", ondelete="CASCADE"))
-	damage: Mapped[int] = mapped_column(BigInteger, default=0)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(50))
+	trigger: Mapped[str] = mapped_column(String(16), default="strong_hit")
+	effect: Mapped[dict] = mapped_column(JSON, default=dict)
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	pack: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+	__table_args__ = (
+		Index('uq_damage_type_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+class MagicSchools(Base) :
+	"""A school of magic; standard ones come with the server, players can propose their own."""
+	__tablename__ = "magic_schools"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(50))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	casting_stat: Mapped[str] = mapped_column(String(16), default="intelligence")
+	creator_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	state: Mapped[str] = mapped_column(String(16), default="pending")
+	standard: Mapped[bool] = mapped_column(Boolean, default=False)
+	review_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+	__table_args__ = (
+		Index('uq_magic_school_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+# kind is spell or ability; tier cantrip, weak, normal or strong; effect damage, heal, condition, shield or boost.
+# condition is the condition a condition or boost ability applies, secondary the one a damage ability adds on a hit.
+class Abilities(Base) :
+	"""A spell or ability a player built, reviewed by staff."""
+	__tablename__ = "abilities"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	creator_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	flavor: Mapped[str | None] = mapped_column(Text, nullable=True)
+	kind: Mapped[str] = mapped_column(String(16), default="ability")
+	school_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("magic_schools.id", ondelete="SET NULL"),
+	                                              nullable=True)
+	stat: Mapped[str] = mapped_column(String(16), default="intelligence")
+	tier: Mapped[str] = mapped_column(String(16), default="weak")
+	effect: Mapped[str] = mapped_column(String(16), default="damage")
+	damage_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+	condition: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	area: Mapped[bool] = mapped_column(Boolean, default=False)
+	secondary: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	state: Mapped[str] = mapped_column(String(16), default="pending")
+	review_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	forum_thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	forum_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	tag_ids: Mapped[list] = mapped_column(JSON, default=list)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+	__table_args__ = (
+		Index('uq_ability_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+# event abilities were granted by a GM: they skip the slot limits.
+class CharacterAbilities(Base) :
+	"""An ability a character knows."""
+	__tablename__ = "character_abilities"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	ability_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("abilities.id", ondelete="CASCADE"))
+	event: Mapped[bool] = mapped_column(Boolean, default=False)
+	granted_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+	__table_args__ = (
+		UniqueConstraint('character_id', 'ability_id', name='uq_character_ability'),
+	)
 
 
 # ============================================================
