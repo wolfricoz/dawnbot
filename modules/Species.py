@@ -1,3 +1,6 @@
+"""Species for characters. Members make their own; staff review them, and approved ones are posted in the species
+forum, where tags on a post can restrict who may pick it (see /tagrule).
+"""
 import logging
 
 import discord

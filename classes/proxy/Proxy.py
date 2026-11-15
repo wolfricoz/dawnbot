@@ -1,5 +1,6 @@
 """Posts a member's message as their character: the webhook post, removing the original, the log and the rewards."""
 import logging
+from dataclasses import replace
 
 import discord
 from discord_py_utilities.messages import send_message
@@ -96,15 +97,52 @@ class Proxy :
 		if sum(attachment.size for attachment in message.attachments) > guild.filesize_limit :
 			await Proxy._tell(message, TOO_LARGE)
 			return True
-		message_ids = await Proxy._post(bot, message, match)
+		posted, segments, problem = Proxy._languages(match)
+		if problem :
+			await Proxy._tell(message, f"{problem} I left your message as it is.")
+			return True
+		view = None
+		if segments :
+			from classes.language.LanguageFlow import understand_view
+
+			view = understand_view(segments, guild.id)
+		message_ids = await Proxy._post(bot, message, replace(match, text=posted), view)
 		if not message_ids :
 			return True
+		if segments :
+			from classes.language.LanguageFlow import LanguageFlow
+
+			LanguageFlow.save(message_ids[0], match.character, segments)
 		try :
 			await message.delete()
 		except discord.NotFound :
 			pass
 		await Proxy._reward(bot, message, match, message_ids, in_roleplay)
+		await Proxy._after(bot, message, match)
 		return True
+
+	# ============================================================
+	@staticmethod
+	def _languages(match: Match) -> tuple[str, list | None, str | None] :
+		"""The text to post, the language segments (or None) and why it can't be posted (or None)."""
+		try :
+			from classes.language.LanguageFlow import LanguageFlow
+
+			return LanguageFlow.prepare(match.character, match.text)
+		except Exception as e :
+			logging.error(f"Reading the languages of a post failed: {e}", exc_info=True)
+			return match.text, None, None
+
+	# ============================================================
+	@staticmethod
+	async def _after(bot: discord.Client, message: discord.Message, match: Match) -> None :
+		"""What else a post counts for: the scene in its channel. A failure here never undoes the post."""
+		try :
+			from classes.scenes.SceneFlow import SceneFlow
+
+			await SceneFlow.on_post(bot, message.channel, match.character, match.text)
+		except Exception as e :
+			logging.error(f"Counting a post for its scene failed: {e}", exc_info=True)
 
 	# ============================================================
 	@staticmethod
@@ -116,8 +154,10 @@ class Proxy :
 
 	# ============================================================
 	@staticmethod
-	async def _post(bot: discord.Client, message: discord.Message, match: Match) -> list[int] :
-		"""Sends the post through the channel's webhook. Returns the ids of the messages sent (empty on failure)."""
+	async def _post(bot: discord.Client, message: discord.Message, match: Match,
+	                view: discord.ui.View | None = None) -> list[int] :
+		"""Sends the post through the channel's webhook. Returns the ids of the messages sent (empty on failure). A
+		view (the Understand button of a post in a language) goes on the last message."""
 		character = match.character
 		line, replied_player = await Proxy.reply_line(message)
 		chunks = Compose.split(match.text, line)
@@ -133,10 +173,15 @@ class Proxy :
 				         for attachment in message.attachments]
 				for index, chunk in enumerate(chunks) :
 					last = index == len(chunks) - 1
-					posted = await webhook.send(content=chunk or discord.utils.MISSING, username=character.name,
-					                            avatar_url=avatar_url or discord.utils.MISSING,
-					                            files=files if last and files else discord.utils.MISSING,
-					                            allowed_mentions=mentions, thread=thread, wait=True)
+					arguments = dict(content=chunk or discord.utils.MISSING, username=character.name,
+					                 avatar_url=avatar_url or discord.utils.MISSING,
+					                 files=files if last and files else discord.utils.MISSING,
+					                 allowed_mentions=mentions, thread=thread, wait=True)
+					try :
+						posted = await webhook.send(**arguments, view=view if last and view else discord.utils.MISSING)
+					except ValueError :
+						# A webhook the library can't attach buttons to; the context menu still works.
+						posted = await webhook.send(**arguments)
 					sent.append(posted.id)
 				return sent
 			except discord.NotFound :

@@ -9,7 +9,8 @@ from classes.characters.Access import Access
 from classes.characters.Special import STATS
 from classes.kernel.ConfigData import ConfigData
 from database.database import CharacterGear, Characters, GearItems
-from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST, OWNED, SOLD
+from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST, OWNED, SOLD, \
+	USED
 from database.transactions.CharacterTransactions import CharacterTransactions
 from database.transactions.CurrencyTransactions import BUY, CurrencyTransactions, GM_GIVE, GM_TAKE, SELL
 from database.transactions.GearItemTransactions import GearItemTransactions
@@ -17,7 +18,14 @@ from resources.configs.ConfigMapping import ConfigMapping
 
 WEAPON = "weapon"
 ARMOR = "armor"
-KINDS = [WEAPON, ARMOR]
+# Used up in a fight with the Use item action (see classes/combat/Items.py).
+CONSUMABLE = "consumable"
+KINDS = [WEAPON, ARMOR, CONSUMABLE]
+KIND_LABELS = {WEAPON : "Weapon", ARMOR : "Armor", CONSUMABLE : "Consumable", "material" : "Material"}
+# Crafted quality (see classes/economy/Crafting.py).
+MASTERWORK = "masterwork"
+CURSED = "cursed"
+MASTERWORK_SELL = 1.5
 
 # Where a character's gear came from.
 CREATION = "creation"
@@ -57,7 +65,14 @@ class Gear :
 	# ============================================================
 	@staticmethod
 	def sell_value(entry: CharacterGear, guild_id: int) -> int :
-		return int(entry.price_paid * SELL_RATE) if Gear.economy(guild_id) else 0
+		"""30% of what was paid, for the whole stack of a material; masterwork sells for half as much again and
+		cursed gear for nothing."""
+		if not Gear.economy(guild_id) or getattr(entry, "quality", None) == CURSED :
+			return 0
+		value = entry.price_paid * SELL_RATE * max(1, getattr(entry, "quantity", 1) or 1)
+		if getattr(entry, "quality", None) == MASTERWORK :
+			value *= MASTERWORK_SELL
+		return int(value)
 
 	# == what a character may have ==
 
@@ -140,7 +155,12 @@ class Gear :
 		locked = Gear.lock_reason(item, access)
 		if locked :
 			return None, f"{item.name} {locked}."
-		price = Gear.price(item)
+		from classes.economy.FactionFlow import FactionFlow
+
+		faction_problem = FactionFlow.buy_problem(character, item)
+		if faction_problem :
+			return None, faction_problem
+		price = FactionFlow.price_for(character, item, Gear.price(item))
 		if price :
 			updated, problem = Gear.change_currency(character, -price, BUY, actor_uid, note=item.name)
 			if problem :
@@ -182,6 +202,24 @@ class Gear :
 
 	# ============================================================
 	@staticmethod
+	def use_up(entry_id: int) -> CharacterGear | None :
+		"""Marks a consumable as used (after a fight's Use item action)."""
+		entry = CharacterGearTransactions().get(entry_id)
+		if entry is None or entry.status != OWNED :
+			return None
+		return CharacterGearTransactions().update(entry.id, status=USED, equipped=False)
+
+	# ============================================================
+	@staticmethod
+	def restore(entry_id: int) -> CharacterGear | None :
+		"""Gives back a consumable whose use was undone."""
+		entry = CharacterGearTransactions().get(entry_id)
+		if entry is None or entry.status != USED :
+			return None
+		return CharacterGearTransactions().update(entry.id, status=OWNED)
+
+	# ============================================================
+	@staticmethod
 	def take(entry: CharacterGear) -> bool :
 		"""Removes an item from a character entirely, as if they never had it (for mistakes)."""
 		return CharacterGearTransactions().delete(entry.id)
@@ -194,12 +232,30 @@ class Gear :
 		"""Equips an owned item. A character wears one armor set at a time; weapons can all be equipped."""
 		if entry.status != OWNED :
 			return None, f"{entry.name} is {entry.status}."
+		if entry.kind == CONSUMABLE :
+			return None, f"{entry.name} is used up in a fight, not equipped."
+		if entry.kind not in (WEAPON, ARMOR) :
+			return None, f"{entry.name} can't be equipped."
+		if entry.kind == ARMOR :
+			stuck = [worn for worn in CharacterGearTransactions().equipped(entry.character_id, ARMOR)
+			         if worn.id != entry.id and getattr(worn, "quality", None) == CURSED]
+			if stuck :
+				return None, f"The cursed {stuck[0].name} won't come off; a GM has to lift the curse first."
 		return CharacterGearTransactions().equip(entry.id, only_one_of_kind=entry.kind == ARMOR), None
 
 	# ============================================================
 	@staticmethod
 	def unequip(entry: CharacterGear) -> CharacterGear | None :
+		"""Takes an item off. Cursed armor doesn't come off (returns None)."""
+		if Gear.stuck(entry) :
+			return None
 		return CharacterGearTransactions().update(entry.id, equipped=False)
+
+	# ============================================================
+	@staticmethod
+	def stuck(entry: CharacterGear) -> bool :
+		"""Cursed armor that is worn can't be taken off until a GM lifts the curse."""
+		return entry.kind == ARMOR and entry.equipped and getattr(entry, "quality", None) == CURSED
 
 	# ============================================================
 	@staticmethod

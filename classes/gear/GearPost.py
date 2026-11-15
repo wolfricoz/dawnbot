@@ -7,7 +7,8 @@ import logging
 
 import discord
 
-from classes.gear.Gear import WEAPON
+from classes.combat import Items, Rules
+from classes.gear.Gear import CONSUMABLE, WEAPON
 from classes.gear.GearCard import GearCard
 from classes.kernel.ConfigData import ConfigData
 from database.database import GearItems
@@ -30,23 +31,34 @@ class GearPost :
 	# ============================================================
 	@staticmethod
 	def combat_text(item: GearItems) -> str :
-		"""`1d8 + Strength damage · +1 to hit` for weapons, `HP 90 · AP 30 · AC 15 · -1 to hit` for armor."""
+		"""`2d6 + STR · Slashing · STR to hit, +1 · 3 AP · two handed` for weapons, `Medium armor · AC +2 · DT 2` for
+		armor. Old values are shown converted."""
 		combat = item.combat or {}
 		if not combat :
 			return ""
 		if item.kind == WEAPON :
-			text = combat.get("dice", "")
-			modifier = combat.get("modifier") or ""
-			if ":" in modifier :
-				kind, stat = modifier.split(":", 1)
-				text += f" + {stat.capitalize()}" if kind == "damage" else f" + half {stat.capitalize()} in dice"
-			parts = [f"{text} damage".strip()]
-			if combat.get("hitmodifier") :
-				parts.append(f"{combat['hitmodifier']:+d} to hit")
+			weapon = Rules.normalise_weapon(combat)
+			damage = weapon["dice"]
+			if weapon.get("damage_stat") :
+				damage += f" + {Rules.STAT_SHORT[weapon['damage_stat']]}"
+			parts = [damage]
+			if weapon.get("type") :
+				parts.append(weapon["type"])
+			hit = f"{Rules.STAT_SHORT.get(weapon['attack_stat'], weapon['attack_stat'])} to hit"
+			if weapon.get("hit_mod") :
+				hit += f", {weapon['hit_mod']:+d}"
+			parts += [hit, weapon["range"], f"{Rules.weapon_ap(weapon)} AP"]
+			if weapon.get("properties") :
+				parts.append(", ".join(prop.replace("_", " ") for prop in weapon["properties"]))
 			return " · ".join(parts)
-		parts = [f"{key.upper()} {combat[key]}" for key in ("hp", "ap", "ac") if key in combat]
-		if combat.get("hitchance") :
-			parts.append(f"{combat['hitchance']:+d} to hit")
+		if item.kind == CONSUMABLE :
+			return f"{Items.describe(combat)} · {Items.AP_ITEM} AP · used up"
+		armor = Rules.normalise_armor(combat)
+		parts = [f"{armor['armor_class'].capitalize()} armor", f"AC {armor['ac']:+d}", f"DT {armor['dt']}"]
+		if armor.get("hit_mod") :
+			parts.append(f"{armor['hit_mod']:+d} to hit")
+		if armor.get("ability_hit_mod") :
+			parts.append(f"{armor['ability_hit_mod']:+d} to hit with abilities")
 		return " · ".join(parts)
 
 	# ============================================================

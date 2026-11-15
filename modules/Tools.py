@@ -10,13 +10,30 @@ from translate import Translator
 
 from classes.characters.ImageStorage import ImageStorage
 from classes.characters.Special import STATS, Special
+from classes.checks import RollLog
+from classes.combat import Fortune
 from classes.combat.AutoComplete import AutoComplete
-from classes.dice.Dice import Dice, MAX_AMOUNT, MAX_SIDES, MIN_SIDES, Modifier
+from classes.dice.Dice import CRITICAL_FAILURE, Dice, MAX_AMOUNT, MAX_SIDES, MIN_SIDES, Modifier, POOR
 from classes.dice.DiceCard import DiceCard
 from classes.kernel.ConfigData import ConfigData
 from data.languages import LANGUAGES
 from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
+from database.transactions.SceneTransactions import SceneTransactions
 from resources.configs.ConfigMapping import ConfigMapping
+from views.buttons.Show import ShowView
+
+# /dice rolls that count as bad for the bad-roll protection.
+BAD_TIERS = (POOR, CRITICAL_FAILURE)
+
+
+# ============================================================
+def reaches(roll, dc: int) -> bool :
+	"""Whether a /dice roll reaches a DC: a critical success always does, a critical failure never."""
+	if roll.is_critical_success :
+		return True
+	if roll.is_critical_failure :
+		return False
+	return roll.total >= dc
 
 
 class Tools(commands.Cog) :
@@ -27,10 +44,29 @@ class Tools(commands.Cog) :
 
 	# ============================================================
 	@app_commands.command(name="endscene", description="ends the scene")
-	async def endscene(self, interaction: discord.Interaction, rpenddate: str, title: str = None) :
+	async def endscene(self, interaction: discord.Interaction, rpenddate: str = None, title: str = None) :
 		"""
-		Ends the scene in this channel and posts a summary entry in the timeline channel.
+		Ends the scene in this channel and posts a summary entry in the timeline channel. When a scene from /scene start
+		is open here, this ends it like /scene end (host or staff), writing its chronicle too. The in-world date
+		defaults to the server's calendar.
 		"""
+		from classes.scenes.SceneFlow import SceneFlow
+		from classes.world.WorldFlow import WorldFlow
+
+		scene = SceneFlow.scene_here(interaction.channel)
+		if scene is not None :
+			if not SceneFlow.runs(scene, interaction.user) :
+				return await interaction.response.send_message("Only the scene's host (or staff) can end it.",
+				                                               ephemeral=True)
+			await interaction.response.defer(ephemeral=True, thinking=True)
+			if title :
+				SceneTransactions().update(scene.id, title=title[:200])
+			scene, _ = await SceneFlow.finish(self.bot, scene.id, interaction.user.id, None, rpenddate)
+			return await interaction.followup.send(f"🏁 **{scene.title}** has ended.", ephemeral=True)
+		rpenddate = rpenddate or WorldFlow.short_date(interaction.guild_id)
+		if not rpenddate :
+			return await interaction.response.send_message("Give the in-world date the scene ended (rpenddate).",
+			                                               ephemeral=True)
 		await interaction.response.defer(thinking=False, ephemeral=True)
 		channel = await ConfigData().get_channel(interaction.guild, ConfigMapping.TIMELINE, optional=True)
 		if channel is None :
@@ -51,11 +87,13 @@ class Tools(commands.Cog) :
 	                       title="What you are trying to do; shown as the title",
 	                       amount="How many dice to roll",
 	                       character="Roll as one of your approved characters",
-	                       stat="The character's SPECIAL stat that adds its modifier")
+	                       stat="The character's SPECIAL stat that adds its modifier",
+	                       dc="A number the total has to reach; the roll then shows success or failure",
+	                       secret="Only you see the roll, with a button to show it")
 	async def dice(self, interaction: discord.Interaction, dicetype: app_commands.Range[int, MIN_SIDES, MAX_SIDES],
 	               modifier: app_commands.Range[int, -50, 50] = 0, title: app_commands.Range[str, 1, 200] = None,
 	               amount: app_commands.Range[int, 1, MAX_AMOUNT] = 1, character: str = None,
-	               stat: Choice[str] = None) :
+	               stat: Choice[str] = None, dc: app_commands.Range[int, 1, 100000] = None, secret: bool = False) :
 		"""
 		Rolls one or more dice and posts the result with a line of story text that depends on how the roll went.
 
@@ -63,6 +101,13 @@ class Tools(commands.Cog) :
 		server's starting stat value (5 by default), so 5 adds nothing, 10 adds +5 and 1 adds -4. The modifier option
 		comes on top. Modifiers are added once to the total, and dice of 100 sides or more triple them. Rolling every die
 		on its highest side is a critical success; every die on 1 is a critical failure.
+
+		Rolling as a character counts toward its bad luck: after 3 rolls in a row that come out Poor or worse (or fail
+		in a fight), its next bad roll is made again once and the better result counts.
+
+		With a `dc`, the card also says whether the total reached it (a critical success always does, a critical failure
+		never), and a roll as a character counts as bad when it falls short. A `secret` roll only shows you the result,
+		with a **Show** button to post it later, and is copied to the GM roll log when the server has one.
 		"""
 		stat = stat.value if isinstance(stat, Choice) else stat
 		logging.debug(f"{interaction.user.name} rolled {amount}d{dicetype} modifier {modifier} character {character} "
@@ -89,13 +134,32 @@ class Tools(commands.Cog) :
 		modifiers.append(Modifier("Bonus", modifier))
 
 		# Fetching a stored avatar can take a moment.
-		await interaction.response.defer(thinking=True)
+		await interaction.response.defer(thinking=True, ephemeral=secret)
 		avatar = await ImageStorage.url(self.bot, record.avatar_id) if record else None
-		roll = Dice.roll(dicetype, amount, modifiers)
+		note = None
+		if record is not None :
+			succeeded = (lambda result : reaches(result, dc)) if dc is not None else \
+				(lambda result : result.tier not in BAD_TIERS)
+			roll, first = Fortune.for_character(record.id, lambda : Dice.roll(dicetype, amount, modifiers), succeeded,
+			                                    lambda result : result.total)
+			note = Fortune.note(str(first.total)) if first is not None else None
+		else :
+			roll = Dice.roll(dicetype, amount, modifiers)
 		embed = DiceCard.embed(roll, roller=interaction.user.display_name, goal=title,
 		                       character_name=record.name if record else None, stat=stat,
-		                       icon_url=avatar or interaction.user.display_avatar.url, thumbnail_url=avatar)
-		await interaction.followup.send(embed=embed)
+		                       icon_url=avatar or interaction.user.display_avatar.url, thumbnail_url=avatar, note=note)
+		if dc is not None :
+			embed.add_field(name=f"Against DC {dc}", value="✅ Success" if reaches(roll, dc) else "❌ Failure",
+			                inline=False)
+		if not secret :
+			return await interaction.followup.send(embed=embed)
+		await interaction.followup.send("🔒 Only you see this roll.", embed=embed,
+		                                view=ShowView(interaction.user.id, embed), ephemeral=True)
+		who = f"{record.name} (<@{interaction.user.id}>)" if record else f"<@{interaction.user.id}>"
+		await RollLog.post(interaction.guild, f"🔒 Secret /dice by {who} in <#{interaction.channel_id}>: "
+		                                      f"{roll.notation} = {roll.total}" +
+		                   (f" against DC {dc} ({'success' if reaches(roll, dc) else 'failure'})" if dc else "") +
+		                   (f" · {title}" if title else ""))
 
 	# ============================================================
 	@app_commands.command(name="coinflip", description="flips a coin for you!")

@@ -7,16 +7,17 @@ import discord
 from classes.characters.Special import STATS
 from classes.gear.Gear import ARMOR, KINDS, WEAPON
 from classes.gear.GearPost import GearPost
-from classes.gear.Packs import ARMOR_COMBAT, Packs, WEAPON_COMBAT
+from classes.gear.Packs import ARMOR_COMBAT, COMBAT_DEFAULTS, Packs, WEAPON_COMBAT
 from database.transactions.GearItemTransactions import GearItemTransactions
 from listeners.GearListener import GearListener
-from modules.Armory import Armory, MODIFIER_CHOICES
+from modules.Armory import Armory
 from test_modules.base import DatabaseTestCase, GUILD_ID
 
 OTHER_GUILD = 1048433044253573121
 GOOD_ITEM = {"kind" : WEAPON, "name" : "Test Blade", "description" : "A blade.", "price" : 100,
              "requirements" : {"strength" : 5}, "effect_met" : "+1 to hit", "effect_unmet" : "-1 to hit",
-             "combat" : {"dice" : "1d8", "modifier" : "damage:strength", "hitmodifier" : 0}}
+             "combat" : {"type" : "Slashing", "dice" : "1d8", "attack_stat" : "strength", "damage_stat" : "strength",
+                         "hit_mod" : 0, "range" : "melee", "properties" : []}}
 
 
 def pack_with(**changes) :
@@ -37,7 +38,7 @@ class TestPacks(DatabaseTestCase) :
 		self.assertEqual(pack["starting_currency"], 3000)
 		weapons = [item for item in pack["items"] if item["kind"] == WEAPON]
 		armor = [item for item in pack["items"] if item["kind"] == ARMOR]
-		self.assertTrue(14 <= len(weapons) <= 18, len(weapons))
+		self.assertTrue(14 <= len(weapons) <= 20, len(weapons))
 		self.assertTrue(8 <= len(armor) <= 12, len(armor))
 
 	def test_every_fantasy_item_is_valid_and_sensible(self) :
@@ -55,8 +56,11 @@ class TestPacks(DatabaseTestCase) :
 					self.assertTrue(item["effect_unmet"])
 				for minimum in item["requirements"].values() :
 					self.assertTrue(1 <= minimum <= 10)
-				expected = WEAPON_COMBAT if item["kind"] == WEAPON else ARMOR_COMBAT
-				self.assertEqual(set(item["combat"]), set(expected))
+				# Weapons also name their kind (sword, bow...) unless they are a spell focus.
+				expected = set(COMBAT_DEFAULTS[item["kind"]])
+				if item["kind"] == "weapon" and "focus" not in item["combat"]["properties"] :
+					expected.add("kind")
+				self.assertEqual(set(item["combat"]), expected)
 
 	def test_import_adds_everything_then_skips_everything(self) :
 		count = len(Packs.load("fantasy")["items"])
@@ -68,7 +72,7 @@ class TestPacks(DatabaseTestCase) :
 		plate = GearItemTransactions().find(GUILD_ID, "warden's full plate")
 		self.assertEqual(plate.kind, ARMOR)
 		self.assertEqual(plate.requirements, {"strength" : 8, "endurance" : 6})
-		self.assertEqual(plate.combat["ac"], 19)
+		self.assertEqual((plate.combat["armor_class"], plate.combat["ac"], plate.combat["dt"]), ("heavy", 4, 3))
 		added, skipped = Packs.import_into(GUILD_ID, "fantasy")
 		self.assertEqual((added, len(skipped)), ([], count))
 		self.assertEqual(len(GearItemTransactions().get_all(GUILD_ID)), count)
@@ -120,6 +124,12 @@ class TestPacks(DatabaseTestCase) :
 			pack_with(kind=ARMOR, combat={"ac" : "high"}),
 			pack_with(kind=ARMOR, combat={"ac" : -1}),
 			pack_with(kind=ARMOR, combat={"dice" : "1d6"}),
+			pack_with(combat={"attack_stat" : "mana"}),
+			pack_with(combat={"range" : "far"}),
+			pack_with(combat={"properties" : ["huge"]}),
+			pack_with(combat={"hit_mod" : 11}),
+			pack_with(kind=ARMOR, combat={"armor_class" : "plate"}),
+			pack_with(kind=ARMOR, combat={"dt" : 11}),
 			{"items" : [GOOD_ITEM, GOOD_ITEM | {"name" : "test blade"}]},
 		]
 		for data in bad :
@@ -127,12 +137,12 @@ class TestPacks(DatabaseTestCase) :
 				Packs.validate(copy.deepcopy(data), "test")
 
 	def test_items_are_completed(self) :
-		item = Packs.validate({"items" : [{"kind" : ARMOR, "name" : " Rags ", "combat" : {"ac" : 11}}]})["items"][0]
+		item = Packs.validate({"items" : [{"kind" : ARMOR, "name" : " Rags ", "combat" : {"ac" : 1}}]})["items"][0]
 		self.assertEqual(item["name"], "Rags")
 		self.assertEqual(item["price"], 0)
 		self.assertEqual(item["requirements"], {})
 		self.assertIsNone(item["effect"])
-		self.assertEqual(item["combat"], ARMOR_COMBAT | {"ac" : 11})
+		self.assertEqual(item["combat"], ARMOR_COMBAT | {"ac" : 1})
 
 
 class TestRequirementText(DatabaseTestCase) :
@@ -174,32 +184,53 @@ class TestCombatValues(DatabaseTestCase) :
 	def test_defaults_and_changes(self) :
 		self.assertEqual(Packs.combat_for(WEAPON, None, {}), WEAPON_COMBAT)
 		self.assertEqual(Packs.combat_for(ARMOR, None, {}), ARMOR_COMBAT)
-		self.assertEqual(Packs.combat_for(WEAPON, None, {"dice" : "2D6", "modifier" : "Dice:Agility"}),
-		                 {"dice" : "2d6", "modifier" : "dice:agility", "hitmodifier" : 0})
-		self.assertEqual(Packs.combat_for(WEAPON, {"dice" : "1d8", "modifier" : "damage:strength"},
-		                                  {"modifier" : "none", "hitmodifier" : None}),
-		                 {"dice" : "1d8", "modifier" : "", "hitmodifier" : 0})
-		self.assertEqual(Packs.combat_for(ARMOR, {"hp" : 120, "junk" : 1}, {"ac" : 18}),
-		                 ARMOR_COMBAT | {"hp" : 120, "ac" : 18})
+		self.assertEqual(Packs.combat_for(WEAPON, None, {"dice" : "2D6", "attack_stat" : "agi", "damage_stat" : "none",
+		                                                 "properties" : "light, Two handed", "ap" : 4}),
+		                 WEAPON_COMBAT | {"dice" : "2d6", "attack_stat" : "agility", "damage_stat" : None,
+		                                  "properties" : ["light", "two_handed"], "ap" : 4})
+		current = Packs.combat_for(WEAPON, None, {"type" : "Fire"})
+		self.assertEqual(Packs.combat_for(WEAPON, current, {"type" : "none", "hit_mod" : None})["type"], None)
+		self.assertEqual(Packs.combat_for(ARMOR, {"armor_class" : "light", "junk" : 1}, {"ac" : 2}),
+		                 ARMOR_COMBAT | {"armor_class" : "light", "ac" : 2})
+
+	def test_old_values_are_converted(self) :
+		self.assertEqual(Packs.combat_for(WEAPON, None, {"dice" : "1d8", "modifier" : "damage:agility",
+		                                                 "hitmodifier" : 1}),
+		                 WEAPON_COMBAT | {"dice" : "1d8", "attack_stat" : "agility", "damage_stat" : "agility",
+		                                  "hit_mod" : 1})
+		self.assertEqual(Packs.combat_for(ARMOR, {"hp" : 120, "ac" : 18}, {}),
+		                 ARMOR_COMBAT | {"armor_class" : "heavy", "ac" : 3, "dt" : 3})
+		self.assertEqual(Packs.combat_for(ARMOR, {"hp" : 120, "ac" : 18}, {"dt" : 2})["dt"], 2)
 
 	def test_values_of_the_other_kind_are_refused(self) :
 		with self.assertRaises(ValueError) as caught :
 			Packs.combat_for(ARMOR, None, {"dice" : "1d6"})
 		self.assertIn("only for weapons", str(caught.exception))
 		with self.assertRaises(ValueError) as caught :
-			Packs.combat_for(WEAPON, None, {"ac" : 14})
+			Packs.combat_for(WEAPON, None, {"dt" : 2})
 		self.assertIn("only for armor", str(caught.exception))
 
-	def test_every_modifier_choice_is_accepted(self) :
-		for choice in MODIFIER_CHOICES :
-			Packs.combat_for(WEAPON, None, {"modifier" : choice.value})
+	def test_refresh_rewrites_pack_items(self) :
+		self.add_server()
+		Packs.import_into(GUILD_ID, "fantasy")
+		sword = GearItemTransactions().find(GUILD_ID, "Arming Sword")
+		GearItemTransactions().update(sword.id, combat={"dice" : "1d8", "modifier" : "damage:strength"}, price=7)
+		GearItemTransactions().add(GUILD_ID, WEAPON, "Homemade", combat={"dice" : "1d4"})
+		updated = Packs.refresh_into(GUILD_ID, "fantasy")
+		self.assertEqual([item.name for item in updated], ["Arming Sword"])
+		sword = GearItemTransactions().find(GUILD_ID, "Arming Sword")
+		self.assertEqual((sword.combat["dice"], sword.combat["type"], sword.price), ("2d6", "Slashing", 7))
 
 	def test_combat_text(self) :
-		weapon = SimpleNamespace(kind=WEAPON, combat={"dice" : "1d8", "modifier" : "damage:strength",
-		                                              "hitmodifier" : 1})
-		self.assertEqual(GearPost.combat_text(weapon), "1d8 + Strength damage · +1 to hit")
-		armor = SimpleNamespace(kind=ARMOR, combat={"hp" : 90, "ap" : 30, "ac" : 15, "hitchance" : -1})
-		self.assertEqual(GearPost.combat_text(armor), "HP 90 · AP 30 · AC 15 · -1 to hit")
+		weapon = SimpleNamespace(kind=WEAPON, combat={"type" : "Slashing", "dice" : "2d6", "attack_stat" : "strength",
+		                                              "damage_stat" : "strength", "hit_mod" : 1, "range" : "melee",
+		                                              "properties" : ["two_handed"]})
+		self.assertEqual(GearPost.combat_text(weapon), "2d6 + STR · Slashing · STR to hit, +1 · melee · 4 AP · two handed")
+		old = SimpleNamespace(kind=WEAPON, combat={"dice" : "1d8", "modifier" : "", "hitmodifier" : 0})
+		self.assertEqual(GearPost.combat_text(old), "1d8 · PER to hit · ranged · 3 AP")
+		armor = SimpleNamespace(kind=ARMOR, combat={"armor_class" : "medium", "ac" : 2, "dt" : 2, "hit_mod" : 0,
+		                                            "ability_hit_mod" : 1})
+		self.assertEqual(GearPost.combat_text(armor), "Medium armor · AC +2 · DT 2 · +1 to hit with abilities")
 		self.assertEqual(GearPost.combat_text(SimpleNamespace(kind=ARMOR, combat={})), "")
 
 
@@ -212,9 +243,18 @@ class TestArmoryHelpers(DatabaseTestCase) :
 
 	def test_combat_changes(self) :
 		choice = discord.app_commands.Choice(name="None", value="none")
-		self.assertEqual(Armory.combat_changes(dice="1d6", modifier=choice, ac=None),
-		                 {"dice" : "1d6", "modifier" : "none"})
-		self.assertEqual(Armory.combat_changes(hitchance=0), {"hitchance" : 0})
+		self.assertEqual(Armory.combat_changes(dice="1d6", damage_stat=choice, ac=None),
+		                 {"dice" : "1d6", "damage_stat" : "none"})
+		self.assertEqual(Armory.combat_changes(dt=0, ap_cost=4), {"dt" : 0, "ap" : 4})
+
+	def test_damage_types_are_checked(self) :
+		self.add_server()
+		changes = {"type" : "fire"}
+		Armory.check_type(GUILD_ID, changes)
+		self.assertEqual(changes["type"], "Fire")
+		with self.assertRaises(ValueError) :
+			Armory.check_type(GUILD_ID, {"type" : "Plasma"})
+		Armory.check_type(GUILD_ID, {"type" : "none"})
 
 	def test_long_lists_are_split(self) :
 		lines = [f"**Item {number}** (weapon) · {number} caps · needs Strength 5" for number in range(300)]

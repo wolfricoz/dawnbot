@@ -17,8 +17,6 @@ from data.env.loader import env, load_environment
 load_environment()
 
 import api
-from classes.combat.CombatCache import CombatCache
-from classes.combat.InstanceManager import InstanceManager
 from classes.kernel.AccessControl import AccessControl
 from classes.kernel.ConfigData import ConfigData
 from classes.kernel.ServerSync import sync_server
@@ -26,12 +24,19 @@ from database import database
 from database.exceptions.KeyNotFound import KeyNotFound
 from database.transactions.UserTransactions import UserTransactions
 from project.data import BOT_NAME, VERSION
-from views.buttons.CombatInitiatedButtons import CombatInitiatedButtons
 from views.buttons.ReviewButtons import ReviewButtons
 from views.buttons.RoleplayChannelPrompt import RoleplayChannelButton
 from views.multiselect.StatPicker import StatButton, StatSelect
 from views.buttons.InterviewControls import InterviewButton, InterviewSelect
 from views.buttons.SpeciesReviewButtons import SpeciesReviewButtons
+from views.combat.AbilityReviewButtons import AbilityReviewButtons
+from classes.language.LanguageFlow import UnderstandButton
+from views.checks.CheckButtons import CheckButton
+from views.letters.LetterButtons import LetterButton
+from views.scenes.SceneButtons import ChronicleButton, SceneButton
+from views.combat.BoardButtons import CombatButton
+from views.economy.JobButtons import JobButton
+from views.tables.TableButtons import TableRollButton
 
 # Exceptions caused by a server's own setup (missing Discord permissions, an unset
 # or deleted config channel), not by a bug in the bot. These are surfaced to the
@@ -140,8 +145,14 @@ async def on_ready() :
 	ConfigData().migrate()
 	ConfigData().load(bot.guilds)
 	AccessControl().reload()
-	CombatCache().load_all()
-	bot.combat_instance_manager = InstanceManager()
+	# New default damage types (like Acid, Necrotic and Sonic) reach servers that already had a table.
+	from classes.combat.DamageTypes import DamageTypes
+
+	for guild in bot.guilds :
+		try :
+			DamageTypes.top_up(guild.id)
+		except Exception as e :
+			logging.error(f"Failed to add the new damage types to {guild.name}: {e}", exc_info=True)
 
 	await send_dev_message(f"{BOT_NAME} version {VERSION} is in {len(bot.guilds)} servers and has started up successfully!")
 	# Synchronises the slash commands with discord.
@@ -153,10 +164,13 @@ async def on_ready() :
 @bot.event
 async def setup_hook() :
 	# Persistent views must be registered on every start, or their buttons stop working after a restart.
-	bot.add_view(CombatInitiatedButtons())
 	bot.add_view(ReviewButtons())
 	bot.add_view(SpeciesReviewButtons())
 	bot.add_dynamic_items(RoleplayChannelButton, StatSelect, StatButton, InterviewButton, InterviewSelect)
+	bot.add_view(AbilityReviewButtons())
+	bot.add_dynamic_items(RoleplayChannelButton, StatSelect, StatButton, CombatButton, CheckButton, TableRollButton,
+	                      SceneButton, ChronicleButton, UnderstandButton, LetterButton,
+	                      JobButton)
 
 	directories = ["modules", "listeners", "tasks"]
 	loaded = []

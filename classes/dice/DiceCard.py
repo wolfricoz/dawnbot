@@ -60,11 +60,12 @@ class DiceCard :
 	@staticmethod
 	def embed(roll: DiceRoll, roller: str, goal: str | None = None, character_name: str | None = None,
 	          stat: str | None = None, icon_url: str | None = None, thumbnail_url: str | None = None,
-	          rng: random.Random | None = None) -> discord.Embed :
+	          rng: random.Random | None = None, note: str | None = None) -> discord.Embed :
 		"""
 		@param roller: the member's display name, shown in the footer.
 		@param icon_url: the character's avatar, or the member's when no character rolled.
 		@param thumbnail_url: the character's avatar, shown large.
+		@param note: an extra line under the result, such as a bad-roll reroll.
 		"""
 		tier = roll.tier
 		name = character_name or roller
@@ -75,6 +76,8 @@ class DiceCard :
 		               f"# 🎲 {roll.total}\n"
 		               f"{DiceCard.breakdown(roll)}\n"
 		               f"{DiceCard.meter(roll)}").replace("\n\n", "\n")
+		if note :
+			description += f"\n-# {note}"
 
 		embed = discord.Embed(title=title[:256], description=description, colour=TIER_COLOURS[tier],
 		                      timestamp=discord.utils.utcnow())

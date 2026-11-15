@@ -91,10 +91,20 @@ nav_order: {nav}
 <h6>version: {VERSION}</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-{inspect.getdoc(module) if not isinstance(module, str) else module}
+{module if isinstance(module, str) else self.description(module)}
 
 
 """
+
+    @staticmethod
+    def description(cog) -> str:
+        """The cog's own docstring, else its module's. inspect.getdoc would fall back to discord.py's GroupCog
+        docstring, and long descriptions live in the module docstring because Discord caps class docstrings at 100
+        characters."""
+        own = cog.__dict__.get("__doc__")
+        if not own:
+            own = getattr(sys.modules.get(cog.__module__), "__doc__", None)
+        return inspect.cleandoc(own) if own else ""
 
     def command_line(self, docfile, function, tclass, domain, cachefile=None):
         if function.startswith("_") or function.startswith('cog') or function.startswith('cog') or function.startswith(
@@ -144,9 +154,11 @@ nav_order: {nav}
         self.add_command_to_cache(domain, command_name, docstring)
 
         usage = f"/{domain.lower()} {command_name}" if domain else f"/{command_name}"
+        # Every line is quoted, so a docstring with several paragraphs stays in one block quote.
+        quoted = "\n".join(f"> {line}" if line.strip() else ">" for line in docstring.split("\n"))
         docfile.write(f"### `{command_name}`\n\n"
                       f"**Usage:** `{usage}{param_string}`\n\n"
-                      f"> {docstring}\n\n"
+                      f"{quoted}\n\n"
                       f"---\n\n")
 
     def add_command_to_cache(self, domain, function, docstring):

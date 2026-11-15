@@ -1,5 +1,8 @@
-"""The shop: browsing the server's gear catalog and buying gear for your characters. The rules live in
-classes/gear/Gear.py."""
+"""The server's gear shop. Browse the weapons and armor your characters can buy, look at an item, and buy it
+with a character's currency. Some items need a server level or a role and show as unavailable until you have it;
+event and staff items aren't sold and are only given out by staff.
+"""
+# The rules live in classes/gear/Gear.py.
 import logging
 
 import discord
@@ -9,17 +12,22 @@ from discord.ext import commands
 
 from classes.characters.Access import Access
 from classes.characters.CharacterFlow import CharacterFlow
+from classes.combat import Rules
 from classes.combat.AutoComplete import AutoComplete
-from classes.gear.Gear import ARMOR, Gear, ShopItem, WEAPON
+from classes.combat.Proficiency import Proficiency
+from classes.gear.Gear import ARMOR, CONSUMABLE, Gear, ShopItem, WEAPON
 from classes.gear.GearCard import GearCard
-from database.database import Characters
+from database.database import CharacterGear, Characters
+from database.transactions.CharacterGearTransactions import CharacterGearTransactions
 from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
 from modules.Currency import balance_text, find_own_character
 from modules.Gear import refresh_post, unmet_warning
+from views.combat.Pickers import Option, pick, reply
 
 # What fits in one embed description.
 PAGE_LIMIT = 4000
-KIND_CHOICES = [Choice(name="Weapons", value=WEAPON), Choice(name="Armor", value=ARMOR)]
+KIND_CHOICES = [Choice(name="Weapons", value=WEAPON), Choice(name="Armor", value=ARMOR),
+                Choice(name="Consumables", value=CONSUMABLE)]
 
 
 # ============================================================
@@ -157,6 +165,27 @@ class Shop(commands.GroupCog, name="Shop", group_name="shop") :
 		logging.info(f"{interaction.user.name} bought {entry.name} for character {record.id} for {entry.price_paid}")
 		await interaction.followup.send(text, ephemeral=True)
 		await refresh_post(self.bot, record.id)
+		if entry.kind == WEAPON :
+			await self.ask_proficiency(interaction, entry)
+
+	# ============================================================
+	@staticmethod
+	async def ask_proficiency(interaction: discord.Interaction, entry: CharacterGear) -> None :
+		"""Asks how well the character handles a weapon it just got; without an answer it counts as Awful."""
+		entry_id = entry.id
+
+		async def chosen(pick_interaction: discord.Interaction, values: list[str]) :
+			current = CharacterGearTransactions().get(entry_id)
+			if current is None :
+				return await reply(pick_interaction, "That weapon is gone.")
+			_, message = Proficiency.set_weapon(current, values[0])
+			await pick_interaction.response.edit_message(content=message, view=None)
+
+		options = [Option(f"{tier.capitalize()} ({Rules.proficiency_bonus(tier):+d} to hit)", tier)
+		           for tier in Rules.PROFICIENCY_ORDER]
+		await pick(interaction, f"How well does your character handle the **{entry.name}**? You set this once (a GM "
+		                        f"can change it later); until you do, it counts as Awful (-2). You can also set it "
+		                        f"later with /gear proficiency.", options, "Proficiency", chosen)
 
 
 async def setup(bot) :

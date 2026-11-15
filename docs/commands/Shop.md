@@ -2,7 +2,7 @@
 layout: default
 title: Shop
 parent: Commands
-nav_order: 16
+nav_order: 32
 ---
 
 <h1>Shop</h1>
@@ -19,8 +19,8 @@ event and staff items aren't sold and are only given out by staff.
 **Usage:** `/shop browse <kind>`
 
 > Lists the gear in the shop, optionally only weapons or only armor, with prices and SPECIAL requirements.
-Items you can't buy yet are marked with the reason. Use /shop view for an item's details and /shop buy to
-buy it.
+> Items you can't buy yet are marked with the reason. Use /shop view for an item's details and /shop buy to
+> buy it.
 
 ---
 
@@ -29,7 +29,7 @@ buy it.
 **Usage:** `/shop view <item>`
 
 > Shows an item's details: its price, SPECIAL requirements and effects, and whether each of your approved
-characters meets the requirements. Gear can be used without meeting them, but with a penalty.
+> characters meets the requirements. Gear can be used without meeting them, but with a penalty.
 
 ---
 
@@ -38,8 +38,8 @@ characters meets the requirements. Gear can be used without meeting them, but wi
 **Usage:** `/shop buy <character> <item>`
 
 > Buys an item for one of your approved characters, paid with that character's currency. You can buy gear
-your character doesn't have the SPECIAL for; it still works, but with a penalty. Selling it back later
-returns 30% of the price.
+> your character doesn't have the SPECIAL for; it still works, but with a penalty. Selling it back later
+> returns 30% of the price.
 
 ---
 

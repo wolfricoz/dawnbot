@@ -223,16 +223,11 @@ New servers get this sheet, based on the one the community already uses. Name, o
 | | Past occupations | long | no | |
 | Character history | History | long | no | |
 | Combat | Combat archetype | choice | no | Spellcaster / Melee / Ranged |
-| | Magic school | short | no | only for spellcasters |
-| | Weapon proficiencies | long | no | up to 2 weapons at Good or above, the rest Average or worse; unlisted weapons are Awful (−2) |
 | | Armor proficiency | choice | no | Unarmored / Light / Medium / Heavy |
-| | Shield | choice | no | Yes / No: +2 Defense, −2 attack, plus the limitations from the original sheet |
-| | Magics | long | no | max 6: 2 Weak, 2 Normal, 1 Strong (limited use), 1 Cantrip; spellcasters can't have Abilities unless granted by an event |
-| | Abilities | long | no | max 3; characters with Abilities can't cast spells unless granted by an event |
 
-The original sheet's "Combat notes" (actions per round, attack roll and AC formulas) explain the rules rather than ask anything. They're shown as an info message at the start of the Combat section of the interview, and the review card leaves them out.
+The Combat section starts with an info note, "Combat", that points to `/ability`, the shop and `/gear proficiency`; the review card leaves it out.
 
-The combat fields are plain text for now. The combat round decides how they relate to SPECIAL, gear and dawnbot's combat (see section 10).
+Magic school, Weapon proficiencies, Shield, Magics and Abilities used to be free-text questions here. The combat round removed them: weapons, abilities and magic can only come from the bot's own systems (the gear catalog and the effect catalog). Those labels can't be added back as questions or extra fields, and `/ability import_sheets` turns old answers into blank abilities. See design/combat.md, section 1.
 
 ## 5. Commands
 
@@ -437,7 +432,7 @@ Each phase comes with tests through `tests/run_tests.py` and updated docs from `
 
 ## 10. Still open
 
-- **Two combat systems.** The default sheet's combat section uses its own d20 rules: weapon proficiency tiers (Excellent +2 to Awful −2), archetypes, armor proficiency, spells and abilities. This round uses SPECIAL and a gear catalog. The combat round has to decide how they fit together, for example whether proficiency tiers become data dawnbot understands, and how SPECIAL feeds attack rolls and AC. Until then, the sheet's combat fields are plain text.
+- **Two combat systems.** The default sheet's combat section uses its own d20 rules: weapon proficiency tiers (Excellent +2 to Awful −2), archetypes, armor proficiency, spells and abilities. This round uses SPECIAL and a gear catalog. The combat round has to decide how they fit together, for example whether proficiency tiers become data dawnbot understands, and how SPECIAL feeds attack rolls and AC. Until then, the sheet's combat fields are plain text. (Settled in the combat round: proficiency lives on the character's weapon records, and spells and abilities are built from the effect catalog; the free-text fields are gone.)
 - **A species stat minimum below 1** (down to −2) means a character of that species can have a negative stat. Point-buy and rolling then need to allow values below 1 for that species, and combat's `floor(stat × 0.5)` gives a negative modifier. That seems intended, but confirm it when the combat round starts.
 
 ## 11. Risks

@@ -90,7 +90,7 @@ class TestOwnedGearHelpers(ShopTestCase) :
 		Gear.equip(plate)
 		Gear.set_status(self.own(self.sword), LOST, USER_ID)
 		lines = inventory_lines(self.character, Gear.inventory(self.character.id, include_gone=True))
-		self.assertEqual(lines, ["**Plate** (armor) · worn · misses Strength 8", "**Sword** (weapon)",
+		self.assertEqual(lines, ["**Plate** (armor) · worn · misses Strength 8", "**Sword** (weapon) · No proficiency set",
 		                         "~~Sword~~ (weapon) · lost"])
 		self.assertEqual(len(inventory_lines(self.character, Gear.inventory(self.character.id))), 2)
 

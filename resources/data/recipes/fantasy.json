@@ -1,0 +1,45 @@
+{
+  "name": "fantasy",
+  "title": "Fantasy",
+  "materials": [
+    {"name": "Iron Ingot", "price": 20, "description": "A bar of iron, ready for the forge."},
+    {"name": "Steel Ingot", "price": 60, "description": "Folded, hardened steel."},
+    {"name": "Leather Strip", "price": 10, "description": "Tanned hide, cut into usable strips."},
+    {"name": "Ash Wood", "price": 8, "description": "A straight length of seasoned ash."},
+    {"name": "Linen Cloth", "price": 5, "description": "A bolt of plain linen."},
+    {"name": "Healing Herb", "price": 6, "description": "Bitter leaves that close wounds."},
+    {"name": "Fire Lily", "price": 15, "description": "A red flower that is warm to the touch."},
+    {"name": "Troll Blood", "price": 80, "description": "Thick and green, and it still twitches."},
+    {"name": "Glass Vial", "price": 3, "description": "An empty stoppered vial."},
+    {"name": "Smith's Hammer", "price": 120, "description": "A tool, not a weapon. Needed for smithing; not used up."},
+    {"name": "Alchemy Kit", "price": 150, "description": "Mortar, pestle and a small burner. Needed for brewing; not used up."}
+  ],
+  "recipes": [
+    {"name": "Linen Bandages", "result": "Linen Bandages", "amount": 2, "ingredients": {"Linen Cloth": 1}, "stat": "agility", "dc": 8},
+    {"name": "Healing Draught", "result": "Healing Draught", "ingredients": {"Healing Herb": 2, "Glass Vial": 1}, "tool": "Alchemy Kit", "stat": "intelligence", "dc": 12},
+    {"name": "Burn Salve", "result": "Burn Salve", "ingredients": {"Healing Herb": 1, "Fire Lily": 1, "Glass Vial": 1}, "tool": "Alchemy Kit", "stat": "intelligence", "dc": 12},
+    {"name": "Greater Healing Draught", "result": "Greater Healing Draught", "ingredients": {"Healing Herb": 4, "Fire Lily": 1, "Glass Vial": 1}, "tool": "Alchemy Kit", "stat": "intelligence", "dc": 15},
+    {"name": "Troll-Blood Elixir", "result": "Troll-Blood Elixir", "ingredients": {"Troll Blood": 1, "Healing Herb": 2, "Glass Vial": 1}, "tool": "Alchemy Kit", "stat": "intelligence", "dc": 18},
+    {"name": "Hedge Knife", "result": "Hedge Knife", "ingredients": {"Iron Ingot": 1, "Leather Strip": 1}, "tool": "Smith's Hammer", "stat": "strength", "dc": 10},
+    {"name": "Ash Spear", "result": "Ash Spear", "ingredients": {"Ash Wood": 2, "Iron Ingot": 1}, "tool": "Smith's Hammer", "stat": "strength", "dc": 12},
+    {"name": "Hunting Bow", "result": "Hunting Bow", "ingredients": {"Ash Wood": 3, "Leather Strip": 1}, "stat": "agility", "dc": 13, "days": 2},
+    {"name": "Arming Sword", "result": "Arming Sword", "ingredients": {"Steel Ingot": 2, "Leather Strip": 1}, "tool": "Smith's Hammer", "stat": "strength", "dc": 15, "days": 3},
+    {"name": "Hardened Leather", "result": "Hardened Leather", "ingredients": {"Leather Strip": 6}, "stat": "agility", "dc": 13, "days": 2},
+    {"name": "Chain Hauberk", "result": "Chain Hauberk", "ingredients": {"Iron Ingot": 8, "Leather Strip": 2}, "tool": "Smith's Hammer", "stat": "endurance", "dc": 16, "days": 5}
+  ],
+  "salvage": {
+    "Hedge Knife": {"Iron Ingot": 1},
+    "Ash Spear": {"Ash Wood": 1, "Iron Ingot": 1},
+    "Arming Sword": {"Steel Ingot": 2},
+    "Flanged Mace": {"Iron Ingot": 3},
+    "Bearded War Axe": {"Steel Ingot": 2, "Ash Wood": 1},
+    "Two-Hand Greatblade": {"Steel Ingot": 4},
+    "Padded Jack": {"Linen Cloth": 3},
+    "Hardened Leather": {"Leather Strip": 4},
+    "Studded Brigandine": {"Leather Strip": 4, "Iron Ingot": 2},
+    "Chain Hauberk": {"Iron Ingot": 5},
+    "Scale Coat": {"Iron Ingot": 6, "Leather Strip": 2},
+    "Bastion Half-Plate": {"Steel Ingot": 6},
+    "Warden's Full Plate": {"Steel Ingot": 8}
+  }
+}

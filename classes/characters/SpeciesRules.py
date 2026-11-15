@@ -21,11 +21,14 @@ class SpeciesRules :
 
 	# ============================================================
 	@staticmethod
-	def limits(species: Species | None, rules: StatRules, data: dict | None = None) -> Limits :
+	def limits(species: Species | None, rules: StatRules, data: dict | None = None, legendary: bool = False) -> Limits :
 		"""{stat: (min, max)}; stats the species does not change follow the server. data replaces the species' own
-		stat_limits, for a definition that is not saved yet."""
+		stat_limits, for a definition that is not saved yet. Legendary characters have their maximums doubled."""
 		data = data if data is not None else (species.stat_limits if species is not None else {}) or {}
-		return {stat : tuple(data[stat]) if stat in data else (rules.minimum, rules.maximum) for stat in STATS}
+		limits = {stat : tuple(data[stat]) if stat in data else (rules.minimum, rules.maximum) for stat in STATS}
+		if legendary :
+			limits = {stat : (low, high * 2 if high > 0 else high) for stat, (low, high) in limits.items()}
+		return limits
 
 	# ============================================================
 	@staticmethod

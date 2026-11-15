@@ -1,3 +1,7 @@
+"""Posting as characters. Members post as a character by starting or ending a message with its prefix or
+suffix, or with /character autoproxy. Right-click a post and choose Apps > Edit as character to edit it, react
+with ❌ to delete it, or react with ❓ to find out who wrote it.
+"""
 import logging
 
 import discord
@@ -15,12 +19,17 @@ from database.transactions.ProxyTransactions import ProxyTransactions
 class EditPost(discord.ui.Modal, title="Edit message") :
 	"""The new text of a message posted as a character; its reply line, if any, is kept."""
 
-	def __init__(self, message: discord.Message, webhook: discord.Webhook, first_message_id: int) :
+	def __init__(self, message: discord.Message, webhook: discord.Webhook, first_message_id: int,
+	             language_text: str | None = None, character=None) :
 		super().__init__()
 		self.message = message
 		self.webhook = webhook
 		self.first_message_id = first_message_id
+		# A post in a language is edited as written (with its {Language} markers) and scrambled again.
+		self.character = character if language_text is not None else None
 		self.reply, self.old_text = Compose.strip_reply_line(message.content)
+		if language_text is not None :
+			self.old_text = language_text
 		limit = MESSAGE_LIMIT - (len(self.reply) + 1 if self.reply else 0)
 		self.text = discord.ui.TextInput(label="Message", style=discord.TextStyle.paragraph, default=self.old_text,
 		                                 max_length=limit, required=True)
@@ -28,7 +37,15 @@ class EditPost(discord.ui.Modal, title="Edit message") :
 
 	async def on_submit(self, interaction: discord.Interaction) :
 		new_text = self.text.value
-		content = f"{self.reply}\n{new_text}" if self.reply else new_text
+		posted = new_text
+		if self.character is not None :
+			from classes.language.LanguageFlow import LanguageFlow
+
+			posted, segments, problem = LanguageFlow.prepare(self.character, new_text)
+			if problem :
+				return await interaction.response.send_message(problem, ephemeral=True)
+			LanguageFlow.save(self.first_message_id, self.character, segments or [])
+		content = f"{self.reply}\n{posted}" if self.reply else posted
 		thread = self.message.channel if isinstance(self.message.channel, discord.Thread) else discord.utils.MISSING
 		try :
 			await self.webhook.edit_message(self.message.id, content=content, thread=thread,
@@ -66,7 +83,19 @@ class Proxy(commands.GroupCog, name="Proxy", group_name="proxy") :
 			webhook = None
 		if webhook is None :
 			return await interaction.response.send_message("I can no longer edit that message.", ephemeral=True)
-		await interaction.response.send_modal(EditPost(message, webhook, entry.first_message_id))
+		from classes.language.LanguageFlow import LanguageFlow
+
+		language_text = LanguageFlow.edit_text(message.id, interaction.guild_id)
+		character = None
+		if language_text is not None :
+			if len(ProxyTransactions().get_post(message.id)) > 1 :
+				return await interaction.response.send_message("A long post in a language can't be edited; delete it "
+				                                               "and post it again.", ephemeral=True)
+			character = CharacterTransactions().get_by_id(entry.character_id)
+			if character is None :
+				language_text = None
+		await interaction.response.send_modal(EditPost(message, webhook, entry.first_message_id, language_text,
+		                                               character))
 
 	# ============================================================
 	@app_commands.command(name="recalculate")

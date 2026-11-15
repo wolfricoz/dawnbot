@@ -2,14 +2,14 @@
 layout: default
 title: Experience
 parent: Commands
-nav_order: 8
+nav_order: 15
 ---
 
 <h1>Experience</h1>
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-XP commands. Members earn XP by posting in the XP channels set with /config channel and /config forum.
+XP commands. Members earn XP by posting in the XP channels.
 
 
 ### `recount`
@@ -17,9 +17,9 @@ XP commands. Members earn XP by posting in the XP channels set with /config chan
 **Usage:** `/recount`
 
 > Resets everyone's XP in this server and counts every XP channel again.
-
-**Permissions:**
-- `Developer`
+>
+> **Permissions:**
+> - `Developer`
 
 ---
 
@@ -36,9 +36,9 @@ XP commands. Members earn XP by posting in the XP channels set with /config chan
 **Usage:** `/setxp <member> <xp>`
 
 > Sets a member's XP.
-
-**Permissions:**
-- `Manage Server`
+>
+> **Permissions:**
+> - `Manage Server`
 
 ---
 
@@ -47,9 +47,9 @@ XP commands. Members earn XP by posting in the XP channels set with /config chan
 **Usage:** `/addxp <member> <xp>`
 
 > Adds XP to a member.
-
-**Permissions:**
-- `Manage Server`
+>
+> **Permissions:**
+> - `Manage Server`
 
 ---
 
@@ -58,9 +58,9 @@ XP commands. Members earn XP by posting in the XP channels set with /config chan
 **Usage:** `/removexp <member> <xp>`
 
 > Removes XP from a member.
-
-**Permissions:**
-- `Manage Server`
+>
+> **Permissions:**
+> - `Manage Server`
 
 ---
 

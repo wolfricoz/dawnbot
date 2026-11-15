@@ -196,7 +196,8 @@ class Special :
 		from database.transactions.SpeciesTransactions import SpeciesTransactions
 
 		rules = Special.rules(character.guild_id)
-		maximum = SpeciesRules.limits(SpeciesTransactions().get(character.species_id), rules)[stat][1]
+		maximum = SpeciesRules.limits(SpeciesTransactions().get(character.species_id), rules,
+		                              legendary=bool(getattr(character, "legendary", False)))[stat][1]
 		current = getattr(character, stat)
 		if current + amount > maximum :
 			return None, f"{stat.capitalize()} is {current} and cannot go above {maximum}."

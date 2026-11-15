@@ -6,7 +6,7 @@ from classes.gear.Gear import ARMOR, Gear
 from classes.kernel.ConfigData import ConfigData
 from database.database import CharacterInfo, Characters, SheetFields
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
-from database.transactions.CharacterTransactions import APPROVED, DENIED, PENDING, RETIRED
+from database.transactions.CharacterTransactions import APPROVED, DEAD, DENIED, PENDING, RETIRED
 from database.transactions.OccupationTransactions import OccupationTransactions
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
 from database.transactions.SpeciesTransactions import SpeciesTransactions
@@ -19,9 +19,10 @@ FIELD_LIMIT = 1024
 # Answers longer than this get their own lines instead of sharing a line with their label.
 INLINE_ANSWER = 80
 
-STATE_LABELS = {PENDING : "Waiting for review", APPROVED : "Approved", DENIED : "Denied", RETIRED : "Retired"}
+STATE_LABELS = {PENDING : "Waiting for review", APPROVED : "Approved", DENIED : "Denied", RETIRED : "Retired",
+                DEAD : "Dead"}
 STATE_COLORS = {PENDING : discord.Color.gold(), APPROVED : discord.Color.green(), DENIED : discord.Color.red(),
-                RETIRED : discord.Color.light_grey()}
+                RETIRED : discord.Color.light_grey(), DEAD : discord.Color.darker_grey()}
 
 
 # ============================================================
@@ -70,7 +71,11 @@ class Card :
 	@staticmethod
 	def sheet_text(infos: list[CharacterInfo], fields: list[SheetFields]) -> str :
 		"""The character's answers and extra fields as text, grouped under the sheet's section headings."""
+		from classes.combat.SheetAbilities import reserved
+
 		sections = {field.id : field.section for field in fields}
+		# Spells, abilities and weapons come from the bot's own systems; old free-text answers about them stay hidden.
+		infos = [info for info in infos if not reserved(info.key)]
 		lines, current = [], None
 		has_sections = any(sections.get(info.sheet_field_id) for info in infos)
 		for info in infos :
@@ -113,6 +118,20 @@ class Card :
 
 	# ============================================================
 	@staticmethod
+	def abilities_text(character: Characters) -> str :
+		"""The abilities the character knows, one per line, like `Firebolt (Weak spell)` or `Iron Skin (Normal
+		passive)`."""
+		from database.transactions.AbilityTransactions import AbilityTransactions
+
+		lines = []
+		for link, ability in AbilityTransactions().known(character.id) :
+			note = " · event" if link.event else ("" if ability.state == "approved" else " · blank" if ability.state == "draft" else f" · {ability.state}")
+			kind = "passive" if ability.activation == "passive" else ability.kind
+			lines.append(f"{ability.name} ({ability.tier.capitalize()} {kind}{note})")
+		return "\n".join(lines)[:1024]
+
+	# ============================================================
+	@staticmethod
 	def embeds(character: Characters, avatar_url: str | None = None, show_state: bool = True,
 	           infos: list[CharacterInfo] | None = None) -> list[discord.Embed] :
 		"""The character as one or more embeds; a long sheet continues in further embeds, one per message."""
@@ -122,11 +141,14 @@ class Card :
 		chunks = chunk_text(text, DESCRIPTION_LIMIT)
 		color = STATE_COLORS.get(character.state, discord.Color.blurple())
 
-		first = discord.Embed(title=character.name[:256], description=chunks[0] or None, color=color)
+		legendary = bool(getattr(character, "legendary", False))
+		title = f"🌟 {character.name}" if legendary else character.name
+		first = discord.Embed(title=title[:256], description=chunks[0] or None, color=color)
 		if avatar_url :
 			first.set_thumbnail(url=avatar_url)
 		first.add_field(name="SPECIAL", value=Card.stats_text(character), inline=False)
-		first.add_field(name="Level", value=f"{character.level} ({character.xp} XP)")
+		first.add_field(name="Level", value=f"{character.level} ({character.xp} XP)"
+		                                    + (" · Legendary" if legendary else ""))
 		if character.unspent_points :
 			first.add_field(name="Unspent points", value=str(character.unspent_points))
 		currency_name = ConfigData().get_key(character.guild_id, ConfigMapping.CURRENCY_NAME)
@@ -141,6 +163,9 @@ class Card :
 		gear = Card.gear_text(character)
 		if gear :
 			first.add_field(name="Gear", value=gear, inline=False)
+		abilities = Card.abilities_text(character)
+		if abilities :
+			first.add_field(name="Abilities", value=abilities, inline=False)
 		if show_state :
 			first.set_footer(text=STATE_LABELS.get(character.state, character.state))
 

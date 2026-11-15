@@ -89,6 +89,22 @@ class CharacterInfoTransactions(DatabaseTransactions) :
 			return info
 
 	# ============================================================
+	def rename(self, character_id: int, key: str, new_key: str) -> CharacterInfo | None :
+		"""Renames an extra field; a name another field already has gets a number added (`Magics (old) 2`)."""
+		with self.createsession() as session :
+			info = self._find(session, character_id, key)
+			if info is None :
+				return None
+			taken = {row.key.lower() for row in session.scalars(
+				Select(CharacterInfo).where(CharacterInfo.character_id == character_id)) if row.id != info.id}
+			candidate, number = new_key, 2
+			while candidate.lower() in taken :
+				candidate, number = f"{new_key} {number}", number + 1
+			info.key = candidate
+			self.commit(session)
+			return info
+
+	# ============================================================
 	def remove(self, character_id: int, key: str) -> bool :
 		with self.createsession() as session :
 			info = self._find(session, character_id, key)

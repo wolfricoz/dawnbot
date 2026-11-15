@@ -1,3 +1,6 @@
+"""The roles and occupations characters can hold. Each can have a limit on how many characters hold it, and can
+need a server level, a role, or be given out by staff only.
+"""
 import logging
 
 import discord
