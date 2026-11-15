@@ -4,7 +4,7 @@ at Strong). See classes/combat/Passives.py for what each type does and the amoun
 
 Effects with the scope `choose` take the passive's target option: a damage type, or melee, ranged, magic or physical.
 """
-from classes.combat import Conditions as C
+from classes.combat import Conditions as C, GeneratedEffects
 from classes.combat.Effects import Effect, MAGIC, NORMAL, PHYSICAL, index, make
 from classes.combat.Passives import AC, AURA, BERSERK, BONUS, CHOOSE, COUNTER, CRIT, DAMAGE, DC, DT, HEAL_POWER, HP, \
 	IMMUNE, LAST_STAND, LIFESTEAL, MELEE, ON_STRONG_HIT, RANGED, REGENERATE, RESIST, SAVE, SECOND_WIND, SEQUENCE, \
@@ -117,7 +117,6 @@ PASSIVE_EFFECTS = [
 	immune("true_sight", "True Sight", M, C.BLINDED, "can't be blinded"),
 	immune("unbound_voice", "Unbound Voice", M, C.SILENCED, "can't be silenced"),
 	immune("blessed_soul", "Blessed Soul", M, C.CURSED, "curses slide off"),
-	immune("anchored", "Anchored", M, C.BANISHED, "can't be banished"),
 
 	# == Recovery ==
 	trigger("regeneration_passive", "Regeneration", P, RECOVERY, 2, "wounds close by themselves", REGENERATE),
@@ -164,6 +163,8 @@ PASSIVE_EFFECTS = [
 	     scope=ANY),
 ]
 
+# The hand-written entries above, then the themed and weapon ones from GeneratedEffects.py.
+PASSIVE_EFFECTS = GeneratedEffects.merge(PASSIVE_EFFECTS, GeneratedEffects.passive())
 CATALOG = index(PASSIVE_EFFECTS)
 
 

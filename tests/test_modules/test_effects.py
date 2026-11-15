@@ -18,12 +18,28 @@ from test_modules.test_combat import TYPES, NOW, ability, duel, engine, fighter
 class TestCatalog(unittest.TestCase) :
 
 	def test_there_is_a_lot_to_pick_from(self) :
-		self.assertGreaterEqual(len(EffectCatalog.ACTIVE_EFFECTS), 250)
-		self.assertGreaterEqual(len(PassiveCatalog.PASSIVE_EFFECTS), 80)
+		self.assertGreaterEqual(len(EffectCatalog.ACTIVE_EFFECTS), 2000)
+		self.assertGreaterEqual(len(PassiveCatalog.PASSIVE_EFFECTS), 400)
 		for catalog in (EffectCatalog.ACTIVE_EFFECTS, PassiveCatalog.PASSIVE_EFFECTS) :
 			names = [effect.name.lower() for effect in catalog]
 			self.assertEqual(len(names), len(set(names)))
 			self.assertEqual({effect.realm for effect in catalog}, {Effects.MAGIC, Effects.PHYSICAL})
+		# Generated keys the migration and stored abilities rely on stay put.
+		for key in ("crystal_lance", "blood_leech", "spear_crippling", "bow_volley", "fire_affinity") :
+			self.assertTrue(EffectCatalog.get(key) or PassiveCatalog.get(key), key)
+
+	def test_nothing_god_like(self) :
+		"""Pitched at a 5th-level party: no time stop, banishing, disintegrating, mind control or golems."""
+		for key in ("time_stop", "banishment", "disintegrate", "finger_of_death", "mind_control", "polymorph",
+		            "petrify", "mass_heal", "teleport", "summon_demon", "summon_golem", "death_ward") :
+			self.assertIsNone(EffectCatalog.get(key), key)
+		for effect in EffectCatalog.ACTIVE_EFFECTS :
+			params = effect.params
+			self.assertNotIn(C.BANISHED, (params.get("condition"), params.get("on_hit"), params.get("on_fail")))
+			self.assertNotEqual(params.get("condition"), C.INTANGIBLE, effect.key)
+			self.assertLessEqual(int(params.get("steps") or 0), 1, effect.key)
+			for word in ("Cataclysm", "Golem", "Demon", "Cosmic") :
+				self.assertNotIn(word, effect.name)
 
 	def test_every_entry_fits_discord_and_describes_itself(self) :
 		for effect in EffectCatalog.ACTIVE_EFFECTS :
@@ -150,13 +166,13 @@ class TestEffectsInFights(unittest.TestCase) :
 		run.attack(ayla, 2, "unarmed")
 
 	def test_doom_companion_haste_and_drain(self) :
-		fight, run, ayla, bandit = self.setup(["doom"], "spell", "normal", 2, 6, 6, 6, 6, 6, 6)
+		fight, run, ayla, bandit = self.setup(["doom"], "spell", "normal", 2, 6, 6, 6)
 		run.use_ability(ayla, 1, [2])
-		self.assertEqual(C.get(bandit.conditions, C.DOOMED)["amount"], 36)
+		self.assertEqual(C.get(bandit.conditions, C.DOOMED)["amount"], 18)
 		bandit.conditions[-1]["turns"] = 1
 		bandit.acted = False
 		run.end_turn(bandit)
-		self.assertEqual(bandit.hp, 0)
+		self.assertEqual(bandit.hp, 30 - 18)
 		fight, run, ayla, bandit = self.setup(["raise_dead"], "spell", "normal", damage_type="Slashing")
 		run.use_ability(ayla, 1, [1])
 		self.assertTrue(C.has(ayla.conditions, C.COMPANION))
@@ -208,7 +224,7 @@ class TestEffectsInFights(unittest.TestCase) :
 		self.assertEqual(run.ability_targets(ayla, ayla.abilities[0]), [ayla])
 		run.use_ability(ayla, 1, [])
 		self.assertTrue(C.has(ayla.conditions, C.EMPOWERED))
-		fight, run, ayla, bandit = self.setup(["teleport"], "spell", "normal")
+		fight, run, ayla, bandit = self.setup(["retreat"], "ability", "normal")
 		run.use_ability(ayla, 1, [])
 		self.assertEqual(ayla.state, FLED)
 

@@ -16,7 +16,7 @@ An active effect has a mechanic, which is what the engine does with it, and para
   `on_fail` adds a condition to a failed save.
 - afflict: the target saves against the DC or gets `condition` for the tier's turns (+`turns`). `amount` overrides the
   tier's number for conditions that carry one (vulnerable, drained).
-- doom: the target saves or is doomed; when the doom runs out it takes the dice twice over.
+- doom: the target saves or is doomed; when the doom runs out it takes the dice.
 - dispel: removes `count` helpful conditions from the target (no save).
 - heal: heals the dice + modifier; also reaches downed allies. `cleanse` removes a harmful condition, `self_cost`
   makes the user pay half of it in HP.
@@ -393,7 +393,7 @@ def describe(effect: Effect, tier: str, stat: str, effects: list[Effect], damage
 		amount = tier_amount(tier, name, params.get("amount"))
 		text = f"{save} save or {C.label(name)}{f' {amount}' if amount else ''} for {length} turn{plural}"
 	elif mechanic == DOOM :
-		text = f"END save or doomed: {roll} twice over when it runs out in {length} turn{plural}"
+		text = f"END save or doomed: takes {dice(tier, effect, effects)} when it runs out in {length} turn{plural}"
 	elif mechanic == DISPEL :
 		count = int(params.get("count") or 1)
 		text = f"removes {count} helpful condition{'s' if count != 1 else ''}"

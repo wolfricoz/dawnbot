@@ -370,11 +370,10 @@ class Resolver :
 			self.say(f"→ {effect['name']}: {target.name} resists ({text}).")
 			return False
 		dice = self.effect_dice(ability, effect)
-		first, _ = Rules.roll_dice(dice, rng=self.rng)
-		second, _ = Rules.roll_dice(dice, rng=self.rng)
+		amount, _ = Rules.roll_dice(dice, rng=self.rng)
 		turns = self.effect_turns(ability, effect)
-		if self.inflict(target, C.DOOMED, turns, first + second, actor.id) :
-			self.say(f"→ {effect['name']}: {target.name} fails ({text}) and is doomed: {first + second} damage in "
+		if self.inflict(target, C.DOOMED, turns, amount, actor.id) :
+			self.say(f"→ {effect['name']}: {target.name} fails ({text}) and is doomed: {amount} damage in "
 			         f"{turns} turn{'s' if turns != 1 else ''}.")
 		return True
 

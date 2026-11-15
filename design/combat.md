@@ -176,18 +176,26 @@ hold 25 options; the armory's item options only offer the conditions from before
 | Normal | 2 | 3d6 | 2 | +2 | 2 | up to 4 |
 | Strong | 1 | 4d8 | 3 | +3 | 3 | up to 5 |
 
-The catalog (`classes/combat/EffectCatalog.py`) holds about 300 active effects in 26 categories (fire, water, storm,
-earth, air, light, shadow, death, nature, mind, force, space and time, life, wards, curses, summoning, body, martial,
-ranged, tactics, stealth, grit, alchemy, plus modifiers and drawbacks), each magic or physical, drawn from the Superpower
-Wiki's categories, lists of spells and D&D. Many share a mechanic and differ in damage type, rider and cost, so players
-find the power they mean by name. Some need a minimum tier (stuns at Weak, banishing and time stop at Strong).
+The catalog holds 2,005 active effects (1,188 magic, 817 physical) in 34 categories, each magic or physical, drawn
+from the Superpower Wiki's categories, lists of spells and D&D. About 280 are written by hand
+(`classes/combat/EffectCatalog.py`: the well-known powers and spells by name); the rest come from
+`classes/combat/GeneratedEffects.py`, which crosses 49 magic themes (fire, crystal, blood, dreams, cards, runes...) and
+38 weapons and natural weapons (sword, whip, crossbow, claws, tail...) with technique templates (bolt, lance, nova,
+hex, ward, summon; crippling, disarming, flurry, parry...). Many share a mechanic and differ in damage type, rider and
+cost, so players find the power they mean by name. Some need a minimum tier (stuns at Weak, mass effects at Normal).
+Generated keys (`<theme>_<template>`) are stored on abilities, so they must not be renamed.
+
+Everything is pitched at a party of about 5th level in D&D terms (Rico's call): spells up to roughly 3rd level and the
+tricks of a seasoned fighter, ranger or rogue. Nothing stops time, banishes, disintegrates, polymorphs, takes over a
+mind, makes the user intangible or summons golems and demons; summons are small helpers (sprites, hounds, wisps). The
+banished and intangible conditions stay for GMs to apply by hand.
 
 | Mechanic | What it does |
 |---|---|
 | attack | `d20 + stat modifier` against AC; a hit deals dice + modifier − DT. Options: fixed damage type, extra hits (one dice step lower each), ignores DT, drain (heals the user half), a condition on a hit, execute (+1 die at half HP or less), accuracy, wider crits. |
 | blast | The target saves (`d20 + stat`) against `10 + modifier + DC bonus`; a failed save takes the dice, a passed one half. Can add a condition on a failed save. |
 | afflict | Save or the condition for the tier's turns. A save failed by 5 or more also triggers the ability's damage type. |
-| doom | Save or doomed: the dice twice over when it runs out. |
+| doom | Save or doomed: takes the dice when it runs out. |
 | dispel / cleanse | Removes helpful conditions from an enemy / harmful ones from an ally. |
 | heal / shield / revive | Dice + modifier as HP, as a shield, or to bring a downed ally back. Heals reach downed allies. |
 | boost | A helpful condition for the tier's turns. Boosts that only work on the user cost 1 less. |
@@ -201,8 +209,9 @@ need no target. Spells count as magic for passives and wards; physical abilities
 
 ### Passive abilities
 
-Always on, never used on a turn. Tier Weak (1 effect), Normal (2) or Strong (3); built from about 80 passive effects
-(`classes/combat/PassiveCatalog.py`), each magic or physical. An ability passive takes 2 ability slots and physical
+Always on, never used on a turn. Tier Weak (1 effect), Normal (2) or Strong (3); built from 443 passive effects
+(`classes/combat/PassiveCatalog.py` by hand, plus each theme's affinity, attunement, resistance, absorption, immunity
+and infusion and each weapon's mastery and training), each magic or physical. An ability passive takes 2 ability slots and physical
 effects; a spell passive takes one spell slot of its tier and magic effects (and needs a school). Every passive lowers
 the character's AP each turn by the cost of its effects (+1 per effect at Strong), and can't leave it under 3 AP.
 
@@ -277,8 +286,8 @@ below 15%), support (revives and heals allies first). Player autopilot: weakest,
 
 - `classes/combat/Rules.py`: modifiers, derived stats, weapon and armor values, attack and damage rolls.
 - `classes/combat/Conditions.py`, `DamageTypes.py`, `Abilities.py`: conditions, damage types, ability rules.
-- `classes/combat/Effects.py`, `EffectCatalog.py`, `PassiveCatalog.py`: effect mechanics, checks and AP costs, and the
-  two catalogs. `classes/combat/Resolver.py`: resolving abilities and their effects in a fight (a mixin of the engine).
+- `classes/combat/Effects.py`, `EffectCatalog.py`, `PassiveCatalog.py`, `GeneratedEffects.py`: effect mechanics,
+  checks and AP costs, the hand-written catalogs and the themed bulk of them. `classes/combat/Resolver.py`: resolving abilities and their effects in a fight (a mixin of the engine).
 - `classes/combat/SheetAbilities.py`: reserved sheet labels and turning old free-text answers into blank abilities.
 - `classes/combat/Loadout.py`: a character or bestiary entry as a combatant.
 - `classes/combat/Passives.py`: passive abilities. `classes/combat/Fortune.py`: bad-roll protection. `classes/combat/Items.py`: consumables. `classes/combat/BestiaryFlow.py`: bestiary values and imports.

@@ -2,13 +2,16 @@
 
 Ideas come from the Superpower Wiki's categories, lists of spells, D&D and other fantasy games. Many entries share a
 mechanic and differ in damage type, condition and cost, so players can find the power they have in mind by its name.
+Everything is pitched at a party of about 5th level in D&D terms (spells up to roughly 3rd level), so nothing stops
+time, banishes, disintegrates or takes over a mind. The entries below are written by hand; GeneratedEffects.py adds
+about 1,700 more by crossing themes (crystal, blood, dreams, cards...) and weapons with technique templates.
 Magic effects are for spells, physical ones for abilities. See classes/combat/Effects.py for what each mechanic does.
 
 Costs, roughly: an attack, blast or heal 2; with a light rider (burning, slowed, marked...) 3; with a heavy one
 (stunned, silenced, disarmed...) 4. Conditions without damage 2 to 4, boosts 2 to 4 (1 less when they only work on
 the user). Modifiers add 1 to 4, drawbacks take 1 off.
 """
-from classes.combat import Conditions as C
+from classes.combat import Conditions as C, GeneratedEffects
 from classes.combat.Effects import AFFLICT, AREA, ATTACK, BACKLASH, BLAST, BLOOD, BOOST, CANTRIP, CLEANSE, COMPANION, \
 	DISPEL, DOOM, DRAWBACK, ESCAPE, EXHAUST, Effect, HEAL, LINGERING, MAGIC, MASS, MODIFIER, NORMAL, ONCE, OVERCHARGE, \
 	PHYSICAL, PRECISE, RECKLESS, REVIVE, SELF, SHIELD, STRONG, WEAK, WEAKEN, index, make
@@ -59,7 +62,7 @@ MODIFIER_CAT = "Modifiers"
 DRAWBACK_CAT = "Drawbacks"
 CATEGORIES = [GENERAL, FIRE_CAT, WATER_CAT, STORM_CAT, EARTH_CAT, AIR_CAT, LIGHT_CAT, SHADOW_CAT, DEATH_CAT,
               NATURE_CAT, MIND_CAT, FORCE_CAT, SPACE_CAT, LIFE_CAT, WARD_CAT, CURSE_CAT, SUMMON_CAT, BODY_CAT,
-              MARTIAL_CAT, ARCHERY_CAT, TACTICS_CAT, STEALTH_CAT, GRIT_CAT, GADGET_CAT, MODIFIER_CAT, DRAWBACK_CAT]
+              MARTIAL_CAT, ARCHERY_CAT, TACTICS_CAT, STEALTH_CAT, GRIT_CAT, GADGET_CAT] + GeneratedEffects.NEW_CATEGORIES              + [MODIFIER_CAT, DRAWBACK_CAT]
 
 
 # ============================================================
@@ -112,7 +115,7 @@ ACTIVE_EFFECTS = [
 	afflict("immolate", "Immolate", M, FIRE_CAT, 2, "wraps the target in clinging flames", C.BURNING),
 	attack("searing_smite", "Searing Smite", M, FIRE_CAT, 3, "white-hot heat that melts through armor", FIRE,
 	       ignore_dt=True),
-	blast("inferno", "Inferno", M, FIRE_CAT, 4, "a roaring firestorm", FIRE, tier=NORMAL, steps=1,
+	blast("inferno", "Wall of Fire", M, FIRE_CAT, 4, "a sheet of roaring flame", FIRE, tier=NORMAL, steps=1,
 	      on_fail=C.BURNING),
 	attack("magma_fist", "Magma Fist", M, FIRE_CAT, 3, "a fist of molten rock", FIRE, steps=1),
 	afflict("heat_metal", "Heat Metal", M, FIRE_CAT, 3, "makes the target's weapon too hot to hold", C.DISARMED,
@@ -160,10 +163,8 @@ ACTIVE_EFFECTS = [
 	# == Earth, stone & metal ==
 	attack("stone_spike", "Stone Spike", M, EARTH_CAT, 2, "a spike of rock bursts from the ground", PIERCING),
 	attack("geokinesis", "Geokinesis", M, EARTH_CAT, 3, "hurls a boulder", BLUNT, steps=1),
-	blast("earthquake", "Earthquake", M, EARTH_CAT, 4, "the ground shakes and splits", BLUNT, tier=NORMAL,
+	blast("earthquake", "Tremor", M, EARTH_CAT, 4, "the ground heaves under the target", BLUNT, tier=NORMAL,
 	      on_fail=C.PRONE),
-	afflict("petrify", "Petrify", M, EARTH_CAT, 4, "turns the target's flesh to stone for a while", C.STUNNED,
-	        tier=NORMAL, turns=1),
 	afflict("entomb", "Entomb", M, EARTH_CAT, 3, "stone closes around the target's legs", C.RESTRAINED),
 	boost("stoneskin", "Stoneskin", M, EARTH_CAT, 2, "skin as hard as rock", C.FORTIFIED),
 	attack("metal_shards", "Metal Shards", M, EARTH_CAT, 3, "a storm of razor-sharp metal", SLASHING,
@@ -177,7 +178,7 @@ ACTIVE_EFFECTS = [
 
 	# == Air & sound ==
 	attack("gust", "Gust", M, AIR_CAT, 3, "a blast of wind that knocks the target over", BLUNT, on_hit=C.PRONE),
-	blast("tornado", "Tornado", M, AIR_CAT, 4, "a whirling column of wind", BLUNT, tier=NORMAL, steps=1),
+	blast("tornado", "Dust Devil", M, AIR_CAT, 4, "a small whirlwind of grit and air", BLUNT, tier=NORMAL, steps=1),
 	afflict("suffocate", "Suffocate", M, AIR_CAT, 3, "pulls the air from the target's lungs", C.SILENCED,
 	        tier=WEAK),
 	attack("wind_blade", "Wind Blade", M, AIR_CAT, 3, "an invisible blade of air", SLASHING, accuracy=2),
@@ -196,7 +197,7 @@ ACTIVE_EFFECTS = [
 	afflict("blinding_light", "Blinding Light", M, LIGHT_CAT, 2, "a flash that blinds", C.BLINDED),
 	attack("smite", "Smite", M, LIGHT_CAT, 3, "divine power through a strike, hardest on the wounded", RADIANT,
 	       execute=True),
-	blast("sunburst", "Sunburst", M, LIGHT_CAT, 4, "a burst of searing sunlight", RADIANT, save="perception",
+	blast("sunburst", "Radiant Flash", M, LIGHT_CAT, 4, "a flash of searing light", RADIANT, save="perception",
 	      tier=NORMAL, on_fail=C.BLINDED),
 	attack("photokinesis", "Photokinesis", M, LIGHT_CAT, 3, "a beam of concentrated light", RADIANT, steps=1),
 	boost("bless", "Bless", M, LIGHT_CAT, 2, "a blessing that steadies the target", C.BLESSED),
@@ -212,12 +213,8 @@ ACTIVE_EFFECTS = [
 	attack("umbrakinesis", "Umbrakinesis", M, SHADOW_CAT, 3, "shadows lash and hold the target", NECROTIC,
 	       on_hit=C.RESTRAINED),
 	afflict("void_touch", "Void Touch", M, SHADOW_CAT, 3, "the void gnaws at the target's will", C.DRAINED),
-	attack("void_rift", "Void Rift", M, SHADOW_CAT, 4, "a tear into nothing that ignores armor", ARCANE,
-	       tier=WEAK, steps=1, ignore_dt=True),
-	afflict("banishment", "Banishment", M, SHADOW_CAT, 5, "sends the target to another plane for a turn",
-	        C.BANISHED, tier=STRONG, turns=-2),
 	afflict("nightmare", "Nightmare", M, SHADOW_CAT, 3, "visions of terror", C.FRIGHTENED),
-	make("eclipse", "Eclipse", M, SHADOW_CAT, DISPEL, 3, "darkness snuffs out the target's magic", WEAK, count=2),
+	make("eclipse", "Snuff Magic", M, SHADOW_CAT, DISPEL, 3, "darkness snuffs out the target's magic", WEAK, count=2),
 
 	# == Death, blood & decay ==
 	attack("life_drain", "Life Drain", M, DEATH_CAT, 3, "steals the target's life force", NECROTIC, drain=True),
@@ -230,8 +227,6 @@ ACTIVE_EFFECTS = [
 	afflict("rapid_aging", "Rapid Aging", M, DEATH_CAT, 3, "ages the target years in a moment", C.WEAKENED,
 	        turns=1),
 	make("death_mark", "Death Mark", M, DEATH_CAT, DOOM, 3, "marks the target for death", NORMAL),
-	attack("finger_of_death", "Finger of Death", M, DEATH_CAT, 4, "a word of death", NECROTIC, tier=STRONG,
-	       steps=1, execute=True),
 	attack("bone_spear", "Bone Spear", M, DEATH_CAT, 2, "a spear of bone torn from the earth", PIERCING),
 	blast("plague", "Plague", M, DEATH_CAT, 3, "a cloud of sickness", POISON, save="endurance",
 	      on_fail=C.POISONED),
@@ -265,14 +260,12 @@ ACTIVE_EFFECTS = [
 	# == Mind & psychic ==
 	attack("mind_spike", "Mind Spike", M, MIND_CAT, 2, "drives a spike of thought into the target", MENTAL,
 	       accuracy=1),
-	blast("psychic_scream", "Psychic Scream", M, MIND_CAT, 3, "a mental shriek", MENTAL, save="intelligence",
+	blast("psychic_scream", "Psychic Shriek", M, MIND_CAT, 3, "a mental shriek", MENTAL, save="intelligence",
 	      on_fail=C.STUNNED, tier=NORMAL),
 	afflict("telepathic_charm", "Charm", M, MIND_CAT, 3, "the target can't bring itself to hurt you", C.CHARMED),
 	afflict("confusion", "Confusion", M, MIND_CAT, 3, "scrambles the target's thoughts", C.CONFUSED),
 	afflict("sleep", "Sleep", M, MIND_CAT, 4, "the target falls into a magical sleep", C.ASLEEP, tier=WEAK),
 	afflict("terror", "Terror", M, MIND_CAT, 3, "fills the target with dread", C.FRIGHTENED),
-	afflict("mind_control", "Mind Control", M, MIND_CAT, 5, "takes over the target's mind", C.CONFUSED, tier=NORMAL,
-	        turns=1),
 	afflict("hold_person", "Hold Person", M, MIND_CAT, 4, "paralyses the target", C.STUNNED, tier=WEAK),
 	afflict("illusion", "Illusion", M, MIND_CAT, 3, "phantom attackers confuse the target", C.CONFUSED),
 	afflict("mind_blank", "Mind Fog", M, MIND_CAT, 3, "clouds the target's mind so spells won't come",
@@ -294,8 +287,6 @@ ACTIVE_EFFECTS = [
 	afflict("telekinetic_hold", "Telekinetic Hold", M, FORCE_CAT, 3, "holds the target in the air", C.RESTRAINED),
 	attack("crushing_grip", "Crushing Grip", M, FORCE_CAT, 4, "an invisible hand squeezes the target", BLUNT,
 	       tier=WEAK, on_hit=C.STUNNED),
-	attack("disintegrate", "Disintegrate", M, FORCE_CAT, 4, "a ray that unmakes matter", ARCANE, tier=STRONG,
-	       steps=2),
 	attack("arcane_blast", "Arcane Blast", M, FORCE_CAT, 2, "a blast of arcane power", ARCANE),
 	attack("arcane_mark", "Hunter's Sigil", M, FORCE_CAT, 3, "brands the target so others find their mark", ARCANE,
 	       on_hit=C.MARKED),
@@ -303,31 +294,17 @@ ACTIVE_EFFECTS = [
 	# == Space, time & gravity ==
 	boost("haste", "Haste", M, SPACE_CAT, 3, "speeds the target up", C.HASTED),
 	afflict("slow", "Slow", M, SPACE_CAT, 2, "slows the target down", C.SLOWED),
-	afflict("time_stop", "Time Stop", M, SPACE_CAT, 5, "freezes the target in time", C.STUNNED, tier=STRONG,
-	        turns=-1),
 	boost("blink", "Blink", M, SPACE_CAT, 3, "the target flickers out of the way", C.EVASIVE),
-	make("teleport", "Teleport", M, SPACE_CAT, ESCAPE, 3, "teleports you out of the fight", NORMAL),
 	afflict("gravity_well", "Gravity Well", M, SPACE_CAT, 3, "crushing gravity pins the target", C.RESTRAINED),
-	blast("gravity_crush", "Gravity Crush", M, SPACE_CAT, 4, "gravity flattens everything", BLUNT,
-	      save="strength", tier=NORMAL, on_fail=C.PRONE),
-	afflict("temporal_drain", "Temporal Drain", M, SPACE_CAT, 3, "steals moments from the target", C.DRAINED),
-	boost("phase_shift", "Phase Shift", M, SPACE_CAT, 4, "the target slips half out of this world", C.INTANGIBLE,
-	      tier=WEAK),
-	attack("spatial_rend", "Spatial Rend", M, SPACE_CAT, 4, "tears space apart around the target", SLASHING,
-	       tier=WEAK, ignore_dt=True, steps=1),
-	make("rewind", "Rewind", M, SPACE_CAT, HEAL, 3, "turns back time on the target's wounds", WEAK, steps=1),
 
 	# == Life & healing ==
 	make("healing_word", "Healing Word", M, LIFE_CAT, HEAL, 2, "a word of power that heals"),
 	make("cure_wounds", "Cure Wounds", M, LIFE_CAT, HEAL, 3, "a touch that heals more", WEAK, steps=1),
 	make("purify", "Purify", M, LIFE_CAT, CLEANSE, 2, "cleans away poisons, curses and ailments", count=2),
-	make("greater_restoration", "Greater Restoration", M, LIFE_CAT, CLEANSE, 3, "removes every ailment", NORMAL),
 	make("revivify", "Revivify", M, LIFE_CAT, REVIVE, 3, "brings a fallen ally back", WEAK),
 	boost("regeneration", "Regeneration", M, LIFE_CAT, 2, "the target's wounds keep closing", C.REGENERATING),
 	make("life_transfer", "Life Transfer", M, LIFE_CAT, HEAL, 2, "gives your own life to heal another",
 	     steps=1, self_cost=True),
-	make("mass_heal", "Mass Heal", M, LIFE_CAT, HEAL, 4, "a wave of healing", NORMAL, steps=1, cleanse=True),
-	boost("death_ward", "Death Ward", M, LIFE_CAT, 4, "death passes the target by once", C.UNDYING, tier=WEAK),
 	make("lay_on_hands", "Lay on Hands", P, LIFE_CAT, HEAL, 3, "a healer's practised hands", WEAK, steps=1),
 	make("smelling_salts", "Smelling Salts", P, LIFE_CAT, REVIVE, 3, "shocks a downed ally awake", WEAK),
 	make("antidote", "Treat Ailment", P, LIFE_CAT, CLEANSE, 2, "cleans wounds and treats poison", count=1),
@@ -341,7 +318,6 @@ ACTIVE_EFFECTS = [
 	boost("sanctuary", "Sanctuary", M, WARD_CAT, 3, "enemies' blows slide off the target", C.EVASIVE),
 	boost("protection", "Protection", M, WARD_CAT, 2, "a protective aura", C.FORTIFIED),
 	make("counterspell", "Counterspell", M, WARD_CAT, DISPEL, 2, "unravels the target's magic", count=1),
-	boost("aegis", "Aegis", M, WARD_CAT, 4, "an unbreakable ward against weapons", C.INTANGIBLE, tier=NORMAL),
 	make("bulwark", "Bulwark", P, WARD_CAT, SHIELD, 3, "braces a wall of shields", WEAK, steps=1),
 	boost("shield_wall", "Shield Wall", P, WARD_CAT, 2, "locks shields with the target", C.FORTIFIED),
 	boost("cover", "Take Cover", P, WARD_CAT, 3, "drags the target behind cover", C.HIDDEN),
@@ -358,17 +334,13 @@ ACTIVE_EFFECTS = [
 	afflict("misfortune", "Misfortune", M, CURSE_CAT, 3, "everything goes wrong for the target", C.CURSED,
 	        tier=NORMAL, turns=-1),
 	afflict("corrode", "Corrode", M, CURSE_CAT, 2, "armor rusts and rots", C.CORRODED),
-	make("unravel", "Unravel", M, CURSE_CAT, DISPEL, 3, "unpicks every protection", NORMAL, count=3),
+	make("unravel", "Unravel", M, CURSE_CAT, DISPEL, 3, "unpicks its protections", NORMAL, count=2),
 
 	# == Summoning & creation ==
-	make("summon_elemental", "Summon Elemental", M, SUMMON_CAT, COMPANION, 3, "calls a fire, water, earth or air "
-	     "elemental", WEAK),
-	make("summon_golem", "Golem", M, SUMMON_CAT, COMPANION, 4, "builds a golem of clay or stone", NORMAL, type=BLUNT,
-	     steps=1),
+	make("summon_elemental", "Minor Elemental", M, SUMMON_CAT, COMPANION, 3, "calls a small fire, water, earth or "
+	     "air spirit", WEAK),
 	make("spiritual_weapon", "Spiritual Weapon", M, SUMMON_CAT, COMPANION, 3, "a floating weapon of force", WEAK,
 	     type=ARCANE),
-	make("summon_demon", "Summon Demon", M, SUMMON_CAT, COMPANION, 4, "binds a demon to fight for you", NORMAL,
-	     type=FIRE, steps=1),
 	make("summon_spirit", "Summon Spirit", M, SUMMON_CAT, COMPANION, 3, "calls a restless spirit", WEAK,
 	     type=NECROTIC),
 	boost("mirror_image", "Mirror Image", M, SUMMON_CAT, 3, "illusory copies take the next blow", C.EVASIVE),
@@ -394,11 +366,7 @@ ACTIVE_EFFECTS = [
 	boost("shapeshift", "Beast Form", M, BODY_CAT, 2, "takes on a beast's might", C.EMPOWERED, aim=SELF),
 	boost("enlarge", "Enlarge", M, BODY_CAT, 2, "the target grows to giant size", C.EMPOWERED),
 	afflict("reduce", "Shrink", M, BODY_CAT, 3, "shrinks the target to half its size", C.WEAKENED, turns=1),
-	afflict("polymorph", "Polymorph", M, BODY_CAT, 5, "turns the target into a harmless animal", C.DISARMED,
-	        tier=NORMAL, turns=1),
 	boost("vampire_form", "Vampire Form", M, BODY_CAT, 3, "every wound you deal feeds you", C.VAMPIRIC, aim=SELF),
-	boost("intangibility", "Intangibility", P, BODY_CAT, 3, "your body turns to mist", C.INTANGIBLE, aim=SELF,
-	      tier=WEAK),
 	boost("spikes", "Spiked Hide", P, BODY_CAT, 2, "spines that hurt anyone who hits you", C.THORNS, aim=SELF),
 	attack("drain_bite", "Leech", P, BODY_CAT, 3, "latches on and drinks", PIERCING, drain=True),
 
@@ -544,6 +512,8 @@ ACTIVE_EFFECTS = [
 	make("backfire", "Backfire", P, DRAWBACK_CAT, DRAWBACK, -1, "hurts you when it fails", kind=BACKLASH),
 ]
 
+# The hand-written entries above, then the themed ones from GeneratedEffects.py (hand-written ones win on a clash).
+ACTIVE_EFFECTS = GeneratedEffects.merge(ACTIVE_EFFECTS, GeneratedEffects.active())
 CATALOG = index(ACTIVE_EFFECTS)
 
 
