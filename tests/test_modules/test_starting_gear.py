@@ -26,12 +26,10 @@ def step() :
 	return DraftTransactions().get(USER_ID).step
 
 
+# The catalog as a member without roles sees it: 1 Sword, 2 Lance (level 2), 3 Bow, 4 Crown (staff), 5 Leather, 6 Plate.
+# The Relic is an event item and is not shown.
 class StartingGearTestCase(DatabaseTestCase) :
-	"""A server without sheet questions, with point-buy only and 1500 currency to start with.
-
-	The catalog as a member without roles sees it: 1 Sword, 2 Lance (level 2), 3 Bow, 4 Crown (staff), 5 Leather,
-	6 Plate. The Relic is an event item and is not shown.
-	"""
+	"""A server without sheet questions, with point-buy only and 1500 currency to start with."""
 
 	def setUp(self) :
 		super().setUp()

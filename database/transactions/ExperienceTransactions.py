@@ -5,9 +5,9 @@ from database.transactions.DatabaseTransactions import DatabaseTransactions
 from database.transactions.UserTransactions import UserTransactions
 
 
+# Every write registers the user first, so members who joined after start-up are never silently skipped.
 class ExperienceTransactions(DatabaseTransactions) :
-	"""XP and message counts, per user per guild. Every write registers the user first, so members who
-	joined after start-up are never silently skipped."""
+	"""XP and message counts, per user per guild."""
 
 	# ============================================================
 	def get(self, uid: int, guild_id: int) -> Experience :

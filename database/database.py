@@ -136,8 +136,9 @@ class Levels(Timestamps, Base) :
 	xp_required: Mapped[int] = mapped_column(BigInteger)
 
 
+# Channel lists live in config.
 class Channels(Timestamps, Base) :
-	"""Unused; kept so the live table is not dropped by a future autogenerate. Channel lists live in config."""
+	"""Unused; kept so a future autogenerate does not drop the live table."""
 	__tablename__ = "channels"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	guildid: Mapped[int] = mapped_column(BigInteger)
@@ -148,11 +149,9 @@ class Channels(Timestamps, Base) :
 # Characters and combat
 # ============================================================
 
+# Discord's attachment links expire, so the message is what is stored; url and expires_at only cache the last link.
 class StoredImages(Base) :
-	"""An image kept as a message in the storage channel (STORAGE_CHANNEL), such as a character's avatar.
-
-	Discord's attachment links expire, so the message is what is stored; url and expires_at only cache the last link.
-	"""
+	"""An image kept as a message in the storage channel (STORAGE_CHANNEL), such as an avatar."""
 	__tablename__ = "stored_images"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	storage_channel_id: Mapped[int] = mapped_column(BigInteger)
@@ -162,14 +161,12 @@ class StoredImages(Base) :
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+# stat_limits holds {stat: [min, max]} for the stats it changes; stats it leaves out follow the server's limits.
+# stat_modifiers holds {stat: change to the starting value}. tag_ids are the tags on its post in the species forum, kept
+# in step by the ProxyListener, and decide who may pick it (see tag_requirements). Edits to an approved species wait in
+# pending_changes until staff approve them.
 class Species(Timestamps, Base) :
-	"""A species characters can be, made by a player and reviewed by staff, or the default Human.
-
-	stat_limits holds {stat: [min, max]} for the stats it changes; stats it leaves out follow the server's limits.
-	stat_modifiers holds {stat: change to the starting value}. tag_ids are the tags on its post in the species forum,
-	kept in step by the ProxyListener, and decide who may pick it (see tag_requirements). Edits to an approved
-	species wait in pending_changes until staff approve them.
-	"""
+	"""A species characters can be: made by a player and reviewed by staff, or the default Human."""
 	__tablename__ = "species"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
@@ -192,13 +189,10 @@ class Species(Timestamps, Base) :
 	)
 
 
+# max_holders is how many characters can hold it at once (empty means no limit). min_level is a server level (the number
+# of level roles a member has reached), role_id a role the member needs; staff_only ones are only given out by staff.
 class Occupations(Base) :
-	"""A role or occupation characters can hold, set by staff.
-
-	max_holders is how many characters can hold it at once (empty means no limit). min_level is a server level (the
-	number of level roles a member has reached), role_id a role the member needs; staff_only ones are only given out
-	by staff.
-	"""
+	"""A role or occupation characters can hold, set by staff."""
 	__tablename__ = "occupations"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
@@ -215,12 +209,10 @@ class Occupations(Base) :
 	)
 
 
+# kind is role (value: role id), level (value: server level), staff_only (only staff may give it out) or event (hidden;
+# only given out by staff).
 class TagRequirements(Base) :
-	"""What a tag on a forum post asks of a member before they may pick what the post is about.
-
-	kind is role (value: role id), level (value: server level), staff_only (only staff may give it out) or event
-	(hidden; only given out by staff).
-	"""
+	"""What a tag on a forum post asks of a member before they may pick what the post is about."""
 	__tablename__ = "tag_requirements"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
@@ -234,12 +226,10 @@ class TagRequirements(Base) :
 	)
 
 
+# state is the review state (pending, approved, denied, retired); the status column from Timestamps is unrelated.
+# Changes to an approved character that need a new review wait in pending_changes until staff approve them.
 class Characters(Timestamps, Base) :
-	"""A player's character on one server.
-
-	state is the review state (pending, approved, denied, retired); the status column from Timestamps is unrelated.
-	Changes to an approved character that need a new review wait in pending_changes until staff approve them.
-	"""
+	"""A player's character on one server."""
 	__tablename__ = "characters"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
@@ -292,11 +282,9 @@ class Characters(Timestamps, Base) :
 	)
 
 
+# type is short, long, number, choice or info. An info field asks nothing: its help text is shown as a note.
 class SheetFields(Timestamps, Base) :
-	"""One question on a server's character sheet, asked in the order of position.
-
-	type is short, long, number, choice or info. An info field asks nothing: its help text is shown as a note.
-	"""
+	"""One question on a server's character sheet, asked in the order of position."""
 	__tablename__ = "sheet_fields"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
@@ -312,11 +300,9 @@ class SheetFields(Timestamps, Base) :
 	choices: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
 
+# sheet_field_id links an answer to the server's sheet question; it is empty for fields the player added.
 class CharacterInfo(Timestamps, Base) :
-	"""A field on a character sheet, shown in the order of position.
-
-	sheet_field_id links an answer to the server's sheet question; it is empty for fields the player added.
-	"""
+	"""A field on a character sheet, shown in the order of position."""
 	__tablename__ = "character_info"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
@@ -331,13 +317,11 @@ class CharacterInfo(Timestamps, Base) :
 	)
 
 
+# length, counted, xp_awarded and currency_awarded are only set on a post's first message. counted means the post was
+# made in a roleplay channel, so it earns XP; recalculating XP uses the length of every counted post that was not
+# deleted.
 class ProxyMessages(Base) :
-	"""A message the bot posted as a character. A long post takes several messages; they share first_message_id.
-
-	length, counted, xp_awarded and currency_awarded are only set on a post's first message. counted means the post
-	was made in a roleplay channel, so it earns XP; recalculating XP uses the length of every counted post that was
-	not deleted.
-	"""
+	"""A message the bot posted as a character. A long post's messages share first_message_id."""
 	__tablename__ = "proxy_messages"
 	message_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
 	first_message_id: Mapped[int] = mapped_column(BigInteger, index=True)
@@ -369,14 +353,12 @@ class Autoproxy(Base) :
 	)
 
 
+# requirements holds {stat: lowest value} a character needs to use it well. effect_met and effect_unmet describe what
+# happens when a character does or does not meet them, effect what the item always does. combat holds the numbers combat
+# will use (weapons: dice, modifier, hitmodifier; armor: hp, ap, ac, hitchance). tag_ids are the tags on its post in the
+# gear forum, kept in step from thread updates; they decide who may buy it.
 class GearItems(Timestamps, Base) :
-	"""A weapon or armor set in a server's catalog.
-
-	requirements holds {stat: lowest value} a character needs to use it well. effect_met and effect_unmet describe
-	what happens when a character does or does not meet them, effect what the item always does. combat holds the
-	numbers combat will use (weapons: dice, modifier, hitmodifier; armor: hp, ap, ac, hitchance). tag_ids are the
-	tags on its post in the gear forum, kept in step from thread updates; they decide who may buy it.
-	"""
+	"""A weapon or armor set in a server's catalog."""
 	__tablename__ = "gear_items"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
@@ -401,11 +383,9 @@ class GearItems(Timestamps, Base) :
 	)
 
 
+# name and kind are copied from the catalog, so the item keeps its name if the catalog entry is removed.
 class CharacterGear(Base) :
-	"""A piece of gear a character owns, or owned: lost, broken and sold items stay as history.
-
-	name and kind are copied from the catalog, so the item keeps its name if the catalog entry is removed.
-	"""
+	"""A piece of gear a character owns, or owned: lost, broken and sold items stay as history."""
 	__tablename__ = "character_gear"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
@@ -584,12 +564,10 @@ class Templates(Timestamps, Base) :
 	)
 
 
+# The category is also written at the start of the channel's name, so the origin stays visible (and restorable) even
+# without this row.
 class ArchivedChannels(Base) :
-	"""Where an archived channel came from, so /archive restore can put it back exactly.
-
-	The category is also written at the start of the channel's name, so the origin stays visible (and restorable)
-	even without this row.
-	"""
+	"""Where an archived channel came from, so /archive restore can put it back exactly."""
 	__tablename__ = "archived_channels"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)

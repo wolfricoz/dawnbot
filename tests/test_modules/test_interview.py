@@ -25,7 +25,7 @@ def add_image() -> int :
 
 
 class InterviewTestCase(DatabaseTestCase) :
-	"""A server with a small sheet: a required number, an optional choice with a note above it, and a long text."""
+	"""A server with a small sheet: a required number, an optional choice under a note, a long text."""
 
 	def setUp(self) :
 		super().setUp()

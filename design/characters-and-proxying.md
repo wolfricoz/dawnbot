@@ -255,6 +255,8 @@ The combat fields are plain text for now. The combat round decides how they rela
 
 `field add | edit | remove | move | list`, `preview`, `reset` (back to the default sheet).
 
+`template` (anyone): the server's sheet as blank text to copy, fill in elsewhere and paste into the interview.
+
 ### Species (`/species`)
 
 `create` (DM interview), `edit`, `list`, `view`. Approve and deny happen through the review buttons.
@@ -298,6 +300,19 @@ The combat fields are plain text for now. The combat round decides how they rela
    - starting gear (a shop with `STARTING_CURRENCY`; free picks in free mode)
 3. `back`, `skip` (optional fields only) and `cancel` work at every step. Every answer is saved as it comes in, so a restart loses nothing.
 4. A summary lets the player fix any answer, then submit.
+
+**Pasting a sheet** (`classes/characters/SheetPaste.py`). At any step of a create, edit or import, the player can paste a whole sheet written elsewhere (a character site, a document, an old post) in one message. Typing `template` in the DM sends the server's blank sheet to fill in, the same as `/sheet template`.
+- The paste is read as `Label: value` lines, `Label - value` (only for labels the server asks), and headings on their own line with paragraphs under them. Required marks (`*`), hints in brackets, bullets and markdown are ignored.
+- Labels match the sheet's questions by name, by a part of a name (`Goals` for `Goals / ambitions`), by the words of a name (`Gender` for `Gender representation`) or by a synonym (`Backstory` for `History`). `Name`, `Proxy` (or `Prefix` and `Suffix`), `Species`/`Race` and `Occupation` fill the interview's own steps. An image sent with the paste becomes the picture.
+- A message counts as a sheet when it answers at least 2 questions (3 while answering a long question, where a label or two can come up in passing).
+- Every answer goes through the same checks as a typed one, with some allowances: `24 years old` for a number, `Melee fighter` for the option Melee. Refused answers are listed and asked again.
+- Labels the sheet doesn't ask become extra fields on a new character. An edit lists them and points to `/character add_info`.
+- After a paste, the interview asks only the required questions that are still missing, then stats, gear and the summary. Optional questions that were left out can be answered from the summary.
+
+**SPECIAL picker** (`classes/characters/StatPanel.py`, `views/multiselect/StatPicker.py`). When the interview reaches the stats step, a components v2 message follows the question, with one menu per stat. Typing seven numbers still works.
+- Point-buy: each menu lists only the values the points left can pay for, with the cost of each option, and the heading shows the points left. Unspent points are kept, as with typing.
+- Rolling: each menu lists the rolled values not placed on another stat yet (equal values share one option). Confirm unlocks once every value is placed, and Reroll rolls again and counts the reroll.
+- Picks are kept in the draft (`stat_work`, `stat_assign`), and the menus are dynamic items found by who pressed them, so the picker survives a restart. Confirm feeds the values to the interview as if they were typed. A picker whose draft has moved past the stats step closes when it's pressed.
 5. Submitting creates the character as `pending` and posts the review card.
 
 ### 6.2 Review

@@ -31,7 +31,7 @@ STAT_STEPS = ("maximums", "minimums", "modifiers")
 
 @dataclass
 class Definition :
-	"""A species as the player described it: its texts and its seven maximums, minimums and starting changes."""
+	"""A species as the player described it: its texts and its seven maximums, minimums and changes."""
 	name: str
 	description: str
 	benefits: str

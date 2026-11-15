@@ -8,8 +8,9 @@ from database.transactions.ExperienceTransactions import ExperienceTransactions
 from database.transactions.LevelTransactions import LevelTransactions
 
 
+# The XP channels are set with /config channel and /config forum.
 class Experience(commands.Cog) :
-	"""XP commands. Members earn XP by posting in the XP channels set with /config channel and /config forum."""
+	"""XP commands. Members earn XP by posting in the XP channels."""
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
