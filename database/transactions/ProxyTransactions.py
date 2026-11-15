@@ -23,6 +23,17 @@ class ProxyTransactions(DatabaseTransactions) :
 			self.commit(session)
 
 	# ============================================================
+	def recent_characters(self, channel_id: int, since) -> list[int] :
+		"""The characters that posted in a channel or thread (not deleted) since the given time, most recent first."""
+		with self.createsession() as session :
+			rows = session.execute(Select(ProxyMessages.character_id, func.max(ProxyMessages.created_at))
+			                       .where(ProxyMessages.channel_id == channel_id, ProxyMessages.created_at >= since,
+			                              ProxyMessages.deleted.is_(False), ProxyMessages.character_id.is_not(None))
+			                       .group_by(ProxyMessages.character_id)
+			                       .order_by(func.max(ProxyMessages.created_at).desc())).all()
+			return [row[0] for row in rows]
+
+	# ============================================================
 	def get(self, message_id: int) -> ProxyMessages | None :
 		with self.createsession() as session :
 			return session.scalar(Select(ProxyMessages).where(ProxyMessages.message_id == message_id))

@@ -214,20 +214,25 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(option=[Choice(name=x.lower(), value=x.value) for x in
 	                              [ConfigMapping.CHARACTER, ConfigMapping.CHARACTER_REVIEW, ConfigMapping.SPECIES_FORUM,
-	                               ConfigMapping.GEAR_FORUM, ConfigMapping.TIMELINE, ConfigMapping.MODLOG]])
+	                               ConfigMapping.GEAR_FORUM, ConfigMapping.TIMELINE, ConfigMapping.MODLOG,
+	                               ConfigMapping.GM_ROLL_LOG]])
 	async def singlechannels(self, interaction: Interaction, option: Choice[str],
 	                         channel: discord.TextChannel | discord.ForumChannel) :
 		"""
-		Sets the character, character review, species forum, gear forum, timeline or modlog channel. Approved characters and
-		species are posted in the character channel and the species forum (a forum gives each its own thread); new and
-		edited characters and species wait for staff in the character review channel.
+		Sets the character, character review, species forum, gear forum, timeline, modlog or GM roll log channel.
+		Approved characters and species are posted in the character channel and the species forum (a forum gives each
+		its own thread); new and edited characters and species wait for staff in the character review channel. The GM
+		roll log gets a copy of every secret roll.
 
 		**Permissions:**
 		- `Manage Server`
 		"""
 		await interaction.response.defer(ephemeral=True)
 		self._prepare(interaction.guild)
-		if option.value == ConfigMapping.CHARACTER_REVIEW and not isinstance(channel, discord.TextChannel) :
+		if option.value in (ConfigMapping.CHARACTER_REVIEW, ConfigMapping.GM_ROLL_LOG) and \
+				not isinstance(channel, discord.TextChannel) :
+			if option.value == ConfigMapping.GM_ROLL_LOG :
+				return await interaction.followup.send("The GM roll log has to be a text channel.")
 			return await interaction.followup.send("The character review channel has to be a text channel.")
 		ConfigData().add_key(interaction.guild.id, option.value, channel.id, overwrite=True)
 		await interaction.followup.send(f"{option.name} channel set to {channel.mention}")

@@ -45,6 +45,9 @@ class ConfigMapping(StrEnum) :
 	ABILITY_CREATION = "ABILITY_CREATION"
 	ABILITY_FORUM = "ABILITY_FORUM"
 
+	# === Roleplay tools ===
+	GM_ROLL_LOG = "GM_ROLL_LOG"
+
 	# === Moderation ===
 	MODLOG = "MODLOG"
 
@@ -62,6 +65,7 @@ channels = [
 	ConfigMapping.SPECIES_FORUM,
 	ConfigMapping.GEAR_FORUM,
 	ConfigMapping.ABILITY_FORUM,
+	ConfigMapping.GM_ROLL_LOG,
 	ConfigMapping.MODLOG,
 ]
 
@@ -205,6 +209,9 @@ docs = {
 	ConfigMapping.ABILITY_CREATION   : "Who can create abilities, spells and magic schools: `everyone` (the default), `staff` (Manage Messages) or `off`.",
 	ConfigMapping.ABILITY_FORUM      : "Optional: the forum where approved abilities are posted. Tags on an ability's post can restrict who may learn it; see /tagrule.",
 
+	# == roleplay tools ==
+	ConfigMapping.GM_ROLL_LOG        : "Optional: a channel where every secret roll is copied (secret and passive checks, secret /dice rolls and secret table rolls), so the server can audit them.",
+
 	# == moderation ==
-	ConfigMapping.MODLOG        : "The staff channel for bot notices, such as missing permissions.",
+	ConfigMapping.MODLOG        :"The staff channel for bot notices, such as missing permissions.",
 }

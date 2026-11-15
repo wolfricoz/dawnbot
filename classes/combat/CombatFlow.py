@@ -329,27 +329,31 @@ class CombatFlow :
 
 	# ============================================================
 	@staticmethod
-	async def start(interaction: discord.Interaction, title: str, pacing: str | None, lethal: bool) -> None :
+	async def start(interaction: discord.Interaction, title: str, pacing: str | None, lethal: bool) -> Fight | None :
+		"""Opens a fight in a new thread with the member as GM. Returns the fight, or None when it couldn't start."""
 		guild_id = interaction.guild_id
 		if lethal :
 			problem = CombatFlow.lethal_problem(guild_id, interaction.user.guild_permissions.manage_messages)
 			if problem :
-				return await reply(interaction, problem)
+				await reply(interaction, problem)
+				return None
 		await interaction.response.defer(ephemeral=True)
 		thread = await CombatFlow.open_thread(interaction, title)
 		if thread is None :
-			return
+			return None
 		parent = thread.parent_id if isinstance(thread, discord.Thread) else interaction.channel_id
 		fight = CombatTransactions().create(guild_id, interaction.user.id, DEFAULT_SIDES, title=title[:100],
 		                                    channel_id=parent, thread_id=thread.id, kind=PVE, state=SETUP,
 		                                    pacing=CombatFlow.pacing(guild_id, pacing), lethal=lethal)
 		if fight is None :
-			return await reply(interaction, "Something went wrong creating the fight; please try again.")
+			await reply(interaction, "Something went wrong creating the fight; please try again.")
+			return None
 		logging.info(f"{interaction.user.name} started fight {fight.id} in {interaction.guild.name}")
 		await CombatFlow.update_board(interaction.client, fight)
 		lethal_note = " It is **lethal**." if lethal else ""
 		await reply(interaction, f"The fight is ready in {thread.mention}.{lethal_note} Players press **Join** on "
 		                         f"the board; as GM you add NPCs and start it from **GM**.")
+		return fight
 
 	# == joining ==
 

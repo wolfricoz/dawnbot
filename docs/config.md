@@ -40,6 +40,9 @@ Optional: the forum where the gear catalog is posted, one post per item. Tags on
 ### ABILITY_FORUM
 Optional: the forum where approved abilities are posted. Tags on an ability's post can restrict who may learn it; see /tagrule.
 
+### GM_ROLL_LOG
+Optional: a channel where every secret roll is copied (secret and passive checks, secret /dice rolls and secret table rolls), so the server can audit them.
+
 ### MODLOG
 The staff channel for bot notices, such as missing permissions.
 <h2>Settings</h2>

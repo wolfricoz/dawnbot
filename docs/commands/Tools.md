@@ -2,7 +2,7 @@
 layout: default
 title: Tools
 parent: Commands
-nav_order: 23
+nav_order: 25
 ---
 
 <h1>Tools</h1>
@@ -22,7 +22,7 @@ Roleplay tools: dice, coin flips, scene endings and translation.
 
 ### `dice`
 
-**Usage:** `/dice <dicetype> <modifier> <title> <amount> <character> <stat>`
+**Usage:** `/dice <dicetype> <modifier> <title> <amount> <character> <stat> <dc> <secret>`
 
 > Rolls one or more dice and posts the result with a line of story text that depends on how the roll went.
 >
@@ -33,6 +33,10 @@ Roleplay tools: dice, coin flips, scene endings and translation.
 >
 > Rolling as a character counts toward its bad luck: after 3 rolls in a row that come out Poor or worse (or fail
 > in a fight), its next bad roll is made again once and the better result counts.
+>
+> With a `dc`, the card also says whether the total reached it (a critical success always does, a critical failure
+> never), and a roll as a character counts as bad when it falls short. A `secret` roll only shows you the result,
+> with a **Show** button to post it later, and is copied to the GM roll log when the server has one.
 
 ---
 

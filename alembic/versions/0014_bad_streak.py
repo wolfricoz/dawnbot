@@ -1,6 +1,6 @@
 """bad-roll protection: characters count their failed rolls in a row
 
-Comes before 0016_drop_legacy_combat, which waits until the old tables have been imported.
+Comes before 0017_drop_legacy_combat, which waits until the old tables have been imported.
 
 Revision ID: 0014_bad_streak
 Revises: 0013_passive_abilities

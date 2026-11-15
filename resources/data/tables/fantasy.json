@@ -1,0 +1,206 @@
+{
+  "name": "fantasy",
+  "title": "Fantasy",
+  "tables": [
+    {
+      "name": "Loot (Minor)",
+      "description": "What a pocket, a crate or a small cache holds. Luck-touched: the best finds are at the top.",
+      "luck": true,
+      "entries": [
+        "01-02: Nothing but lint and a dead beetle.",
+        "03-04: A bent copper coin and a button. | currency: 1d4",
+        "05-06: A small purse of coins. | currency: 2d6",
+        "07: A roll of clean linen. | item: Linen Bandages",
+        "08: [[Trinkets]]",
+        "09: [[Trinkets]] and a few coins. | currency: 1d6",
+        "10: A stoppered vial of something red and warm. | item: Healing Draught",
+        "11: A pot of greasy salve that smells of mint. | item: Burn Salve",
+        "12: A worn knife with a good edge. | item: Hedge Knife",
+        "13: A leather sling and a pouch of river stones. | item: Shepherd's Sling",
+        "14: A heavier purse, sewn shut. | currency: 4d6",
+        "15: A pouch of smelling salts and a crumpled map. | item: Smelling Salts",
+        "16: A small silver ring worth a fair price. | currency: 30",
+        "17: A sturdy hatchet wrapped in oilcloth. | item: Woodsman's Hatchet",
+        "18: A padded jacket, patched but whole. | item: Padded Jack",
+        "19: A flask of something that makes your heart hammer. | item: Courage Tonic",
+        "20: A merchant's strongbox, forgotten. | currency: 6d10"
+      ]
+    },
+    {
+      "name": "Loot (Major)",
+      "description": "A boss's hoard, a noble's vault or a dragon's leftovers. Luck-touched.",
+      "luck": true,
+      "entries": [
+        "01-02: A chest of old coins, half of them fake. | currency: 5d10",
+        "03-04: A chest of good coins. | currency: 10d10",
+        "05: Two healing draughts in a padded box. | item: Healing Draught | item: Healing Draught",
+        "06: [[Loot (Minor)]] and a jeweled hairpin. | currency: 40",
+        "07: A fine arming sword with a plain scabbard. | item: Arming Sword",
+        "08: A flanged mace with a dented head that has seen use. | item: Flanged Mace",
+        "09: A coat of hardened leather that fits like it was made for you. | item: Hardened Leather",
+        "10: A hunting bow and a quiver of fletched arrows. | item: Hunting Bow",
+        "11: A hand crossbow small enough to hide in a coat. | item: Hand Crossbow",
+        "12: A chain hauberk, oiled and rolled in a sack. | item: Chain Hauberk",
+        "13: A vial of thick green liquid that smells like a swamp. | item: Troll-Blood Elixir",
+        "14: A greater healing draught sealed with wax. | item: Greater Healing Draught",
+        "15: A slender stiletto with a thorn-shaped point. | item: Thornpoint Stiletto",
+        "16: A wand that is warm to the touch. | item: Ember Wand",
+        "17: A sabre whose blade ripples like river water. | item: Riverglass Sabre",
+        "18: A rod of rowan wood bound in silver. | item: Rowan Ward-Rod",
+        "19: A suit of half-plate stamped with a forgotten crest. | item: Bastion Half-Plate",
+        "20: A glass orb with a storm trapped inside, and a pile of gold. | item: Thunderglass Orb | currency: 10d10"
+      ]
+    },
+    {
+      "name": "Trinkets",
+      "description": "Small, odd things with no price and a story behind them.",
+      "entries": [
+        "A wooden die with a seven where the six should be.",
+        "A locket holding a lock of white hair.",
+        "A key that fits no lock anyone has found.",
+        "A tin soldier missing its head.",
+        "A letter addressed to someone who died a century ago.",
+        "A smooth black stone that is always cold.",
+        "A pressed flower that still smells fresh.",
+        "A whistle that only dogs seem to hear.",
+        "A tooth too large to belong to any animal you know.",
+        "A coin from a kingdom nobody has heard of.",
+        "A thimble engraved with a tiny map.",
+        "A glass eye that seems to follow you.",
+        "A spool of thread that never runs out. Or so it seems.",
+        "A child's drawing of a castle with too many towers.",
+        "A compass that points to the nearest tavern.",
+        "A bell with no clapper that rings anyway, once a day."
+      ]
+    },
+    {
+      "name": "Road Encounters",
+      "description": "What happens on a day's travel along a road.",
+      "entries": [
+        "01-03: The road is quiet. Birdsong, dust and sore feet.",
+        "04: A merchant's wagon has lost a wheel; the driver begs for help and offers a reward. | currency: 2d10",
+        "05: A shrine by the road, with fresh offerings and no keeper in sight.",
+        "06: A pack of {1d4+1} rats the size of dogs swarms out of a ditch. | npc: 1d4+1 Giant Rat",
+        "07: Wolves pace the travellers from the treeline, waiting for a straggler. | npc: 1d3+1 Grey Wolf",
+        "08: A log across the road; it's an ambush. | npc: 1d3+1 Road Bandit",
+        "09: Arrows from the ridge: bandits who'd rather not come close. | npc: 1d2 Road Bandit | npc: 1d2 Bandit Archer",
+        "10: A patrol stops the travellers and asks too many questions.",
+        "11: A pilgrim shares a rumor: [[Plot Hooks]]",
+        "12: A bandit captain and their crew demand a toll. | npc: Bandit Captain | npc: 1d3 Road Bandit"
+      ]
+    },
+    {
+      "name": "Wilderness Encounters",
+      "description": "What waits off the road: forests, hills and caves.",
+      "entries": [
+        "01-02: Nothing but wind in the trees and the feeling of being watched.",
+        "03: A clear spring; anyone who drinks feels rested.",
+        "04: Tracks of something huge, pressed deep into the mud.",
+        "05: A wolf pack defends its den. | npc: 1d4+1 Grey Wolf",
+        "06: A nest of giant rats in a hollow log. | npc: 2d3 Giant Rat",
+        "07: An abandoned camp with a cold fire and a half-written journal.",
+        "08: A hermit offers shelter for the night, in exchange for a story.",
+        "09: Bandits hiding out in a ruin. | npc: 1d3 Road Bandit | npc: Bandit Archer",
+        "10: The ground shakes; a cave troll comes looking for dinner. | npc: Cave Troll",
+        "11: A lost child who says their village is just over the hill. There is no village.",
+        "12: An old tower with a light in the top window."
+      ]
+    },
+    {
+      "name": "NPC Quirks",
+      "description": "A quick habit or trait to bring an NPC to life.",
+      "entries": [
+        "Speaks only in questions.",
+        "Hums the same three notes when nervous.",
+        "Constantly polishes a ring that isn't there.",
+        "Laughs at the wrong moments.",
+        "Calls everyone by the wrong name, confidently.",
+        "Collects buttons and asks for yours.",
+        "Never sits with their back to a door.",
+        "Quotes a holy book, slightly wrong.",
+        "Smells strongly of onions and is proud of it.",
+        "Whispers, so everyone has to lean in.",
+        "Keeps a tally of every favor owed, in a little book.",
+        "Refuses to say the name of a certain city.",
+        "Has a pet crow that repeats the last word said.",
+        "Tells the same story about a bear, with a different ending each time.",
+        "Is far too interested in the weather.",
+        "Bites coins to check them, even copper ones.",
+        "Treats every stranger like an old friend.",
+        "Wears gloves, even indoors, even in summer.",
+        "Flinches at the sound of bells.",
+        "Speaks of themself in the third person."
+      ]
+    },
+    {
+      "name": "Tavern Names",
+      "description": "Names for an inn or tavern, built from two smaller tables.",
+      "entries": [
+        "3x The [[Tavern Adjective]] [[Tavern Noun]]",
+        "2x The [[Tavern Noun]] and [[Tavern Noun]]",
+        "The [[Tavern Noun]]'s Rest",
+        "The [[Tavern Adjective]] Tankard"
+      ]
+    },
+    {
+      "name": "Tavern Adjective",
+      "description": "Used by Tavern Names.",
+      "entries": [
+        "Drunken", "Golden", "Prancing", "Rusty", "Sleeping", "Laughing", "Crooked", "Wandering", "Silver", "Wet",
+        "Lucky", "Bleeding", "Jolly", "Hollow", "Painted", "Red"
+      ]
+    },
+    {
+      "name": "Tavern Noun",
+      "description": "Used by Tavern Names.",
+      "entries": [
+        "Dragon", "Goat", "Lantern", "Anchor", "Fox", "Barrel", "Crown", "Stag", "Kettle", "Hound", "Wyvern", "Mermaid",
+        "Boar", "Owl", "Sword", "Bard"
+      ]
+    },
+    {
+      "name": "Shop Names",
+      "description": "Names for shops and stalls.",
+      "entries": [
+        "Brenna's Blades and Bandages",
+        "The Sturdy Strap (leatherwork)",
+        "Odds and Endings (curios)",
+        "The Singing Anvil (smithy)",
+        "Pell's Potions, No Refunds",
+        "The Last Arrow (fletcher)",
+        "Grandmother Wick's Candles",
+        "The Copper Kettle (cookware and gossip)",
+        "Maps and Mishaps",
+        "The Honest Scale (moneychanger, allegedly)",
+        "Thistle and Thread (tailor)",
+        "The Bone Box (apothecary)"
+      ]
+    },
+    {
+      "name": "Plot Hooks",
+      "description": "Seeds for an adventure or a scene.",
+      "entries": [
+        "01: {1d4+1} villagers have gone missing from the same street, one each full moon.",
+        "02: A noble offers {4d10+20} gold to anyone who can find their runaway heir, no questions asked.",
+        "03: The well in the town square has started whispering at night.",
+        "04: A ship arrived in port with no crew and a full cargo of [[Trinkets]].",
+        "05: The local temple's relic was swapped for a fake; the priests haven't noticed yet.",
+        "06: Wolves have been seen walking on two legs at the forest's edge.",
+        "07: A dying soldier presses a sealed letter into someone's hand: 'Take it to the capital.'",
+        "08: The harvest festival is in {1d6} days and the mayor has received a threat.",
+        "09: A map tattooed on a dead smuggler's back leads into the old mines.",
+        "10: Two rival guilds both hire the party, for opposite jobs.",
+        "11: The bridge toll has tripled and the new toll-keeper wears a bandit's scarf.",
+        "12: A traveling circus came to town, and the children follow it everywhere.",
+        "13: A tower that has been empty for years has a light in the window again.",
+        "14: Someone is selling healing draughts that make people forget their names.",
+        "15: An old friend of one of the characters turns up, wanted for murder.",
+        "16: The river has turned red upstream, and the fish are dying.",
+        "17: A bell rings in the ruined chapel every night at midnight. The bell was melted down decades ago.",
+        "18: A merchant pays well for escorts, and refuses to say what is in the locked wagon.",
+        "19: The town's cats have all disappeared overnight.",
+        "20: A stranger in the tavern knows every character's name, and says they've been expected."
+      ]
+    }
+  ]
+}

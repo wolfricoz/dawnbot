@@ -2,7 +2,7 @@
 layout: default
 title: Currency
 parent: Commands
-nav_order: 8
+nav_order: 9
 ---
 
 <h1>Currency</h1>

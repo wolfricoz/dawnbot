@@ -2,7 +2,7 @@
 layout: default
 title: Occupation
 parent: Commands
-nav_order: 15
+nav_order: 16
 ---
 
 <h1>Occupation</h1>

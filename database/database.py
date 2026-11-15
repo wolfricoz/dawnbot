@@ -685,6 +685,124 @@ class CharacterAbilities(Base) :
 
 
 # ============================================================
+# Checks and roll tables
+# ============================================================
+
+# kind is individual, group, opposed or passive; visibility public, hidden_dc or secret; state open or closed.
+# allowed is {"role": id, "member": id} (empty means anyone). opposed holds the two sides of an opposed check between
+# characters, {"1": {"uid", "character_id", "stat"}, "2": {...}}, or the NPC's roll, {"npc", "bonus", "natural",
+# "total"}. helps lists {"helper_uid", "helper_character_id", "helper_name", "target_uid", "used"}.
+class Checks(Base) :
+	"""A check a member called; players press Roll on its card."""
+	__tablename__ = "checks"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	channel_id: Mapped[int] = mapped_column(BigInteger)
+	message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	caller_uid: Mapped[int] = mapped_column(BigInteger)
+	title: Mapped[str | None] = mapped_column(String(200), nullable=True)
+	stat: Mapped[str] = mapped_column(String(16))
+	dc: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	kind: Mapped[str] = mapped_column(String(16), default="individual")
+	visibility: Mapped[str] = mapped_column(String(16), default="public")
+	modifier: Mapped[int] = mapped_column(Integer, default=0)
+	allowed: Mapped[dict] = mapped_column(JSON, default=dict)
+	opposed: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	helps: Mapped[list] = mapped_column(JSON, default=list)
+	state: Mapped[str] = mapped_column(String(16), default="open")
+	expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# name is copied from the character, so the line survives the character being deleted. side is 1 or 2 in an opposed
+# check between characters, otherwise 0.
+class CheckRolls(Base) :
+	"""One character's roll on a check."""
+	__tablename__ = "check_rolls"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	check_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("checks.id", ondelete="CASCADE"), index=True)
+	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	uid: Mapped[int] = mapped_column(BigInteger)
+	name: Mapped[str] = mapped_column(String(255))
+	side: Mapped[int] = mapped_column(Integer, default=0)
+	stat: Mapped[str] = mapped_column(String(16))
+	natural: Mapped[int] = mapped_column(Integer)
+	total: Mapped[int] = mapped_column(Integer)
+	outcome: Mapped[str] = mapped_column(String(16))
+	helped_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+	details: Mapped[dict] = mapped_column(JSON, default=dict)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+	__table_args__ = (
+		UniqueConstraint('check_id', 'character_id', name='uq_check_roll_character'),
+	)
+
+
+# dice is "1dN" for a table rolled over ranges, or "weights" for one rolled by weight. kind is table or deck (omen
+# decks, later); visibility everyone or staff.
+class RollTables(Base) :
+	"""A server's roll table: loot, encounters, names, plot hooks."""
+	__tablename__ = "roll_tables"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	dice: Mapped[str] = mapped_column(String(16), default="weights")
+	luck: Mapped[bool] = mapped_column(Boolean, default=False)
+	kind: Mapped[str] = mapped_column(String(16), default="table")
+	visibility: Mapped[str] = mapped_column(String(16), default="everyone")
+	pack: Mapped[str | None] = mapped_column(String(50), nullable=True)
+	creator_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+	__table_args__ = (
+		Index('uq_roll_table_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+# low and high are the range of a table rolled over ranges; weight is used by tables rolled by weight. actions lists
+# what the entry gives: {"kind": "item", "name"}, {"kind": "currency" or "xp", "amount": "2d6"} or
+# {"kind": "npc", "name", "count": "1d4"}.
+class RollTableEntries(Base) :
+	"""One line of a roll table."""
+	__tablename__ = "roll_table_entries"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	table_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("roll_tables.id", ondelete="CASCADE"), index=True)
+	low: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	high: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	weight: Mapped[int] = mapped_column(Integer, default=1)
+	text: Mapped[str] = mapped_column(Text)
+	actions: Mapped[list] = mapped_column(JSON, default=list)
+	position: Mapped[int] = mapped_column(Integer, default=0)
+
+
+# actions are the entry's actions with their dice rolled ({"kind": "currency", "amount": 7}). granted_to lists the
+# character ids a GM gave the rewards to.
+class TableRolls(Base) :
+	"""A roll on a table, kept so its Grant and Start fight buttons work later."""
+	__tablename__ = "table_rolls"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	table_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("roll_tables.id", ondelete="SET NULL"),
+	                                             nullable=True)
+	table_name: Mapped[str] = mapped_column(String(100))
+	uid: Mapped[int] = mapped_column(BigInteger)
+	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	channel_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	natural: Mapped[int] = mapped_column(Integer)
+	rolled: Mapped[int] = mapped_column(Integer)
+	text: Mapped[str] = mapped_column(Text)
+	actions: Mapped[list] = mapped_column(JSON, default=list)
+	granted_to: Mapped[list] = mapped_column(JSON, default=list)
+	fight_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	secret: Mapped[bool] = mapped_column(Boolean, default=False)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ============================================================
 # Server setup
 # ============================================================
 

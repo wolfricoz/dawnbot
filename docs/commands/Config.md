@@ -2,7 +2,7 @@
 layout: default
 title: Config
 parent: Commands
-nav_order: 7
+nav_order: 8
 ---
 
 <h1>Config</h1>
@@ -104,9 +104,10 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 
 **Usage:** `/config singlechannels <option> <channel>`
 
-> Sets the character, character review, species forum, gear forum, timeline or modlog channel. Approved characters and
-> species are posted in the character channel and the species forum (a forum gives each its own thread); new and
-> edited characters and species wait for staff in the character review channel.
+> Sets the character, character review, species forum, gear forum, timeline, modlog or GM roll log channel.
+> Approved characters and species are posted in the character channel and the species forum (a forum gives each
+> its own thread); new and edited characters and species wait for staff in the character review channel. The GM
+> roll log gets a copy of every secret roll.
 >
 > **Permissions:**
 > - `Manage Server`
