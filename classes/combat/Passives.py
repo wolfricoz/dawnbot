@@ -11,7 +11,8 @@ A passive is one of:
   that misses it in melee takes damage, once per round).
 - aura: standing allies get a bonus to to_hit, damage or ac while it stands (the best aura per bonus counts).
 - stacks: every hit it takes from a source (magic, physical, any, or a damage type) adds a stack, each +1 to
-  to_hit, damage or ac, up to a maximum, for the rest of the fight.
+  to_hit, damage or ac, for the rest of the fight. Each stacks passive sets its own limit (1 to 30); without one it
+  uses the tier's (2, 3 or 5).
 
 The amounts come from the tier (see AMOUNTS). Engine.py applies them; this module only holds the numbers and checks.
 """
@@ -53,7 +54,9 @@ AMOUNTS = {TO_HIT : (1, 2, 3), DAMAGE : (1, 2, 3), AC : (1, 2, 3), DT : (1, 2, 3
            SEQUENCE : (2, 4, 6)}
 RESIST_AMOUNTS = (2, 4, 6)
 AURA_AMOUNTS = (1, 1, 2)
+# The stack limit a stacks passive gets when it doesn't set its own, and the highest it may set.
 MAX_STACKS = (2, 3, 5)
+STACK_LIMIT_MAX = 30
 TRIGGER_DICE = ("1d4", "1d6", "1d8")
 TRIGGER_TURNS = (1, 2, 3)
 LAST_STAND_USES = (0, 1, 2)
@@ -92,7 +95,14 @@ def normalise(data: dict | None) -> dict :
 	"""A passive's parts with every key present."""
 	data = data or {}
 	return {"type" : data.get("type"), "field" : data.get("field"), "scope" : data.get("scope"),
-	        "trigger" : data.get("trigger"), "condition" : data.get("condition")}
+	        "trigger" : data.get("trigger"), "condition" : data.get("condition"), "limit" : data.get("limit")}
+
+
+# ============================================================
+def max_stacks(passive: dict) -> int :
+	"""How many stacks a stacks passive can hold: its own limit, or its tier's."""
+	limit = passive.get("limit")
+	return int(limit) if limit else MAX_STACKS[index(passive.get("tier"))]
 
 
 # ============================================================
@@ -112,7 +122,7 @@ def check(tier: str, data: dict, type_names: list[str]) -> tuple[dict | None, st
 		return None, "A passive is Weak, Normal or Strong."
 	if kind not in TYPES :
 		return None, f"The passive must be one of: {', '.join(TYPES)}."
-	clean = {"type" : kind, "field" : None, "scope" : None, "trigger" : None, "condition" : None}
+	clean = {"type" : kind, "field" : None, "scope" : None, "trigger" : None, "condition" : None, "limit" : None}
 	if kind == BONUS :
 		if field not in FIELDS :
 			return None, f"A bonus needs a field: {', '.join(FIELDS)}."
@@ -156,7 +166,11 @@ def check(tier: str, data: dict, type_names: list[str]) -> tuple[dict | None, st
 		matched = _named(scope or ANY, STACK_SOURCES + type_names)
 		if matched is None :
 			return None, "Stacks come from any hit, magic, physical attacks or one damage type."
-		clean["field"], clean["scope"] = field, matched
+		limit = data["limit"]
+		if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool)
+		                          or not 1 <= limit <= STACK_LIMIT_MAX) :
+			return None, f"The stack limit must be a whole number from 1 to {STACK_LIMIT_MAX}."
+		clean["field"], clean["scope"], clean["limit"] = field, matched, limit
 	return clean, None
 
 
@@ -188,7 +202,8 @@ def describe(tier: str, data: dict) -> str :
 		text = f"standing allies get +{AURA_AMOUNTS[i]} {FIELD_LABELS[field]}"
 	elif kind == STACKS :
 		source = "any" if scope == ANY else scope
-		text = f"each {source} hit it takes adds a stack of +1 {FIELD_LABELS[field]} (up to {MAX_STACKS[i]})"
+		limit = max_stacks(data | {"tier" : tier})
+		text = f"each {source} hit it takes adds a stack of +1 {FIELD_LABELS[field]} (up to {limit})"
 	else :
 		text = "does nothing the bot knows"
 	return f"{tier.capitalize()} passive · {text} · {SLOT_COST} slots"

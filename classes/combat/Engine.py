@@ -237,7 +237,7 @@ class Engine :
 			if not P.matches(passive.get("scope"), type_name, magic, ranged) :
 				continue
 			state = self.passive_state(target, passive)
-			limit = P.MAX_STACKS[P.index(passive["tier"])]
+			limit = P.max_stacks(passive)
 			stacks = int(state.get("stacks") or 0)
 			if stacks < limit :
 				state["stacks"] = stacks + 1

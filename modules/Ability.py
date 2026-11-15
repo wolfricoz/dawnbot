@@ -58,6 +58,7 @@ PASSIVE_HELP = {
 	"target"    : "Bonus: melee, ranged, magic or a damage type. Resistance/stacks: magic, physical, any or a type",
 	"trigger"   : "Trigger: when it fires",
 	"condition" : "Immunity: the condition it blocks. On a strong hit: the condition it adds",
+	"stack_limit" : "Stacks: how many stacks it can hold (1 to 30; default 2/3/5 by tier)",
 }
 TEXT_LIMIT = 1000
 
@@ -240,7 +241,8 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 	@app_commands.describe(**PASSIVE_HELP)
 	async def passive(self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100], tier: Choice[str],
 	                  type: Choice[str], field: Choice[str] = None, target: str = None, trigger: Choice[str] = None,
-	                  condition: Choice[str] = None) :
+	                  condition: Choice[str] = None,
+	                  stack_limit: app_commands.Range[int, 1, Passives.STACK_LIMIT_MAX] = None) :
 		"""
 		Builds a passive ability: always on, never used on a turn. It takes 2 of a character's 3 ability slots (an
 		active ability takes 1), and spellcasters can't learn passives unless an event grants one. The tier sets its
@@ -254,7 +256,7 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 		  hit (adds `condition` for 1/2/3 turns) or counter (1d4/1d6/1d8 to a melee attacker that misses, once a round).
 		- `aura`: standing allies get +1/+1/+2 to hit, damage or AC.
 		- `stacks`: each hit it takes from `target` (any, magic, physical or a damage type) adds +1 to hit, damage or
-		  AC, up to 2/3/5 stacks, for the rest of the fight.
+		  AC for the rest of the fight, up to `stack_limit` stacks (1 to 30; without it 2/3/5 by tier).
 		"""
 		problem = AbilityFlow.creation_problem(interaction.guild_id, interaction.user.guild_permissions.manage_messages)
 		if problem :
@@ -263,7 +265,7 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 			return await reply(interaction, f"There already is an ability called {name}.")
 		values, problem = AbilityFlow.check_passive(interaction.guild_id, tier.value, {
 			"type" : type.value, "field" : value_of(field), "scope" : target, "trigger" : value_of(trigger),
-			"condition" : value_of(condition)})
+			"condition" : value_of(condition), "limit" : stack_limit})
 		if problem :
 			return await reply(interaction, problem)
 
@@ -289,11 +291,13 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 	async def passive_edit(self, interaction: discord.Interaction, name: str,
 	                       new_name: app_commands.Range[str, 1, 100] = None, tier: Choice[str] = None,
 	                       type: Choice[str] = None, field: Choice[str] = None, target: str = None,
-	                       trigger: Choice[str] = None, condition: Choice[str] = None) :
+	                       trigger: Choice[str] = None, condition: Choice[str] = None,
+	                       stack_limit: app_commands.Range[int, 0, Passives.STACK_LIMIT_MAX] = None) :
 		"""
 		Changes a passive ability you created (staff can change any). Options you leave out stay as they are; a form
 		lets you change the description and flavor. It goes back to staff for review and doesn't work in fights
-		until it is approved again. Type `none` as `target` to remove its limit.
+		until it is approved again. Type `none` as `target` to remove its limit, and set `stack_limit` to 0 to go back
+		to the tier's stack limit.
 		"""
 		ability = AbilityTransactions().find(interaction.guild_id, name)
 		if ability is None :
@@ -310,7 +314,8 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 		values, problem = AbilityFlow.check_passive(interaction.guild_id, value_of(tier) or ability.tier, {
 			"type" : value_of(type) or current["type"], "field" : value_of(field) or current["field"], "scope" : scope,
 			"trigger" : value_of(trigger) or current["trigger"],
-			"condition" : value_of(condition) or current["condition"]})
+			"condition" : value_of(condition) or current["condition"],
+			"limit" : current["limit"] if stack_limit is None else (stack_limit or None)})
 		if problem :
 			return await reply(interaction, problem)
 

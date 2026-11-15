@@ -43,7 +43,7 @@ Build spells and abilities, and teach them to your characters.
 
 ### `passive`
 
-**Usage:** `/ability passive <name> <tier> <type> <field> <target> <trigger> <condition>`
+**Usage:** `/ability passive <name> <tier> <type> <field> <target> <trigger> <condition> <stack_limit>`
 
 > Builds a passive ability: always on, never used on a turn. It takes 2 of a character's 3 ability slots (an
 > active ability takes 1), and spellcasters can't learn passives unless an event grants one. The tier sets its
@@ -57,17 +57,18 @@ Build spells and abilities, and teach them to your characters.
 >   hit (adds `condition` for 1/2/3 turns) or counter (1d4/1d6/1d8 to a melee attacker that misses, once a round).
 > - `aura`: standing allies get +1/+1/+2 to hit, damage or AC.
 > - `stacks`: each hit it takes from `target` (any, magic, physical or a damage type) adds +1 to hit, damage or
->   AC, up to 2/3/5 stacks, for the rest of the fight.
+>   AC for the rest of the fight, up to `stack_limit` stacks (1 to 30; without it 2/3/5 by tier).
 
 ---
 
 ### `passive_edit`
 
-**Usage:** `/ability passive_edit <name> <new_name> <tier> <type> <field> <target> <trigger> <condition>`
+**Usage:** `/ability passive_edit <name> <new_name> <tier> <type> <field> <target> <trigger> <condition> <stack_limit>`
 
 > Changes a passive ability you created (staff can change any). Options you leave out stay as they are; a form
 > lets you change the description and flavor. It goes back to staff for review and doesn't work in fights
-> until it is approved again. Type `none` as `target` to remove its limit.
+> until it is approved again. Type `none` as `target` to remove its limit, and set `stack_limit` to 0 to go back
+> to the tier's stack limit.
 
 ---
 

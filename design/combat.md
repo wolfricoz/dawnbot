@@ -69,7 +69,7 @@ including the choices made while building that the doc left open.
 - `magic_schools`: `guild_id`, `name`, `description`, `casting_stat`, `creator_uid`, `state`, `standard`,
   `review_message_id`.
 - `abilities` (migration 0013 adds `activation` (`active`, `passive`) and `passive` (JSON: `type`, `field`, `scope`,
-  `trigger`, `condition`)): `guild_id`, `creator_uid`, `name`, `description`, `flavor`, `kind` (`spell`, `ability`), `school_id`,
+  `trigger`, `condition`, `limit`)): `guild_id`, `creator_uid`, `name`, `description`, `flavor`, `kind` (`spell`, `ability`), `school_id`,
   `stat`, `tier`, `effect` (`damage`, `heal`, `condition`, `shield`, `boost`), `damage_type`, `condition`, `area`,
   `secondary`, `state`, `review_message_id`, `forum_thread_id`, `forum_message_id`, `tag_ids`.
 - `character_abilities`: `character_id`, `ability_id`, `event`, `granted_by`.
@@ -170,7 +170,7 @@ Always on, never used on a turn. Tier Weak, Normal or Strong (no Cantrip); each 
 | Trigger: on a strong hit | Its strong hits (attacks and damage abilities) add a harmful condition. | 1/2/3 turns |
 | Trigger: counter | A melee attacker that misses it takes damage, once per round. | 1d4/1d6/1d8 |
 | Aura | Standing allies (not itself) get a bonus to to hit, damage or AC; only the best aura per bonus counts. | +1/+1/+2 |
-| Stacks | Each hit it takes from a source (any, magic, physical or a damage type) adds a stack of +1 to hit, damage or AC, for the rest of the fight. Shown on the board. | up to 2/3/5 stacks |
+| Stacks | Each hit it takes from a source (any, magic, physical or a damage type) adds a stack of +1 to hit, damage or AC, for the rest of the fight. Shown on the board. Each stacks passive can set its own limit (`stack_limit`, 1 to 30), so staff can approve ones that go into the 20s. | its own limit, or 2/3/5 stacks |
 
 "Magic" means abilities and spells; "physical" means weapon attacks. HP, AP, AC, DT and Sequence bonuses are added when
 the combatant joins; the rest during the fight. Bestiary entries can have passives too (their `abilities` option).

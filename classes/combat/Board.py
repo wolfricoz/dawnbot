@@ -58,7 +58,7 @@ def passive_notes(combatant: Combatant) -> list[str] :
 		kept = state.get(str(passive["id"])) or {}
 		tier = Passives.index(passive["tier"])
 		if passive.get("type") == Passives.STACKS and kept.get("stacks") :
-			notes.append(f"⚡ {passive['name']} {kept['stacks']}/{Passives.MAX_STACKS[tier]}")
+			notes.append(f"⚡ {passive['name']} {kept['stacks']}/{Passives.max_stacks(passive)}")
 		elif passive.get("trigger") == Passives.LAST_STAND and kept.get("uses") :
 			left = Passives.LAST_STAND_USES[tier] - int(kept["uses"])
 			notes.append(f"🛡️ {passive['name']}: {left} left")

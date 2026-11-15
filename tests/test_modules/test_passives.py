@@ -104,6 +104,23 @@ class TestPassivesInFights(unittest.TestCase) :
 		self.assertEqual(run.passive_roll(ayla, None, False, False), (0, 3))
 		self.assertEqual(run.effective_ac(ayla), 12)
 
+	def test_own_stack_limits(self) :
+		values, problem = P.check("weak", {"type" : "stacks", "field" : "damage", "scope" : "magic", "limit" : 24},
+		                          TYPE_NAMES)
+		self.assertEqual((values["limit"], problem), (24, None))
+		self.assertIsNotNone(P.check("weak", {"type" : "stacks", "field" : "damage", "limit" : 31}, TYPE_NAMES)[1])
+		self.assertIsNone(P.check("weak", {"type" : "bonus", "field" : "hp", "limit" : 9}, TYPE_NAMES)[0]["limit"])
+		self.assertIn("up to 24", P.describe("weak", values))
+		fight = duel()
+		ayla, bandit = fight.combatant(1), fight.combatant(2)
+		ayla.stats["passives"] = [passive(1, "weak", type="stacks", field="damage", scope="magic", limit=24)]
+		run = engine(fight)
+		for _ in range(30) :
+			run.damage(ayla, 0 if ayla.hp < 2 else 1, bandit, magic=True)
+			ayla.hp = 30
+		self.assertEqual(run.passive_roll(ayla, None, True, False), (0, 24))
+		self.assertEqual(P.max_stacks({"tier" : "strong"}), 5)
+
 	def test_regenerate_counter_and_strong_hits(self) :
 		fight = duel()
 		ayla, bandit = fight.combatant(1), fight.combatant(2)
