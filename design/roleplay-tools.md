@@ -456,7 +456,7 @@ Choices made while building, beyond (or instead of) sections 1 to 15. Settings a
 | Jobs | Forum thread per job; its name carries the state (🟢 open, 🟡 taken, ✅ done, ❌ failed, ⚪ cancelled) instead of forum tags, and finished jobs are locked. Partial success pays half and half the standing; items only on success. Player jobs hold `currency × slots` in escrow and refund what isn't paid out. |
 | Downtime | Rolls count toward bad-roll protection. Occupation pay, stat, crit table and seer are set with `/downtime occupation`. |
 | Crafting | Materials are catalog items of kind `material` and stack (`character_gear.quantity`). Projects set their ingredients aside up front; a bad failure takes a day of progress back, a crit on any day makes the result masterwork; projects don't make cursed items. Salvage keeps each listed material on a coin flip. The fantasy recipe pack (`resources/data/recipes/fantasy.json`) adds 11 materials (two of them tools), 11 recipes and salvage lists for the fantasy gear pack. |
-| **Combat bonus not wired** | Masterwork and cursed work everywhere outside fights (names, sell value, cursed armor staying on). Their fight bonus (+1/−1 to hit, +1/−1 DT) is ready in `Crafting.adjust_combat` but `classes/combat/Loadout.py` doesn't call it yet: another session was changing the combat files while this was built. |
+| Quality in fights | `Loadout.character_stats` runs each owned weapon and the worn armor through `Crafting.adjust_combat`: masterwork +1 / cursed −1 to the item's `hit_mod` (weapons) and DT (armor, never below 0), applied after the catalog values are normalised. Lifting a curse takes it away at the next fight. |
 
 ### Phase F: rumors and omens
 

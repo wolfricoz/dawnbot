@@ -77,7 +77,7 @@ class EconomyCase(DatabaseTestCase) :
 		self.add_server()
 
 	def item(self, name, kind="weapon", price=100, **fields) :
-		return GearItemTransactions().add(GUILD_ID, kind, name, price=price, requirements={}, combat={}, **fields)
+		return GearItemTransactions().add(GUILD_ID, kind, name, price=price, **({"requirements" : {}, "combat" : {}} | fields))
 
 
 class TestFactions(EconomyCase) :
@@ -213,6 +213,22 @@ class TestCrafting(EconomyCase) :
 		self.assertEqual((lifted.name, lifted.quality), ("Plate", None))
 		masterwork = Crafting.give(self.character, self.sword, 1, Crafting.MASTERWORK)[0]
 		self.assertEqual(Gear.sell_value(masterwork, GUILD_ID), int(250 * 0.3 * 1.5))
+
+	def test_quality_reaches_fights(self) :
+		from classes.combat.Loadout import Loadout
+
+		armor = self.item("Mail", "armor", 500, combat={"armor_class" : "medium", "ac" : 2, "dt" : 2})
+		GearItemTransactions().update(self.sword.id, combat={"dice" : "1d8", "hit_mod" : 1})
+		sword = GearItemTransactions().get(self.sword.id)
+		Crafting.give(self.character, sword, 1, Crafting.MASTERWORK)
+		cursed = Crafting.give(self.character, armor, 1, Crafting.CURSED)[0]
+		Gear.equip(cursed)
+		stats = Loadout.character_stats(self.character)
+		weapon = next(weapon for weapon in stats["weapons"] if weapon["name"] == "Masterwork Arming Sword")
+		self.assertEqual(weapon["hit_mod"], 2)
+		self.assertEqual(stats["armor"]["dt"], 1)
+		Crafting.uncurse(CharacterGearTransactions().get(cursed.id))
+		self.assertEqual(Loadout.character_stats(self.character)["armor"]["dt"], 2)
 
 	def test_recipe_pack(self) :
 		data = RecipePacks.load("fantasy")

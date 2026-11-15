@@ -339,7 +339,8 @@ below 15%), support (revives and heals allies first). Player autopilot: weakest,
 - `classes/combat/Balance.py`: the balance simulator. `python -m classes.combat.Balance [fights] [path]` plays each
   effect in simulated duels (a hero with it against one that only attacks) and writes `design/balance-report.md` with
   the outliers per tier (too strong, too weak, worse than attacking). It needs no database or Discord.
-- `classes/combat/Loadout.py`: a character or bestiary entry as a combatant.
+- `classes/combat/Loadout.py`: a character or bestiary entry as a combatant. Crafted masterwork and cursed gear
+  (`character_gear.quality`, see design/roleplay-tools.md) add +1 or −1 to a weapon's hit modifier or an armor's DT.
 - `classes/combat/Passives.py`: passive abilities. `classes/combat/Fortune.py`: bad-roll protection. `classes/combat/Items.py`: consumables. `classes/combat/BestiaryFlow.py`: bestiary values and imports.
 - `classes/gear/Legacy.py`: reads the old global tables. `classes/characters/Death.py`: the dead status.
 - `classes/combat/State.py`, `Engine.py`, `Autopilot.py`: the fight state and every rule that changes it. No Discord.

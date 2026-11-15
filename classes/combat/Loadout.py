@@ -126,6 +126,7 @@ class Loadout :
 	def character_stats(character: Characters) -> dict :
 		"""The snapshot of a character: SPECIAL, level, weapons (with proficiency), armor, shield and abilities."""
 		from classes.characters.Special import Special
+		from classes.economy.Crafting import adjust_combat
 		from classes.gear.Gear import ARMOR, CONSUMABLE, Gear, WEAPON
 
 		base = Special.rules(character.guild_id).base
@@ -136,7 +137,8 @@ class Loadout :
 			combat = item.combat if item is not None else {}
 			requirements = item.requirements if item is not None else {}
 			if entry.kind == WEAPON :
-				weapon = Rules.normalise_weapon(combat)
+				# Crafted masterwork (+1 to hit) or cursed (-1) gear changes the item's own hit modifier.
+				weapon = adjust_combat(WEAPON, Rules.normalise_weapon(combat), entry.quality)
 				if crippled_strength and "two_handed" in weapon["properties"] :
 					continue
 				weapon.update({"key" : f"gear:{entry.id}", "name" : entry.name, "entry_id" : entry.id,
@@ -149,7 +151,8 @@ class Loadout :
 			elif entry.kind == CONSUMABLE :
 				items.append(Items.snapshot(entry.id, entry.name, combat))
 			elif entry.kind == ARMOR and entry.equipped :
-				candidate = Rules.normalise_armor(combat) | {"name" : entry.name}
+				# Crafted masterwork (+1 DT) or cursed (-1 DT) armor.
+				candidate = adjust_combat(ARMOR, Rules.normalise_armor(combat), entry.quality) | {"name" : entry.name}
 				if crippled_strength and candidate["armor_class"] == Rules.HEAVY :
 					continue
 				armor = candidate
