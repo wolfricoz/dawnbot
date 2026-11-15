@@ -1,522 +1,418 @@
 # Effect balance report
 
-2005 effects, 200 fights each. A hero that only attacks wins 48% of the time. Run `python -m classes.combat.Balance` to make a new one; see classes/combat/Balance.py for the method.
+2005 effects, 200 fights each in two scenarios (a duel and a 2-vs-2 team fight, everyone in DT 2 armor). A side that only attacks wins 50% of duels and 49% of team fights. Run `python -m classes.combat.Balance` to make a new one; see classes/combat/Balance.py for the method.
 
-7 too strong, 9 too weak, 483 worse than attacking.
+19 too strong, 12 too weak, 364 worse than attacking.
 
-## Cantrip (1561 effects, median win rate 48%)
+## Cantrip (1561 effects, median win rate 48% / 50% duel / team)
 
-| Effect | Realm | AP | Win rate | Rounds | Verdict |
+| Effect | Realm | AP | Duel | Team | Verdict |
 |---|---|---|---|---|---|
-| Earth Barrage (`earth_barrage`) | magic | 4 | 72% | 4.6 | too strong |
-| Double Sling Stone (`sling_double`) | physical | 4 | 72% | 4.5 | too strong |
-| Sand Barrage (`sand_barrage`) | magic | 4 | 71% | 4.6 | too strong |
-| Chain Barrage (`chain_barrage`) | magic | 4 | 70% | 4.6 | too strong |
-| Mighty Sling Stone (`sling_mighty`) | physical | 4 | 70% | 4.0 | too strong |
-| Ice Shackles (`ice_shackles`) | magic | 4 | 42% | 4.8 | worse than attacking |
-| Storm Speed (`storm_speed`) | magic | 4 | 42% | 5.1 | worse than attacking |
-| Bless (`bless`) | magic | 3 | 42% | 5.0 | worse than attacking |
-| Hex (`hex`) | magic | 3 | 42% | 4.8 | worse than attacking |
-| Brace (`brace`) | physical | 3 | 42% | 5.2 | worse than attacking |
-| Frost Grenade (`frost_grenade`) | physical | 4 | 42% | 4.8 | worse than attacking |
-| Lingering (`lingering_spell`) | magic | 4 | 42% | 4.7 | worse than attacking |
-| Fire Curse (`fire_curse`) | magic | 3 | 42% | 5.0 | worse than attacking |
-| Ash Veil (`ash_veil`) | magic | 4 | 42% | 4.8 | worse than attacking |
-| Frost Bolt (`frost_bolt`) | magic | 3 | 42% | 5.2 | worse than attacking |
-| Frost Lance (`frost_lance`) | magic | 4 | 42% | 4.6 | worse than attacking |
-| Stone Mantle (`stone_mantle`) | magic | 3 | 42% | 4.9 | worse than attacking |
-| Acid Curse (`acid_curse`) | magic | 3 | 42% | 4.9 | worse than attacking |
-| Acid Purge (`acid_purge`) | magic | 3 | 42% | 5.2 | worse than attacking |
-| Wind Curse (`wind_curse`) | magic | 3 | 42% | 5.0 | worse than attacking |
-| Light Bolt (`light_bolt`) | magic | 3 | 42% | 5.3 | worse than attacking |
-| Holy Bolt (`holy_bolt`) | magic | 3 | 42% | 5.4 | worse than attacking |
-| Holy Blessing (`holy_blessing`) | magic | 3 | 42% | 5.0 | worse than attacking |
-| Lunar Hex (`lunar_hex`) | magic | 3 | 42% | 4.8 | worse than attacking |
-| Shadow Mantle (`shadow_mantle`) | magic | 3 | 42% | 5.2 | worse than attacking |
-| Dread Dart (`dread_dart`) | magic | 4 | 42% | 4.7 | worse than attacking |
-| Dread Purge (`dread_purge`) | magic | 3 | 42% | 5.0 | worse than attacking |
-| Force Dart (`force_dart`) | magic | 4 | 42% | 4.4 | worse than attacking |
-| Rune Burst (`rune_burst`) | magic | 3 | 42% | 5.4 | worse than attacking |
-| Death Leech (`death_leech`) | magic | 4 | 42% | 5.0 | worse than attacking |
-| Soul Wave (`soul_wave`) | magic | 4 | 42% | 4.8 | worse than attacking |
-| Greatsword Riposte (`greatsword_riposte`) | physical | 3 | 42% | 5.0 | worse than attacking |
-| Piercing Axe Chop (`axe_piercing`) | physical | 4 | 42% | 4.6 | worse than attacking |
-| Dagger Riposte (`dagger_riposte`) | physical | 3 | 42% | 5.0 | worse than attacking |
-| Whip Riposte (`whip_riposte`) | physical | 3 | 42% | 5.0 | worse than attacking |
-| Hammer Riposte (`hammer_riposte`) | physical | 3 | 42% | 5.1 | worse than attacking |
-| Hammer Feint (`hammer_feint`) | physical | 3 | 42% | 4.8 | worse than attacking |
-| Piercing Shield Slam (`shield_piercing`) | physical | 4 | 42% | 4.9 | worse than attacking |
-| Spear Riposte (`spear_riposte`) | physical | 3 | 42% | 5.1 | worse than attacking |
-| Crippling Lance Charge (`lance_crippling`) | physical | 4 | 42% | 4.5 | worse than attacking |
-| Toppling Trident Jab (`trident_toppling`) | physical | 4 | 42% | 4.7 | worse than attacking |
-| Pinning Trident Jab (`trident_pinning`) | physical | 4 | 42% | 5.0 | worse than attacking |
-| Trident Parry (`trident_parry`) | physical | 3 | 42% | 5.0 | worse than attacking |
-| Bleeding Glaive Arc (`glaive_bleeding`) | physical | 4 | 42% | 4.5 | worse than attacking |
-| Hunter's Bow Shot (`bow_hunters`) | physical | 4 | 42% | 4.6 | worse than attacking |
-| Fist Riposte (`fist_riposte`) | physical | 3 | 42% | 5.0 | worse than attacking |
-| Fang Feint (`fang_feint`) | physical | 3 | 42% | 4.7 | worse than attacking |
-| Wing Parry (`wing_parry`) | physical | 3 | 42% | 5.0 | worse than attacking |
-| Thorn Whip (`thorn_whip`) | magic | 4 | 42% | 4.6 | worse than attacking |
-| Armor Breaker (`armor_breaker`) | physical | 4 | 42% | 4.6 | worse than attacking |
-| Lightning Wave (`lightning_wave`) | magic | 4 | 42% | 4.8 | worse than attacking |
-| Thunder Wave (`thunder_wave`) | magic | 4 | 42% | 4.7 | worse than attacking |
-| Sand Curse (`sand_curse`) | magic | 3 | 42% | 4.7 | worse than attacking |
-| Wind Grasp (`wind_grasp`) | magic | 4 | 42% | 4.8 | worse than attacking |
-| Wind Mantle (`wind_mantle`) | magic | 3 | 42% | 5.0 | worse than attacking |
-| Sonic Grasp (`sound_grasp`) | magic | 4 | 42% | 5.0 | worse than attacking |
-| Sonic Purge (`sound_purge`) | magic | 3 | 42% | 5.2 | worse than attacking |
-| Holy Curse (`holy_curse`) | magic | 3 | 42% | 4.9 | worse than attacking |
-| Star Purge (`star_purge`) | magic | 3 | 42% | 5.1 | worse than attacking |
-| Dream Wave (`dream_wave`) | magic | 4 | 42% | 4.7 | worse than attacking |
-| Arcane Mantle (`arcane_mantle`) | magic | 3 | 42% | 5.1 | worse than attacking |
-| Chaos Judgement (`chaos_judgement`) | magic | 4 | 42% | 4.5 | worse than attacking |
-| Bone Curse (`bone_curse`) | magic | 3 | 42% | 4.8 | worse than attacking |
-| Life Veil (`life_veil`) | magic | 3 | 42% | 5.1 | worse than attacking |
-| Card Lance (`card_lance`) | magic | 4 | 42% | 4.6 | worse than attacking |
-| Hammer Parry (`hammer_parry`) | physical | 3 | 42% | 4.8 | worse than attacking |
-| Flail Parry (`flail_parry`) | physical | 3 | 42% | 5.2 | worse than attacking |
-| Finishing Trident Jab (`trident_finishing`) | physical | 4 | 42% | 4.5 | worse than attacking |
-| Precise Javelin Throw (`javelin_precise`) | physical | 4 | 42% | 4.5 | worse than attacking |
-| Precise Rifle Round (`rifle_precise`) | physical | 4 | 42% | 4.4 | worse than attacking |
-| Precise Claw Swipe (`claw_precise`) | physical | 4 | 42% | 4.4 | worse than attacking |
-| Precise Horn Gore (`horn_precise`) | physical | 4 | 42% | 4.4 | worse than attacking |
-| Horn Parry (`horn_parry`) | physical | 3 | 42% | 5.0 | worse than attacking |
-| Piercing Wing Buffet (`wing_piercing`) | physical | 4 | 42% | 4.7 | worse than attacking |
-| Tentacle Feint (`tentacle_feint`) | physical | 3 | 42% | 4.8 | worse than attacking |
-| Hemokinesis (`hemokinesis`) | magic | 4 | 42% | 4.3 | worse than attacking |
-| Decoy (`decoy`) | physical | 3 | 42% | 5.1 | worse than attacking |
-| Beast Form (`shapeshift`) | magic | 3 | 42% | 5.2 | worse than attacking |
-| Expose Weakness (`expose_weakness`) | physical | 3 | 42% | 4.8 | worse than attacking |
-| Ash Mantle (`ash_mantle`) | magic | 3 | 42% | 5.2 | worse than attacking |
-| Water Veil (`water_veil`) | magic | 3 | 42% | 5.1 | worse than attacking |
-| Water Blessing (`water_blessing`) | magic | 3 | 42% | 4.9 | worse than attacking |
-| Steam Mantle (`steam_mantle`) | magic | 3 | 42% | 5.0 | worse than attacking |
-| Lightning Dart (`lightning_dart`) | magic | 4 | 42% | 4.6 | worse than attacking |
-| Lightning Judgement (`lightning_judgement`) | magic | 4 | 42% | 4.5 | worse than attacking |
-| Lightning Veil (`lightning_veil`) | magic | 4 | 42% | 5.0 | worse than attacking |
-| Earth Mantle (`earth_mantle`) | magic | 3 | 42% | 5.1 | worse than attacking |
-| Iron Judgement (`metal_judgement`) | magic | 4 | 42% | 4.4 | worse than attacking |
-| Wind Purge (`wind_purge`) | magic | 3 | 42% | 5.3 | worse than attacking |
-| Solar Mantle (`solar_mantle`) | magic | 3 | 42% | 5.1 | worse than attacking |
-| Shadow Judgement (`shadow_judgement`) | magic | 4 | 42% | 4.5 | worse than attacking |
-| Shadow Curse (`shadow_curse`) | magic | 3 | 42% | 4.9 | worse than attacking |
-| Dark Judgement (`dark_judgement`) | magic | 4 | 42% | 4.8 | worse than attacking |
-| Dream Burst (`dream_burst`) | magic | 3 | 42% | 5.4 | worse than attacking |
-| Dread Brand (`dread_brand`) | magic | 4 | 42% | 4.9 | worse than attacking |
-| Force Burst (`force_burst`) | magic | 3 | 42% | 5.2 | worse than attacking |
-| Rune Lance (`rune_lance`) | magic | 4 | 42% | 4.7 | worse than attacking |
-| Blood Mantle (`blood_mantle`) | magic | 3 | 42% | 4.9 | worse than attacking |
-| Bone Dart (`bone_dart`) | magic | 4 | 42% | 4.8 | worse than attacking |
-| Soul Lance (`soul_lance`) | magic | 4 | 42% | 4.7 | worse than attacking |
-| Soul Veil (`soul_veil`) | magic | 3 | 42% | 5.1 | worse than attacking |
-| Piercing Scimitar Slash (`scimitar_piercing`) | physical | 4 | 42% | 4.5 | worse than attacking |
-| Staff Feint (`staff_feint`) | physical | 3 | 42% | 5.1 | worse than attacking |
-| Club Parry (`club_parry`) | physical | 3 | 42% | 5.1 | worse than attacking |
-| Shield Parry (`shield_parry`) | physical | 3 | 42% | 5.2 | worse than attacking |
-| Glaive Feint (`glaive_feint`) | physical | 3 | 42% | 4.9 | worse than attacking |
-| Finishing Scattergun Blast (`scattergun_finishing`) | physical | 4 | 42% | 4.6 | worse than attacking |
-| Bleeding Scattergun Blast (`scattergun_bleeding`) | physical | 4 | 42% | 4.5 | worse than attacking |
-| Martial Riposte (`martial_riposte`) | physical | 3 | 42% | 5.0 | worse than attacking |
-| Wing Riposte (`wing_riposte`) | physical | 3 | 42% | 4.9 | worse than attacking |
-| Divine Favor (`divine_favor`) | magic | 3 | 41% | 5.0 | worse than attacking |
-| Mind Spike (`mind_spike`) | magic | 3 | 41% | 4.9 | worse than attacking |
-| Treat Ailment (`antidote`) | physical | 3 | 41% | 5.2 | worse than attacking |
-| Protection (`protection`) | magic | 3 | 41% | 4.9 | worse than attacking |
-| Distract (`distract`) | physical | 3 | 41% | 4.9 | worse than attacking |
-| Hellfire Purge (`hellfire_purge`) | magic | 3 | 41% | 5.1 | worse than attacking |
-| Ice Burst (`ice_burst`) | magic | 3 | 41% | 5.4 | worse than attacking |
-| Water Grasp (`water_grasp`) | magic | 4 | 41% | 4.9 | worse than attacking |
-| Thunder Curse (`thunder_curse`) | magic | 3 | 41% | 5.0 | worse than attacking |
-| Sand Mantle (`sand_mantle`) | magic | 3 | 41% | 5.0 | worse than attacking |
-| Acid Brand (`acid_brand`) | magic | 4 | 41% | 4.7 | worse than attacking |
-| Shadow Lance (`shadow_lance`) | magic | 4 | 41% | 4.8 | worse than attacking |
-| Shadow Purge (`shadow_purge`) | magic | 3 | 41% | 5.0 | worse than attacking |
-| Arcane Hex (`arcane_hex`) | magic | 3 | 41% | 4.9 | worse than attacking |
-| Blood Veil (`blood_veil`) | magic | 4 | 41% | 5.0 | worse than attacking |
-| Bone Mantle (`bone_mantle`) | magic | 3 | 41% | 5.2 | worse than attacking |
-| Soul Burst (`soul_burst`) | magic | 3 | 41% | 5.4 | worse than attacking |
-| Primal Veil (`primal_veil`) | magic | 3 | 41% | 4.8 | worse than attacking |
-| Piercing Dagger Stab (`dagger_piercing`) | physical | 4 | 41% | 4.8 | worse than attacking |
-| Piercing Whip Lash (`whip_piercing`) | physical | 4 | 41% | 4.6 | worse than attacking |
-| Whip Parry (`whip_parry`) | physical | 3 | 41% | 5.2 | worse than attacking |
-| Trident Riposte (`trident_riposte`) | physical | 3 | 41% | 5.0 | worse than attacking |
-| Pinning Bow Shot (`bow_pinning`) | physical | 4 | 41% | 4.7 | worse than attacking |
-| Crippling Javelin Throw (`javelin_crippling`) | physical | 4 | 41% | 4.7 | worse than attacking |
-| Pinning Scattergun Blast (`scattergun_pinning`) | physical | 4 | 41% | 4.7 | worse than attacking |
-| Hunter's Scattergun Blast (`scattergun_hunters`) | physical | 4 | 41% | 4.5 | worse than attacking |
-| Hunter's Horn Gore (`horn_hunters`) | physical | 4 | 41% | 4.4 | worse than attacking |
-| Tentacle Parry (`tentacle_parry`) | physical | 3 | 41% | 5.1 | worse than attacking |
-| Tentacle Riposte (`tentacle_riposte`) | physical | 3 | 41% | 4.9 | worse than attacking |
-| Stone Spike (`stone_spike`) | magic | 3 | 40% | 5.3 | worse than attacking |
-| Void Touch (`void_touch`) | magic | 4 | 40% | 4.9 | worse than attacking |
-| Wither (`wither`) | magic | 4 | 40% | 4.8 | worse than attacking |
-| Clarity (`clarity`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Spell Ward (`spell_ward`) | magic | 4 | 40% | 4.8 | worse than attacking |
-| Enlarge (`enlarge`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Rally (`rally`) | physical | 3 | 40% | 5.0 | worse than attacking |
-| Evasion (`evasion`) | physical | 3 | 40% | 5.0 | worse than attacking |
-| Acid Flask (`acid_flask`) | physical | 4 | 40% | 4.7 | worse than attacking |
-| Ice Bolt (`ice_bolt`) | magic | 3 | 40% | 5.3 | worse than attacking |
-| Ice Judgement (`ice_judgement`) | magic | 4 | 40% | 4.6 | worse than attacking |
-| Thunder Purge (`thunder_purge`) | magic | 3 | 40% | 5.0 | worse than attacking |
-| Earth Curse (`earth_curse`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Earth Purge (`earth_purge`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Stone Veil (`stone_veil`) | magic | 3 | 40% | 4.9 | worse than attacking |
-| Crystal Dart (`crystal_dart`) | magic | 4 | 40% | 4.7 | worse than attacking |
-| Crystal Judgement (`crystal_judgement`) | magic | 4 | 40% | 4.3 | worse than attacking |
-| Crystal Veil (`crystal_veil`) | magic | 4 | 40% | 4.8 | worse than attacking |
-| Acid Dart (`acid_dart`) | magic | 4 | 40% | 4.6 | worse than attacking |
-| Song Grasp (`song_grasp`) | magic | 4 | 40% | 5.1 | worse than attacking |
-| Song Blessing (`song_blessing`) | magic | 3 | 40% | 4.8 | worse than attacking |
-| Holy Lance (`holy_lance`) | magic | 4 | 40% | 4.9 | worse than attacking |
-| Holy Veil (`holy_veil`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Star Grasp (`star_grasp`) | magic | 4 | 40% | 5.1 | worse than attacking |
-| Dream Mantle (`dream_mantle`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Rune Brand (`rune_brand`) | magic | 4 | 40% | 4.7 | worse than attacking |
-| Death Lance (`death_lance`) | magic | 4 | 40% | 4.9 | worse than attacking |
-| Venom Lance (`venom_lance`) | magic | 4 | 40% | 4.8 | worse than attacking |
-| Thread Mantle (`thread_mantle`) | magic | 3 | 40% | 5.0 | worse than attacking |
-| Mirror Bolt (`mirror_bolt`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Mirror Mantle (`mirror_mantle`) | magic | 3 | 40% | 5.0 | worse than attacking |
-| Sword Cut (`sword_strike`) | physical | 3 | 40% | 4.8 | worse than attacking |
-| Bleeding Dagger Stab (`dagger_bleeding`) | physical | 4 | 40% | 4.7 | worse than attacking |
-| Finishing Rapier Lunge (`rapier_finishing`) | physical | 4 | 40% | 4.5 | worse than attacking |
-| Lance Feint (`lance_feint`) | physical | 3 | 40% | 5.0 | worse than attacking |
-| Piercing Glaive Arc (`glaive_piercing`) | physical | 4 | 40% | 4.8 | worse than attacking |
-| Toppling Javelin Throw (`javelin_toppling`) | physical | 4 | 40% | 4.7 | worse than attacking |
-| Fist Parry (`fist_parry`) | physical | 3 | 40% | 5.0 | worse than attacking |
-| Martial Parry (`martial_parry`) | physical | 3 | 40% | 5.1 | worse than attacking |
-| Elbow Riposte (`elbow_riposte`) | physical | 3 | 40% | 5.2 | worse than attacking |
-| Claw Parry (`claw_parry`) | physical | 3 | 40% | 5.1 | worse than attacking |
-| Piercing Horn Gore (`horn_piercing`) | physical | 4 | 40% | 4.8 | worse than attacking |
-| Ice Lance (`ice_lance`) | magic | 4 | 40% | 4.6 | worse than attacking |
-| Silence (`deafening_silence`) | magic | 4 | 40% | 5.1 | worse than attacking |
-| Arcane Blast (`arcane_blast`) | magic | 3 | 40% | 5.0 | worse than attacking |
-| Bite (`bite`) | physical | 3 | 40% | 5.3 | worse than attacking |
-| Spiked Hide (`spikes`) | physical | 3 | 40% | 5.1 | worse than attacking |
-| Blood Frenzy (`blood_frenzy`) | physical | 3 | 40% | 5.2 | worse than attacking |
-| Stand Firm (`stand_firm`) | physical | 3 | 40% | 5.0 | worse than attacking |
-| Magma Purge (`magma_purge`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Lightning Purge (`lightning_purge`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Light Mantle (`light_mantle`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Lunar Lance (`lunar_lance`) | magic | 4 | 40% | 4.6 | worse than attacking |
-| Psychic Brand (`psychic_brand`) | magic | 4 | 40% | 5.0 | worse than attacking |
-| Blood Burst (`blood_burst`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Chain Mantle (`chain_mantle`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Ink Lance (`ink_lance`) | magic | 4 | 40% | 4.5 | worse than attacking |
-| Ink Mantle (`ink_mantle`) | magic | 3 | 40% | 4.9 | worse than attacking |
-| Axe Riposte (`axe_riposte`) | physical | 3 | 40% | 5.2 | worse than attacking |
-| Dagger Parry (`dagger_parry`) | physical | 3 | 40% | 5.0 | worse than attacking |
-| Hunter's Crossbow Quarrel (`crossbow_hunters`) | physical | 4 | 40% | 4.5 | worse than attacking |
-| Precise Pistol Shot (`pistol_precise`) | physical | 4 | 40% | 4.7 | worse than attacking |
-| Finishing Fang Bite (`fang_finishing`) | physical | 4 | 40% | 4.5 | worse than attacking |
-| Horn Riposte (`horn_riposte`) | physical | 3 | 40% | 4.9 | worse than attacking |
-| Tail Riposte (`tail_riposte`) | physical | 3 | 40% | 4.9 | worse than attacking |
-| Frostbite (`frostbite`) | magic | 3 | 40% | 5.0 | worse than attacking |
-| Static Field (`static_field`) | magic | 4 | 40% | 4.9 | worse than attacking |
-| Regeneration (`regeneration`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Water Purge (`water_purge`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Lightning Brand (`lightning_brand`) | magic | 4 | 40% | 4.6 | worse than attacking |
-| Lightning Curse (`lightning_curse`) | magic | 3 | 40% | 4.8 | worse than attacking |
-| Thunder Grasp (`thunder_grasp`) | magic | 4 | 40% | 5.0 | worse than attacking |
-| Sonic Bolt (`sound_bolt`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Song Purge (`song_purge`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Light Veil (`light_veil`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Lunar Bolt (`lunar_bolt`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Dark Veil (`dark_veil`) | magic | 4 | 40% | 5.1 | worse than attacking |
-| Dream Veil (`dream_veil`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Phantasmal Curse (`phantasm_curse`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Force Mantle (`force_mantle`) | magic | 3 | 40% | 5.0 | worse than attacking |
-| Chaos Purge (`chaos_purge`) | magic | 3 | 40% | 5.1 | worse than attacking |
-| Blood Dart (`blood_dart`) | magic | 4 | 40% | 4.6 | worse than attacking |
-| Soul Mantle (`soul_mantle`) | magic | 3 | 40% | 5.2 | worse than attacking |
-| Card Purge (`card_purge`) | magic | 3 | 40% | 5.0 | worse than attacking |
-| Mirror Grasp (`mirror_grasp`) | magic | 4 | 40% | 5.0 | worse than attacking |
-| Scythe Riposte (`scythe_riposte`) | physical | 3 | 40% | 4.9 | worse than attacking |
-| Piercing Spear Thrust (`spear_piercing`) | physical | 4 | 40% | 4.8 | worse than attacking |
-| Spear Feint (`spear_feint`) | physical | 3 | 40% | 5.0 | worse than attacking |
-| Halberd Riposte (`halberd_riposte`) | physical | 3 | 40% | 5.2 | worse than attacking |
-| Piercing Pistol Shot (`pistol_piercing`) | physical | 4 | 40% | 4.6 | worse than attacking |
-| Fang Riposte (`fang_riposte`) | physical | 3 | 40% | 5.3 | worse than attacking |
-| Tailwind (`tailwind`) | magic | 4 | 39% | 5.1 | worse than attacking |
-| Wind Wall (`wind_wall`) | magic | 4 | 39% | 5.1 | worse than attacking |
-| Confusion (`confusion`) | magic | 4 | 39% | 5.0 | worse than attacking |
-| Force Lance (`force_lance`) | magic | 4 | 39% | 4.7 | worse than attacking |
-| Fire Mantle (`fire_mantle`) | magic | 3 | 39% | 5.1 | worse than attacking |
-| Ash Lance (`ash_lance`) | magic | 4 | 39% | 4.7 | worse than attacking |
-| Frost Purge (`frost_purge`) | magic | 3 | 39% | 5.0 | worse than attacking |
-| Sonic Dart (`sound_dart`) | magic | 4 | 39% | 4.5 | worse than attacking |
-| Light Lance (`light_lance`) | magic | 4 | 39% | 4.8 | worse than attacking |
-| Dark Purge (`dark_purge`) | magic | 3 | 39% | 5.0 | worse than attacking |
-| Dark Ward (`dark_ward`) | magic | 3 | 39% | 5.2 | worse than attacking |
-| Dream Dart (`dream_dart`) | magic | 4 | 39% | 4.9 | worse than attacking |
-| Arcane Brand (`arcane_brand`) | magic | 4 | 39% | 4.6 | worse than attacking |
-| Bone Veil (`bone_veil`) | magic | 3 | 39% | 5.3 | worse than attacking |
-| Death Burst (`death_burst`) | magic | 3 | 39% | 5.4 | worse than attacking |
-| Rot Purge (`rot_purge`) | magic | 3 | 39% | 5.2 | worse than attacking |
-| Primal Mantle (`primal_mantle`) | magic | 3 | 39% | 5.2 | worse than attacking |
-| Spore Grasp (`spore_grasp`) | magic | 4 | 39% | 4.9 | worse than attacking |
-| Scythe Parry (`scythe_parry`) | physical | 3 | 39% | 5.2 | worse than attacking |
-| Chain Parry (`chain_parry`) | physical | 3 | 39% | 5.0 | worse than attacking |
-| Hunter's Spear Thrust (`spear_hunters`) | physical | 4 | 39% | 4.7 | worse than attacking |
-| Piercing Crossbow Quarrel (`crossbow_piercing`) | physical | 4 | 39% | 4.6 | worse than attacking |
-| Hunter's Pistol Shot (`pistol_hunters`) | physical | 4 | 39% | 4.7 | worse than attacking |
-| Elbow Parry (`elbow_parry`) | physical | 3 | 39% | 5.2 | worse than attacking |
-| Finishing Horn Gore (`horn_finishing`) | physical | 4 | 39% | 4.6 | worse than attacking |
-| Blink (`blink`) | magic | 4 | 38% | 5.0 | worse than attacking |
-| Thunder Bolt (`thunder_bolt`) | magic | 3 | 38% | 5.3 | worse than attacking |
-| Wind Lance (`wind_lance`) | magic | 4 | 38% | 4.7 | worse than attacking |
-| Lunar Grasp (`lunar_grasp`) | magic | 4 | 38% | 4.9 | worse than attacking |
-| Psychic Lance (`psychic_lance`) | magic | 4 | 38% | 4.8 | worse than attacking |
-| Phantasmal Veil (`phantasm_veil`) | magic | 4 | 38% | 5.2 | worse than attacking |
-| Force Veil (`force_veil`) | magic | 3 | 38% | 5.2 | worse than attacking |
-| Rune Bolt (`rune_bolt`) | magic | 3 | 38% | 5.1 | worse than attacking |
-| Bone Judgement (`bone_judgement`) | magic | 4 | 38% | 4.6 | worse than attacking |
-| Death Wave (`death_wave`) | magic | 4 | 38% | 4.8 | worse than attacking |
-| Thorn Lance (`thorn_lance`) | magic | 4 | 38% | 4.5 | worse than attacking |
-| Thorn Purge (`thorn_purge`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Life Mantle (`life_mantle`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Chain Veil (`chain_veil`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Mirror Purge (`mirror_purge`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Finishing Dagger Stab (`dagger_finishing`) | physical | 4 | 38% | 4.4 | worse than attacking |
-| Bleeding Horn Gore (`horn_bleeding`) | physical | 4 | 38% | 4.7 | worse than attacking |
-| Tail Feint (`tail_feint`) | physical | 3 | 38% | 5.0 | worse than attacking |
-| Fire Shield (`fire_shield`) | magic | 4 | 38% | 5.0 | worse than attacking |
-| Acid Spit (`acid_spit`) | physical | 4 | 38% | 4.6 | worse than attacking |
-| Frost Mantle (`frost_mantle`) | magic | 3 | 38% | 4.9 | worse than attacking |
-| Water Mantle (`water_mantle`) | magic | 3 | 38% | 5.3 | worse than attacking |
-| Crystal Lance (`crystal_lance`) | magic | 4 | 38% | 5.0 | worse than attacking |
-| Wind Veil (`wind_veil`) | magic | 4 | 38% | 5.1 | worse than attacking |
-| Sonic Veil (`sound_veil`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Star Bolt (`star_bolt`) | magic | 3 | 38% | 5.2 | worse than attacking |
-| Psychic Dart (`psychic_dart`) | magic | 4 | 38% | 4.6 | worse than attacking |
-| Force Purge (`force_purge`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Thorn Mantle (`thorn_mantle`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Card Veil (`card_veil`) | magic | 4 | 38% | 4.9 | worse than attacking |
-| Thread Purge (`thread_purge`) | magic | 3 | 38% | 5.3 | worse than attacking |
-| Ink Veil (`ink_veil`) | magic | 4 | 38% | 5.0 | worse than attacking |
-| Piercing Greatsword Cleave (`greatsword_piercing`) | physical | 4 | 38% | 4.5 | worse than attacking |
-| Greatsword Parry (`greatsword_parry`) | physical | 3 | 38% | 5.1 | worse than attacking |
-| Club Riposte (`club_riposte`) | physical | 3 | 38% | 5.1 | worse than attacking |
-| Trident Jab (`trident_strike`) | physical | 3 | 38% | 5.0 | worse than attacking |
-| Piercing Fang Bite (`fang_piercing`) | physical | 4 | 38% | 4.7 | worse than attacking |
-| Bone Spear (`bone_spear`) | magic | 3 | 38% | 5.4 | worse than attacking |
-| Parry (`parry`) | physical | 3 | 38% | 5.3 | worse than attacking |
-| Wild Magic (`wild_magic`) | magic | 2 | 38% | 3.1 | worse than attacking |
-| Ice Mantle (`ice_mantle`) | magic | 3 | 38% | 4.9 | worse than attacking |
-| Ice Veil (`ice_veil`) | magic | 3 | 38% | 5.2 | worse than attacking |
-| Holy Mantle (`holy_mantle`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Dark Dart (`dark_dart`) | magic | 4 | 38% | 4.7 | worse than attacking |
-| Phantasmal Lance (`phantasm_lance`) | magic | 4 | 38% | 4.8 | worse than attacking |
-| Bone Purge (`bone_purge`) | magic | 3 | 38% | 5.1 | worse than attacking |
-| Soul Purge (`soul_purge`) | magic | 3 | 38% | 4.9 | worse than attacking |
-| Card Mantle (`card_mantle`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Ink Purge (`ink_purge`) | magic | 3 | 38% | 5.0 | worse than attacking |
-| Mace Parry (`mace_parry`) | physical | 3 | 38% | 5.0 | worse than attacking |
-| Light Blessing (`light_blessing`) | magic | 3 | 37% | 5.0 | worse than attacking |
-| Dark Mantle (`dark_mantle`) | magic | 3 | 37% | 5.1 | worse than attacking |
-| Psychic Purge (`psychic_purge`) | magic | 3 | 37% | 5.3 | worse than attacking |
-| Arcane Bolt (`arcane_bolt`) | magic | 3 | 37% | 5.2 | worse than attacking |
-| Chaos Lance (`chaos_lance`) | magic | 4 | 37% | 4.7 | worse than attacking |
-| Blood Lance (`blood_lance`) | magic | 4 | 37% | 4.8 | worse than attacking |
-| Ink Curse (`ink_curse`) | magic | 3 | 37% | 4.9 | worse than attacking |
-| Staff Parry (`staff_parry`) | physical | 3 | 37% | 5.1 | worse than attacking |
-| Hunter's Halberd Hack (`halberd_hunters`) | physical | 4 | 37% | 4.3 | worse than attacking |
-| Pinning Lance Charge (`lance_pinning`) | physical | 4 | 37% | 4.7 | worse than attacking |
-| Chill Touch (`chill_touch`) | magic | 4 | 36% | 4.8 | worse than attacking |
-| Feint (`feint`) | physical | 3 | 36% | 5.0 | worse than attacking |
-| Stimulant (`stimulant`) | physical | 4 | 36% | 5.0 | worse than attacking |
-| Backfire (`backfire`) | physical | 2 | 36% | 3.2 | worse than attacking |
-| Ice Dart (`ice_dart`) | magic | 4 | 36% | 4.6 | worse than attacking |
-| Iron Grasp (`metal_grasp`) | magic | 4 | 36% | 4.8 | worse than attacking |
-| Acid Lance (`acid_lance`) | magic | 4 | 36% | 4.8 | worse than attacking |
-| Lunar Burst (`lunar_burst`) | magic | 3 | 36% | 5.2 | worse than attacking |
-| Dark Burst (`dark_burst`) | magic | 3 | 36% | 5.3 | worse than attacking |
-| Dream Brand (`dream_brand`) | magic | 4 | 36% | 4.6 | worse than attacking |
-| Soul Bolt (`soul_bolt`) | magic | 3 | 36% | 5.2 | worse than attacking |
-| Soul Dart (`soul_dart`) | magic | 4 | 36% | 4.8 | worse than attacking |
-| Piercing Trident Jab (`trident_piercing`) | physical | 4 | 36% | 4.7 | worse than attacking |
-| Glaive Riposte (`glaive_riposte`) | physical | 3 | 36% | 5.1 | worse than attacking |
-| Piercing Bow Shot (`bow_piercing`) | physical | 4 | 36% | 4.7 | worse than attacking |
-| Pinning Horn Gore (`horn_pinning`) | physical | 4 | 36% | 4.7 | worse than attacking |
-| Stoneskin (`stoneskin`) | magic | 3 | 36% | 5.0 | worse than attacking |
-| Sanctuary (`sanctuary`) | magic | 4 | 36% | 5.1 | worse than attacking |
-| Vampire Form (`vampire_form`) | magic | 4 | 36% | 5.0 | worse than attacking |
-| Dread Lance (`dread_lance`) | magic | 4 | 36% | 4.8 | worse than attacking |
-| Phantasmal Mantle (`phantasm_mantle`) | magic | 3 | 36% | 5.2 | worse than attacking |
-| Bone Lance (`bone_lance`) | magic | 4 | 36% | 4.8 | worse than attacking |
-| Mirror Lance (`mirror_lance`) | magic | 4 | 36% | 4.8 | worse than attacking |
-| Piercing Rapier Lunge (`rapier_piercing`) | physical | 4 | 36% | 4.8 | worse than attacking |
-| Piercing Club Bash (`club_piercing`) | physical | 4 | 36% | 4.7 | worse than attacking |
-| Shield Riposte (`shield_riposte`) | physical | 3 | 36% | 4.9 | worse than attacking |
-| Spear Parry (`spear_parry`) | physical | 3 | 36% | 5.2 | worse than attacking |
-| Precise Bow Shot (`bow_precise`) | physical | 4 | 36% | 4.6 | worse than attacking |
-| Shadow Cloak (`shadow_cloak`) | magic | 4 | 36% | 5.0 | worse than attacking |
-| Piercing Shot (`piercing_shot`) | physical | 4 | 36% | 4.6 | worse than attacking |
-| Vanish (`vanish`) | physical | 3 | 36% | 5.0 | worse than attacking |
-| Crystal Bolt (`crystal_bolt`) | magic | 3 | 36% | 5.2 | worse than attacking |
-| Iron Veil (`metal_veil`) | magic | 3 | 36% | 4.8 | worse than attacking |
-| Star Lance (`star_lance`) | magic | 4 | 36% | 4.9 | worse than attacking |
-| Star Veil (`star_veil`) | magic | 3 | 36% | 4.9 | worse than attacking |
-| Lunar Purge (`lunar_purge`) | magic | 3 | 36% | 5.2 | worse than attacking |
-| Force Bolt (`force_bolt`) | magic | 3 | 36% | 5.0 | worse than attacking |
-| Bone Bolt (`bone_bolt`) | magic | 3 | 36% | 5.1 | worse than attacking |
-| Mirror Veil (`mirror_veil`) | magic | 4 | 36% | 4.9 | worse than attacking |
-| Javelin Throw (`javelin_strike`) | physical | 3 | 36% | 5.2 | worse than attacking |
-| Fang Bite (`fang_strike`) | physical | 3 | 36% | 5.0 | worse than attacking |
-| Haste (`haste`) | magic | 4 | 35% | 5.1 | worse than attacking |
-| Magma Veil (`magma_veil`) | magic | 3 | 35% | 4.9 | worse than attacking |
-| Shadow Veil (`shadow_veil`) | magic | 4 | 35% | 5.0 | worse than attacking |
-| Blood Purge (`blood_purge`) | magic | 3 | 35% | 4.9 | worse than attacking |
-| Battle Focus (`battle_focus`) | physical | 2 | 34% | 6.2 | worse than attacking |
-| Stone Purge (`stone_purge`) | magic | 3 | 34% | 4.9 | worse than attacking |
-| Dread Bolt (`dread_bolt`) | magic | 3 | 34% | 5.1 | worse than attacking |
-| Phantasmal Bolt (`phantasm_bolt`) | magic | 3 | 34% | 5.1 | worse than attacking |
-| Flail Riposte (`flail_riposte`) | physical | 3 | 34% | 5.0 | worse than attacking |
-| Spear Thrust (`spear_strike`) | physical | 3 | 34% | 5.1 | worse than attacking |
-| Thunder Lance (`thunder_lance`) | magic | 4 | 34% | 5.0 | worse than attacking |
-| Dream Bolt (`dream_bolt`) | magic | 3 | 34% | 5.3 | worse than attacking |
-| Death Brand (`death_brand`) | magic | 4 | 34% | 4.8 | worse than attacking |
-| Piercing Lance Charge (`lance_piercing`) | physical | 4 | 34% | 4.8 | worse than attacking |
-| Bow Shot (`bow_strike`) | physical | 3 | 34% | 5.2 | worse than attacking |
-| Shadow Bolt (`shadow_bolt`) | magic | 3 | 34% | 5.2 | worse than attacking |
-| Super Speed (`super_speed`) | physical | 3 | 34% | 5.0 | worse than attacking |
-| Dark Lance (`dark_lance`) | magic | 4 | 34% | 4.7 | worse than attacking |
-| Scattergun Blast (`scattergun_strike`) | physical | 3 | 34% | 5.2 | worse than attacking |
-| Rage (`rage`) | physical | 2 | 33% | 5.9 | worse than attacking |
-| Blood Bolt (`blood_bolt`) | magic | 3 | 33% | 5.4 | worse than attacking |
-| Horn Gore (`horn_strike`) | physical | 3 | 33% | 5.2 | worse than attacking |
-| Psychic Bolt (`psychic_bolt`) | magic | 3 | 32% | 5.2 | worse than attacking |
-| Chain Purge (`chain_purge`) | magic | 3 | 32% | 5.3 | worse than attacking |
-| Piercing Javelin Throw (`javelin_piercing`) | physical | 4 | 32% | 4.7 | worse than attacking |
-| Acid Splash (`acid_splash`) | magic | 4 | 32% | 4.7 | worse than attacking |
-| Thread Veil (`thread_veil`) | magic | 4 | 32% | 5.0 | worse than attacking |
-| Rifle Round (`rifle_strike`) | physical | 3 | 32% | 5.2 | worse than attacking |
-| Crossbow Quarrel (`crossbow_strike`) | physical | 3 | 31% | 5.2 | worse than attacking |
-| Dream Lance (`dream_lance`) | magic | 4 | 30% | 4.8 | worse than attacking |
-| Rapier Lunge (`rapier_strike`) | physical | 3 | 30% | 5.3 | worse than attacking |
-| Pistol Shot (`pistol_strike`) | physical | 3 | 30% | 5.4 | worse than attacking |
-| Lance Charge (`lance_strike`) | physical | 3 | 30% | 5.0 | worse than attacking |
-| Piercing Rifle Round (`rifle_piercing`) | physical | 4 | 30% | 4.8 | worse than attacking |
-| Acid Bolt (`acid_bolt`) | magic | 3 | 29% | 5.2 | worse than attacking |
-| Dark Bolt (`dark_bolt`) | magic | 3 | 27% | 5.1 | worse than attacking |
-| Death Bolt (`death_bolt`) | magic | 3 | 25% | 5.1 | too weak |
-| Escape Artist (`escape_artist`) | physical | 2 | 24% | 6.5 | too weak |
-| Shake It Off (`shake_it_off`) | physical | 2 | 24% | 6.5 | too weak |
-| Blood Price (`blood_price`) | magic | 2 | 20% | 2.7 | too weak |
-| Iron Will (`iron_will`) | physical | 2 | 15% | 6.3 | too weak |
-| Overexertion (`overexertion`) | physical | 2 | 12% | 2.7 | too weak |
-| Widened (`widened`) | magic | 5 | 12% | 6.4 | too weak |
-| Sweeping (`sweeping`) | physical | 5 | 12% | 6.8 | too weak |
-| *1161 others within range* | | | | | |
+| Life Transfer (`life_transfer`) | magic | 3 | 88% | 82% | too strong |
+| Adrenaline Rush (`adrenaline`) | physical | 3 | 88% | 84% | too strong |
+| Second Wind (`second_wind`) | physical | 2 | 79% | 78% | too strong |
+| Holy Mending (`holy_mending`) | magic | 3 | 76% | 69% | too strong |
+| Healing Word (`healing_word`) | magic | 3 | 74% | 61% | too strong |
+| Thorn Mending (`thorn_mending`) | magic | 3 | 74% | 64% | too strong |
+| Light Mending (`light_mending`) | magic | 3 | 72% | 70% | too strong |
+| Soul Mending (`soul_mending`) | magic | 3 | 70% | 72% | too strong |
+| Life Mending (`life_mending`) | magic | 3 | 71% | 70% | too strong |
+| Water Mending (`water_mending`) | magic | 3 | 66% | 70% | too strong |
+| Healing Draught (`healing_draught`) | physical | 3 | 68% | 66% | too strong |
+| Song Mending (`song_mending`) | magic | 3 | 68% | 68% | too strong |
+| Gust (`gust`) | magic | 4 | 44% | 43% | worse than attacking |
+| Dream Judgement (`dream_judgement`) | magic | 4 | 44% | 43% | worse than attacking |
+| Bone Hex (`bone_hex`) | magic | 3 | 44% | 40% | worse than attacking |
+| Mirror Grasp (`mirror_grasp`) | magic | 4 | 44% | 39% | worse than attacking |
+| Finishing Trident Jab (`trident_finishing`) | physical | 4 | 44% | 43% | worse than attacking |
+| Chill Touch (`chill_touch`) | magic | 4 | 38% | 44% | worse than attacking |
+| Compel (`compel`) | magic | 3 | 32% | 44% | worse than attacking |
+| Ash Mantle (`ash_mantle`) | magic | 3 | 42% | 44% | worse than attacking |
+| Lightning Grasp (`lightning_grasp`) | magic | 4 | 40% | 44% | worse than attacking |
+| Sand Curse (`sand_curse`) | magic | 3 | 18% | 44% | worse than attacking |
+| Sonic Hex (`sound_hex`) | magic | 3 | 18% | 44% | worse than attacking |
+| Star Dart (`star_dart`) | magic | 4 | 44% | 44% | worse than attacking |
+| Dark Burst (`dark_burst`) | magic | 3 | 17% | 44% | worse than attacking |
+| Dream Burst (`dream_burst`) | magic | 3 | 24% | 44% | worse than attacking |
+| Rune Mantle (`rune_mantle`) | magic | 3 | 38% | 44% | worse than attacking |
+| Card Veil (`card_veil`) | magic | 4 | 44% | 34% | worse than attacking |
+| Chain Mantle (`chain_mantle`) | magic | 3 | 38% | 44% | worse than attacking |
+| Mirror Curse (`mirror_curse`) | magic | 3 | 20% | 44% | worse than attacking |
+| Finishing Flail Swing (`flail_finishing`) | physical | 4 | 44% | 40% | worse than attacking |
+| Piercing Javelin Throw (`javelin_piercing`) | physical | 4 | 42% | 44% | worse than attacking |
+| Precise Rifle Round (`rifle_precise`) | physical | 4 | 42% | 44% | worse than attacking |
+| Sonic Scream (`sonic_scream`) | magic | 4 | 38% | 43% | worse than attacking |
+| Slow (`slow`) | magic | 3 | 24% | 43% | worse than attacking |
+| Sanctuary (`sanctuary`) | magic | 4 | 43% | 30% | worse than attacking |
+| Protection (`protection`) | magic | 3 | 43% | 38% | worse than attacking |
+| Blood Frenzy (`blood_frenzy`) | physical | 3 | 40% | 43% | worse than attacking |
+| Fire Mantle (`fire_mantle`) | magic | 3 | 41% | 43% | worse than attacking |
+| Ash Grasp (`ash_grasp`) | magic | 4 | 41% | 43% | worse than attacking |
+| Hellfire Grasp (`hellfire_grasp`) | magic | 4 | 36% | 43% | worse than attacking |
+| Ice Dart (`ice_dart`) | magic | 4 | 37% | 43% | worse than attacking |
+| Stone Mantle (`stone_mantle`) | magic | 3 | 38% | 43% | worse than attacking |
+| Song Mantle (`song_mantle`) | magic | 3 | 43% | 37% | worse than attacking |
+| Song Blessing (`song_blessing`) | magic | 3 | 36% | 43% | worse than attacking |
+| Dream Dart (`dream_dart`) | magic | 4 | 36% | 43% | worse than attacking |
+| Dream Curse (`dream_curse`) | magic | 3 | 18% | 43% | worse than attacking |
+| Dream Mantle (`dream_mantle`) | magic | 3 | 42% | 43% | worse than attacking |
+| Psychic Dart (`psychic_dart`) | magic | 4 | 37% | 43% | worse than attacking |
+| Phantasmal Hex (`phantasm_hex`) | magic | 3 | 23% | 43% | worse than attacking |
+| Phantasmal Grasp (`phantasm_grasp`) | magic | 4 | 43% | 41% | worse than attacking |
+| Arcane Burst (`arcane_burst`) | magic | 3 | 24% | 43% | worse than attacking |
+| Chaos Brand (`chaos_brand`) | magic | 4 | 43% | 42% | worse than attacking |
+| Chaos Grasp (`chaos_grasp`) | magic | 4 | 43% | 38% | worse than attacking |
+| Primal Hex (`primal_hex`) | magic | 3 | 42% | 43% | worse than attacking |
+| Shield Slam (`shield_strike`) | physical | 3 | 39% | 43% | worse than attacking |
+| Piercing Bow Shot (`bow_piercing`) | physical | 4 | 42% | 43% | worse than attacking |
+| Frostbite (`frostbite`) | magic | 3 | 38% | 42% | worse than attacking |
+| Entangle (`entangle`) | magic | 4 | 42% | 40% | worse than attacking |
+| Illusion (`illusion`) | magic | 4 | 32% | 42% | worse than attacking |
+| Super Speed (`super_speed`) | physical | 3 | 31% | 42% | worse than attacking |
+| Fire Grasp (`fire_grasp`) | magic | 4 | 42% | 38% | worse than attacking |
+| Acid Hex (`acid_hex`) | magic | 3 | 23% | 42% | worse than attacking |
+| Sonic Grasp (`sound_grasp`) | magic | 4 | 40% | 42% | worse than attacking |
+| Lunar Wave (`lunar_wave`) | magic | 4 | 42% | 42% | worse than attacking |
+| Dread Curse (`dread_curse`) | magic | 3 | 22% | 42% | worse than attacking |
+| Blood Dart (`blood_dart`) | magic | 4 | 38% | 42% | worse than attacking |
+| Death Curse (`death_curse`) | magic | 3 | 16% | 42% | worse than attacking |
+| Death Leech (`death_leech`) | magic | 4 | 42% | 42% | worse than attacking |
+| Rapier Feint (`rapier_feint`) | physical | 3 | 14% | 42% | worse than attacking |
+| Finishing Fang Bite (`fang_finishing`) | physical | 4 | 42% | 42% | worse than attacking |
+| Finishing Horn Gore (`horn_finishing`) | physical | 4 | 42% | 42% | worse than attacking |
+| Vanish (`vanish`) | physical | 3 | 18% | 42% | worse than attacking |
+| Dirty Trick (`sand_in_eyes`) | physical | 3 | 37% | 42% | worse than attacking |
+| Ash Hex (`ash_hex`) | magic | 3 | 30% | 42% | worse than attacking |
+| Thunder Wave (`thunder_wave`) | magic | 4 | 41% | 42% | worse than attacking |
+| Acid Grasp (`acid_grasp`) | magic | 4 | 38% | 42% | worse than attacking |
+| Song Grasp (`song_grasp`) | magic | 4 | 34% | 42% | worse than attacking |
+| Dream Brand (`dream_brand`) | magic | 4 | 38% | 42% | worse than attacking |
+| Dream Grasp (`dream_grasp`) | magic | 4 | 39% | 42% | worse than attacking |
+| Dream Veil (`dream_veil`) | magic | 3 | 34% | 42% | worse than attacking |
+| Psychic Grasp (`psychic_grasp`) | magic | 4 | 42% | 38% | worse than attacking |
+| Dread Brand (`dread_brand`) | magic | 4 | 41% | 42% | worse than attacking |
+| Force Hex (`force_hex`) | magic | 3 | 26% | 42% | worse than attacking |
+| Arcane Veil (`arcane_veil`) | magic | 3 | 36% | 42% | worse than attacking |
+| Chaos Hex (`chaos_hex`) | magic | 3 | 14% | 42% | worse than attacking |
+| Blood Hex (`blood_hex`) | magic | 3 | 40% | 42% | worse than attacking |
+| Rot Grasp (`rot_grasp`) | magic | 4 | 42% | 42% | worse than attacking |
+| Soul Grasp (`soul_grasp`) | magic | 4 | 42% | 42% | worse than attacking |
+| Card Curse (`card_curse`) | magic | 3 | 20% | 42% | worse than attacking |
+| Flail Swing (`flail_strike`) | physical | 3 | 41% | 42% | worse than attacking |
+| Suppressing Rifle Fire (`rifle_suppressing`) | physical | 3 | 32% | 42% | worse than attacking |
+| Ice Shackles (`ice_shackles`) | magic | 4 | 38% | 42% | worse than attacking |
+| Wind Wall (`wind_wall`) | magic | 4 | 42% | 40% | worse than attacking |
+| Divine Favor (`divine_favor`) | magic | 3 | 36% | 42% | worse than attacking |
+| Barkskin (`barkskin`) | magic | 3 | 40% | 42% | worse than attacking |
+| Rally (`rally`) | physical | 3 | 42% | 42% | worse than attacking |
+| Net (`net`) | physical | 4 | 42% | 42% | worse than attacking |
+| Magma Veil (`magma_veil`) | magic | 3 | 35% | 42% | worse than attacking |
+| Crystal Hex (`crystal_hex`) | magic | 3 | 38% | 42% | worse than attacking |
+| Shadow Hex (`shadow_hex`) | magic | 3 | 25% | 42% | worse than attacking |
+| Psychic Burst (`psychic_burst`) | magic | 3 | 28% | 42% | worse than attacking |
+| Force Veil (`force_veil`) | magic | 3 | 42% | 37% | worse than attacking |
+| Card Grasp (`card_grasp`) | magic | 4 | 42% | 42% | worse than attacking |
+| Suppressing Sling Fire (`sling_suppressing`) | physical | 3 | 32% | 42% | worse than attacking |
+| Gravity Well (`gravity_well`) | magic | 4 | 41% | 40% | worse than attacking |
+| Mirror Image (`mirror_image`) | magic | 4 | 41% | 28% | worse than attacking |
+| Frost Hex (`frost_hex`) | magic | 3 | 34% | 41% | worse than attacking |
+| Ice Bolt (`ice_bolt`) | magic | 3 | 31% | 41% | worse than attacking |
+| Star Grasp (`star_grasp`) | magic | 4 | 36% | 41% | worse than attacking |
+| Lunar Grasp (`lunar_grasp`) | magic | 4 | 30% | 41% | worse than attacking |
+| Dread Grasp (`dread_grasp`) | magic | 4 | 36% | 41% | worse than attacking |
+| Bone Burst (`bone_burst`) | magic | 3 | 28% | 41% | worse than attacking |
+| Suppressing Bow Fire (`bow_suppressing`) | physical | 3 | 28% | 41% | worse than attacking |
+| Static Field (`static_field`) | magic | 4 | 25% | 40% | worse than attacking |
+| Mind Fog (`mind_blank`) | magic | 4 | 30% | 40% | worse than attacking |
+| Demoralize (`demoralize`) | physical | 4 | 40% | 40% | worse than attacking |
+| Water Curse (`water_curse`) | magic | 3 | 16% | 40% | worse than attacking |
+| Crystal Burst (`crystal_burst`) | magic | 3 | 24% | 40% | worse than attacking |
+| Iron Mantle (`metal_mantle`) | magic | 3 | 38% | 40% | worse than attacking |
+| Sonic Curse (`sound_curse`) | magic | 3 | 18% | 40% | worse than attacking |
+| Holy Grasp (`holy_grasp`) | magic | 4 | 38% | 40% | worse than attacking |
+| Star Hex (`star_hex`) | magic | 3 | 22% | 40% | worse than attacking |
+| Star Veil (`star_veil`) | magic | 3 | 38% | 40% | worse than attacking |
+| Blood Grasp (`blood_grasp`) | magic | 4 | 40% | 36% | worse than attacking |
+| Death Burst (`death_burst`) | magic | 3 | 20% | 40% | worse than attacking |
+| Chain Hex (`chain_hex`) | magic | 3 | 30% | 40% | worse than attacking |
+| Ink Hex (`ink_hex`) | magic | 3 | 29% | 40% | worse than attacking |
+| Horn Feint (`horn_feint`) | physical | 3 | 20% | 40% | worse than attacking |
+| Darkness (`darkness`) | magic | 3 | 32% | 40% | worse than attacking |
+| Void Touch (`void_touch`) | magic | 4 | 26% | 40% | worse than attacking |
+| Magma Curse (`magma_curse`) | magic | 3 | 20% | 40% | worse than attacking |
+| Frost Grasp (`frost_grasp`) | magic | 4 | 36% | 40% | worse than attacking |
+| Ice Judgement (`ice_judgement`) | magic | 4 | 40% | 40% | worse than attacking |
+| Water Grasp (`water_grasp`) | magic | 4 | 38% | 40% | worse than attacking |
+| Thunder Grasp (`thunder_grasp`) | magic | 4 | 36% | 40% | worse than attacking |
+| Earth Veil (`earth_veil`) | magic | 3 | 38% | 40% | worse than attacking |
+| Wind Curse (`wind_curse`) | magic | 3 | 19% | 40% | worse than attacking |
+| Wind Veil (`wind_veil`) | magic | 4 | 40% | 33% | worse than attacking |
+| Light Hex (`light_hex`) | magic | 3 | 34% | 40% | worse than attacking |
+| Light Veil (`light_veil`) | magic | 3 | 29% | 40% | worse than attacking |
+| Holy Hex (`holy_hex`) | magic | 3 | 30% | 40% | worse than attacking |
+| Dark Hex (`dark_hex`) | magic | 3 | 28% | 40% | worse than attacking |
+| Dark Grasp (`dark_grasp`) | magic | 4 | 38% | 40% | worse than attacking |
+| Dark Curse (`dark_curse`) | magic | 3 | 22% | 40% | worse than attacking |
+| Phantasmal Dart (`phantasm_dart`) | magic | 4 | 38% | 40% | worse than attacking |
+| Arcane Grasp (`arcane_grasp`) | magic | 4 | 37% | 40% | worse than attacking |
+| Rune Hex (`rune_hex`) | magic | 3 | 26% | 40% | worse than attacking |
+| Chaos Curse (`chaos_curse`) | magic | 3 | 17% | 40% | worse than attacking |
+| Thorn Hex (`thorn_hex`) | magic | 3 | 38% | 40% | worse than attacking |
+| Life Veil (`life_veil`) | magic | 3 | 40% | 37% | worse than attacking |
+| Mirror Hex (`mirror_hex`) | magic | 3 | 28% | 40% | worse than attacking |
+| Ice Armor (`ice_armor`) | magic | 3 | 36% | 40% | worse than attacking |
+| Wither (`wither`) | magic | 4 | 26% | 40% | worse than attacking |
+| Vampire Form (`vampire_form`) | magic | 4 | 33% | 40% | worse than attacking |
+| Stone Grasp (`stone_grasp`) | magic | 4 | 37% | 40% | worse than attacking |
+| Iron Veil (`metal_veil`) | magic | 3 | 35% | 40% | worse than attacking |
+| Wind Hex (`wind_hex`) | magic | 3 | 26% | 40% | worse than attacking |
+| Lunar Hex (`lunar_hex`) | magic | 3 | 18% | 40% | worse than attacking |
+| Psychic Hex (`psychic_hex`) | magic | 3 | 33% | 40% | worse than attacking |
+| Psychic Curse (`psychic_curse`) | magic | 3 | 21% | 40% | worse than attacking |
+| Death Grasp (`death_grasp`) | magic | 4 | 39% | 40% | worse than attacking |
+| Thread Veil (`thread_veil`) | magic | 4 | 40% | 39% | worse than attacking |
+| Chain Veil (`chain_veil`) | magic | 3 | 40% | 37% | worse than attacking |
+| Club Feint (`club_feint`) | physical | 3 | 22% | 40% | worse than attacking |
+| Fist Feint (`fist_feint`) | physical | 3 | 18% | 40% | worse than attacking |
+| Tail Feint (`tail_feint`) | physical | 3 | 18% | 40% | worse than attacking |
+| Confusion (`confusion`) | magic | 4 | 32% | 39% | worse than attacking |
+| Hex (`hex`) | magic | 3 | 16% | 39% | worse than attacking |
+| Corrode (`corrode`) | magic | 3 | 18% | 39% | worse than attacking |
+| Hunter's Mark (`hunters_mark`) | physical | 4 | 39% | 39% | worse than attacking |
+| Iron Grasp (`metal_grasp`) | magic | 4 | 38% | 39% | worse than attacking |
+| Sand Hex (`sand_hex`) | magic | 3 | 30% | 39% | worse than attacking |
+| Song Curse (`song_curse`) | magic | 3 | 18% | 39% | worse than attacking |
+| Lunar Curse (`lunar_curse`) | magic | 3 | 22% | 39% | worse than attacking |
+| Arcane Hex (`arcane_hex`) | magic | 3 | 23% | 39% | worse than attacking |
+| Primal Curse (`primal_curse`) | magic | 3 | 20% | 39% | worse than attacking |
+| Ink Curse (`ink_curse`) | magic | 3 | 22% | 39% | worse than attacking |
+| Fire Curse (`fire_curse`) | magic | 3 | 16% | 38% | worse than attacking |
+| Iron Curse (`metal_curse`) | magic | 3 | 20% | 38% | worse than attacking |
+| Wind Grasp (`wind_grasp`) | magic | 4 | 38% | 38% | worse than attacking |
+| Dread Hex (`dread_hex`) | magic | 3 | 24% | 38% | worse than attacking |
+| Phantasmal Curse (`phantasm_curse`) | magic | 3 | 18% | 38% | worse than attacking |
+| Force Curse (`force_curse`) | magic | 3 | 14% | 38% | worse than attacking |
+| Arcane Curse (`arcane_curse`) | magic | 3 | 24% | 38% | worse than attacking |
+| Bone Veil (`bone_veil`) | magic | 3 | 38% | 38% | worse than attacking |
+| Thorn Veil (`thorn_veil`) | magic | 3 | 38% | 36% | worse than attacking |
+| Card Hex (`card_hex`) | magic | 3 | 38% | 38% | worse than attacking |
+| Thread Curse (`thread_curse`) | magic | 3 | 18% | 38% | worse than attacking |
+| Suppressing Crossbow Fire (`crossbow_suppressing`) | physical | 3 | 30% | 38% | worse than attacking |
+| Suppressing Scattergun Fire (`scattergun_suppressing`) | physical | 3 | 34% | 38% | worse than attacking |
+| Martial Feint (`martial_feint`) | physical | 3 | 15% | 38% | worse than attacking |
+| Fang Feint (`fang_feint`) | physical | 3 | 24% | 38% | worse than attacking |
+| Immolate (`immolate`) | magic | 3 | 26% | 38% | worse than attacking |
+| Brace (`brace`) | physical | 3 | 38% | 32% | worse than attacking |
+| Magma Hex (`magma_hex`) | magic | 3 | 28% | 38% | worse than attacking |
+| Frost Veil (`frost_veil`) | magic | 3 | 38% | 34% | worse than attacking |
+| Stone Hex (`stone_hex`) | magic | 3 | 28% | 38% | worse than attacking |
+| Stone Veil (`stone_veil`) | magic | 3 | 36% | 38% | worse than attacking |
+| Song Hex (`song_hex`) | magic | 3 | 18% | 38% | worse than attacking |
+| Psychic Veil (`psychic_veil`) | magic | 3 | 34% | 38% | worse than attacking |
+| Death Hex (`death_hex`) | magic | 3 | 18% | 38% | worse than attacking |
+| Stoneskin (`stoneskin`) | magic | 3 | 35% | 38% | worse than attacking |
+| Backfire (`backfire`) | physical | 2 | 34% | 38% | worse than attacking |
+| Dagger Feint (`dagger_feint`) | physical | 3 | 16% | 38% | worse than attacking |
+| Suppressing Hatchet Fire (`hatchet_suppressing`) | physical | 3 | 30% | 38% | worse than attacking |
+| Bless (`bless`) | magic | 3 | 22% | 37% | worse than attacking |
+| Clarity (`clarity`) | magic | 3 | 36% | 37% | worse than attacking |
+| Shield Wall (`shield_wall`) | physical | 3 | 37% | 28% | worse than attacking |
+| Distract (`distract`) | physical | 3 | 36% | 37% | worse than attacking |
+| Wild Magic (`wild_magic`) | magic | 2 | 28% | 37% | worse than attacking |
+| Ice Curse (`ice_curse`) | magic | 3 | 14% | 37% | worse than attacking |
+| Ice Veil (`ice_veil`) | magic | 3 | 37% | 36% | worse than attacking |
+| Holy Veil (`holy_veil`) | magic | 3 | 30% | 37% | worse than attacking |
+| Dark Veil (`dark_veil`) | magic | 4 | 12% | 37% | worse than attacking |
+| Mirror Veil (`mirror_veil`) | magic | 4 | 36% | 37% | worse than attacking |
+| Chain Feint (`chain_feint`) | physical | 3 | 14% | 37% | worse than attacking |
+| Trident Feint (`trident_feint`) | physical | 3 | 21% | 37% | worse than attacking |
+| Glaive Feint (`glaive_feint`) | physical | 3 | 18% | 37% | worse than attacking |
+| Suppressing Shuriken Fire (`shuriken_suppressing`) | physical | 3 | 34% | 37% | worse than attacking |
+| Elbow Feint (`elbow_feint`) | physical | 3 | 18% | 37% | worse than attacking |
+| Fire Shield (`fire_shield`) | magic | 4 | 24% | 36% | worse than attacking |
+| Ash Veil (`ash_veil`) | magic | 4 | 14% | 36% | worse than attacking |
+| Light Grasp (`light_grasp`) | magic | 4 | 34% | 36% | worse than attacking |
+| Shadow Curse (`shadow_curse`) | magic | 3 | 18% | 36% | worse than attacking |
+| Voodoo (`voodoo`) | magic | 4 | 36% | 34% | worse than attacking |
+| Hellfire Hex (`hellfire_hex`) | magic | 3 | 28% | 36% | worse than attacking |
+| Lightning Veil (`lightning_veil`) | magic | 4 | 28% | 36% | worse than attacking |
+| Thunder Curse (`thunder_curse`) | magic | 3 | 16% | 36% | worse than attacking |
+| Light Curse (`light_curse`) | magic | 3 | 18% | 36% | worse than attacking |
+| Blood Curse (`blood_curse`) | magic | 3 | 19% | 36% | worse than attacking |
+| Soul Veil (`soul_veil`) | magic | 3 | 24% | 36% | worse than attacking |
+| Scythe Feint (`scythe_feint`) | physical | 3 | 18% | 36% | worse than attacking |
+| Staff Feint (`staff_feint`) | physical | 3 | 24% | 36% | worse than attacking |
+| Shield Feint (`shield_feint`) | physical | 3 | 18% | 36% | worse than attacking |
+| Halberd Feint (`halberd_feint`) | physical | 3 | 20% | 36% | worse than attacking |
+| Tentacle Feint (`tentacle_feint`) | physical | 3 | 16% | 36% | worse than attacking |
+| Shadow Cloak (`shadow_cloak`) | magic | 4 | 14% | 36% | worse than attacking |
+| Regeneration (`regeneration`) | magic | 3 | 33% | 36% | worse than attacking |
+| Spell Ward (`spell_ward`) | magic | 4 | 29% | 36% | worse than attacking |
+| Rot Curse (`rot_curse`) | magic | 3 | 20% | 36% | worse than attacking |
+| Chain Curse (`chain_curse`) | magic | 3 | 22% | 36% | worse than attacking |
+| Mace Feint (`mace_feint`) | physical | 3 | 22% | 36% | worse than attacking |
+| Suppressing Pistol Fire (`pistol_suppressing`) | physical | 3 | 22% | 36% | worse than attacking |
+| Claw Feint (`claw_feint`) | physical | 3 | 15% | 36% | worse than attacking |
+| Precognition (`precognition`) | magic | 4 | 35% | 30% | worse than attacking |
+| Stimulant (`stimulant`) | physical | 4 | 32% | 35% | worse than attacking |
+| Lightning Curse (`lightning_curse`) | magic | 3 | 22% | 35% | worse than attacking |
+| Rune Curse (`rune_curse`) | magic | 3 | 16% | 35% | worse than attacking |
+| Bone Curse (`bone_curse`) | magic | 3 | 14% | 35% | worse than attacking |
+| Spore Curse (`spore_curse`) | magic | 3 | 16% | 35% | worse than attacking |
+| Axe Feint (`axe_feint`) | physical | 3 | 15% | 35% | worse than attacking |
+| Flail Feint (`flail_feint`) | physical | 3 | 22% | 35% | worse than attacking |
+| Wing Feint (`wing_feint`) | physical | 3 | 18% | 35% | worse than attacking |
+| Silence (`deafening_silence`) | magic | 4 | 30% | 34% | worse than attacking |
+| Nightmare (`nightmare`) | magic | 4 | 28% | 34% | worse than attacking |
+| Intimidate (`intimidate`) | physical | 3 | 17% | 34% | worse than attacking |
+| Earth Curse (`earth_curse`) | magic | 3 | 15% | 34% | worse than attacking |
+| Acid Curse (`acid_curse`) | magic | 3 | 18% | 34% | worse than attacking |
+| Greatsword Feint (`greatsword_feint`) | physical | 3 | 22% | 34% | worse than attacking |
+| Scimitar Feint (`scimitar_feint`) | physical | 3 | 20% | 34% | worse than attacking |
+| Whip Feint (`whip_feint`) | physical | 3 | 22% | 34% | worse than attacking |
+| Terror (`terror`) | magic | 4 | 28% | 34% | worse than attacking |
+| Expose Weakness (`expose_weakness`) | physical | 3 | 25% | 34% | worse than attacking |
+| Lightning Hex (`lightning_hex`) | magic | 3 | 19% | 34% | worse than attacking |
+| Phantasmal Veil (`phantasm_veil`) | magic | 4 | 13% | 34% | worse than attacking |
+| Tactical Order (`tactical_order`) | physical | 4 | 34% | 25% | worse than attacking |
+| Smoke Bomb (`smoke_bomb`) | physical | 3 | 32% | 34% | worse than attacking |
+| Blood Price (`blood_price`) | magic | 2 | 13% | 34% | worse than attacking |
+| Hellfire Curse (`hellfire_curse`) | magic | 3 | 24% | 34% | worse than attacking |
+| Crystal Curse (`crystal_curse`) | magic | 3 | 20% | 34% | worse than attacking |
+| Holy Curse (`holy_curse`) | magic | 3 | 12% | 34% | worse than attacking |
+| Rune Veil (`rune_veil`) | magic | 4 | 24% | 34% | worse than attacking |
+| Tailwind (`tailwind`) | magic | 4 | 26% | 33% | worse than attacking |
+| Taunt (`taunt`) | physical | 3 | 28% | 33% | worse than attacking |
+| Fire Hex (`fire_hex`) | magic | 3 | 28% | 33% | worse than attacking |
+| Ash Curse (`ash_curse`) | magic | 3 | 20% | 33% | worse than attacking |
+| Frost Curse (`frost_curse`) | magic | 3 | 19% | 33% | worse than attacking |
+| Soul Curse (`soul_curse`) | magic | 3 | 19% | 32% | too weak |
+| Haste (`haste`) | magic | 4 | 28% | 32% | worse than attacking |
+| Crystal Veil (`crystal_veil`) | magic | 4 | 24% | 32% | worse than attacking |
+| Sand Veil (`sand_veil`) | magic | 4 | 14% | 32% | too weak |
+| Ink Veil (`ink_veil`) | magic | 4 | 14% | 32% | too weak |
+| Overexertion (`overexertion`) | physical | 2 | 10% | 32% | too weak |
+| Lunar Veil (`lunar_veil`) | magic | 4 | 14% | 32% | too weak |
+| Dream Hex (`dream_hex`) | magic | 3 | 18% | 32% | too weak |
+| Blood Veil (`blood_veil`) | magic | 4 | 32% | 28% | worse than attacking |
+| Lance Feint (`lance_feint`) | physical | 3 | 17% | 32% | too weak |
+| Steam Veil (`steam_veil`) | magic | 4 | 20% | 31% | worse than attacking |
+| Hammer Feint (`hammer_feint`) | physical | 3 | 16% | 31% | too weak |
+| Spear Feint (`spear_feint`) | physical | 3 | 16% | 31% | too weak |
+| Feint (`feint`) | physical | 3 | 19% | 30% | too weak |
+| Shadow Veil (`shadow_veil`) | magic | 4 | 16% | 30% | too weak |
+| Take Cover (`cover`) | physical | 4 | 18% | 30% | too weak |
+| Storm Speed (`storm_speed`) | magic | 4 | 29% | 30% | worse than attacking |
+| Stand Firm (`stand_firm`) | physical | 3 | 29% | 28% | worse than attacking |
+| Sword Feint (`sword_feint`) | physical | 3 | 20% | 28% | worse than attacking |
+| *1264 others within range* | | | | | |
 
-## Weak (375 effects, median win rate 48%)
+## Weak (375 effects, median win rate 46% / 52% duel / team)
 
-| Effect | Realm | AP | Win rate | Rounds | Verdict |
+| Effect | Realm | AP | Duel | Team | Verdict |
 |---|---|---|---|---|---|
-| Cure Wounds (`cure_wounds`) | magic | 4 | 69% | 5.8 | too strong |
-| Bomb (`bomb`) | physical | 4 | 68% | 4.0 | too strong |
-| Sand Wisp (`sand_summon`) | magic | 4 | 42% | 4.9 | worse than attacking |
-| Dread Torment (`dread_torment`) | magic | 5 | 42% | 5.1 | worse than attacking |
-| Disarming Scythe Reap (`scythe_disarming`) | physical | 5 | 42% | 6.1 | worse than attacking |
-| Stunning Mace Blow (`mace_stunning`) | physical | 5 | 42% | 5.7 | worse than attacking |
-| Lance Whirlwind (`lance_whirlwind`) | physical | 4 | 42% | 4.8 | worse than attacking |
-| Disarming Martial Kick (`martial_disarming`) | physical | 5 | 42% | 6.2 | worse than attacking |
-| Magma Torment (`magma_torment`) | magic | 5 | 42% | 5.3 | worse than attacking |
-| Hellfire Torment (`hellfire_torment`) | magic | 5 | 42% | 5.5 | worse than attacking |
-| Earth Torment (`earth_torment`) | magic | 5 | 42% | 5.4 | worse than attacking |
-| Crystal Familiar (`crystal_summon`) | magic | 4 | 42% | 4.6 | worse than attacking |
-| Spectral Singer (`song_summon`) | magic | 4 | 42% | 5.0 | worse than attacking |
-| Shadow Smite (`shadow_smite`) | magic | 5 | 42% | 5.6 | worse than attacking |
-| Dream Nova (`dream_nova`) | magic | 5 | 42% | 5.3 | worse than attacking |
-| Chaos Smite (`chaos_smite`) | magic | 5 | 42% | 5.4 | worse than attacking |
-| Chaos Imp (`chaos_summon`) | magic | 4 | 42% | 4.7 | worse than attacking |
-| Bone Nova (`bone_nova`) | magic | 5 | 42% | 5.2 | worse than attacking |
-| Disarming Horn Gore (`horn_disarming`) | physical | 5 | 42% | 6.4 | worse than attacking |
-| Revivify (`revivify`) | magic | 4 | 42% | 4.8 | worse than attacking |
-| Spark Sprite (`lightning_summon`) | magic | 4 | 42% | 4.8 | worse than attacking |
-| Wind Sprite (`wind_summon`) | magic | 4 | 42% | 4.5 | worse than attacking |
-| Holy Torment (`holy_torment`) | magic | 5 | 42% | 5.2 | worse than attacking |
-| Disarming Dagger Stab (`dagger_disarming`) | physical | 5 | 42% | 6.1 | worse than attacking |
-| Disarming Bow Shot (`bow_disarming`) | physical | 5 | 42% | 6.4 | worse than attacking |
-| Disarming Crossbow Quarrel (`crossbow_disarming`) | physical | 5 | 42% | 6.5 | worse than attacking |
-| Disarming Pistol Shot (`pistol_disarming`) | physical | 5 | 42% | 6.3 | worse than attacking |
-| Raise Dead (`raise_dead`) | magic | 4 | 41% | 4.7 | worse than attacking |
-| Ice Hound (`ice_summon`) | magic | 4 | 41% | 4.9 | worse than attacking |
-| Chaos Torment (`chaos_torment`) | magic | 5 | 41% | 5.3 | worse than attacking |
-| Shield Bash (`shield_bash`) | physical | 5 | 40% | 6.3 | worse than attacking |
-| Unstoppable (`unstoppable`) | physical | 3 | 40% | 5.3 | worse than attacking |
-| Ash Wisp (`ash_summon`) | magic | 4 | 40% | 4.7 | worse than attacking |
-| Iron Torment (`metal_torment`) | magic | 5 | 40% | 5.9 | worse than attacking |
-| Shadow Torment (`shadow_torment`) | magic | 5 | 40% | 5.2 | worse than attacking |
-| Spirit Wolf (`primal_summon`) | magic | 4 | 40% | 4.8 | worse than attacking |
-| Ink Torment (`ink_torment`) | magic | 5 | 40% | 5.5 | worse than attacking |
-| Disarming Scimitar Slash (`scimitar_disarming`) | physical | 5 | 40% | 6.3 | worse than attacking |
-| Disarming Lance Charge (`lance_disarming`) | physical | 5 | 40% | 6.5 | worse than attacking |
-| Javelin Volley (`javelin_volley`) | physical | 4 | 40% | 4.7 | worse than attacking |
-| Snuff Magic (`eclipse`) | magic | 4 | 40% | 4.9 | worse than attacking |
-| Mud Hound (`earth_summon`) | magic | 4 | 40% | 4.9 | worse than attacking |
-| Acid Ooze (`acid_summon`) | magic | 4 | 40% | 4.9 | worse than attacking |
-| Chain Torment (`chain_torment`) | magic | 5 | 40% | 5.2 | worse than attacking |
-| Turn (`turn_undead`) | magic | 4 | 40% | 4.8 | worse than attacking |
-| Knockout Gas (`knockout_gas`) | physical | 5 | 40% | 5.5 | worse than attacking |
-| Spectral Hand (`force_summon`) | magic | 4 | 40% | 4.7 | worse than attacking |
-| Bone Torment (`bone_torment`) | magic | 5 | 40% | 5.4 | worse than attacking |
-| Soul Torment (`soul_torment`) | magic | 5 | 40% | 5.2 | worse than attacking |
-| Thorn Torment (`thorn_torment`) | magic | 5 | 40% | 5.3 | worse than attacking |
-| Spore Torment (`spore_torment`) | magic | 5 | 40% | 5.2 | worse than attacking |
-| Chain Smite (`chain_smite`) | magic | 5 | 40% | 5.7 | worse than attacking |
-| Stunning Lance Charge (`lance_stunning`) | physical | 5 | 40% | 5.9 | worse than attacking |
-| Disarming Rifle Round (`rifle_disarming`) | physical | 5 | 40% | 6.4 | worse than attacking |
-| Psychic Nova (`psychic_nova`) | magic | 5 | 39% | 5.2 | worse than attacking |
-| Rune Torment (`rune_torment`) | magic | 5 | 39% | 5.3 | worse than attacking |
-| Ink Smite (`ink_smite`) | magic | 5 | 39% | 5.4 | worse than attacking |
-| Shock Baton (`shock_baton`) | physical | 5 | 38% | 6.2 | worse than attacking |
-| Light Wisp (`light_summon`) | magic | 4 | 38% | 4.8 | worse than attacking |
-| Arcane Smite (`arcane_smite`) | magic | 5 | 38% | 5.4 | worse than attacking |
-| Scattergun Volley (`scattergun_volley`) | physical | 4 | 38% | 4.8 | worse than attacking |
-| Fang Whirlwind (`fang_whirlwind`) | physical | 4 | 38% | 4.9 | worse than attacking |
-| Disarming Tail Lash (`tail_disarming`) | physical | 5 | 38% | 6.1 | worse than attacking |
-| Drown (`drown`) | magic | 4 | 38% | 4.9 | worse than attacking |
-| Bodyguard (`bodyguard`) | physical | 4 | 38% | 4.8 | worse than attacking |
-| Star Mote (`star_summon`) | magic | 4 | 38% | 4.9 | worse than attacking |
-| Rune Sentinel (`rune_summon`) | magic | 4 | 38% | 4.9 | worse than attacking |
-| Mirror Torment (`mirror_torment`) | magic | 5 | 38% | 5.2 | worse than attacking |
-| Water Torment (`water_torment`) | magic | 5 | 38% | 5.2 | worse than attacking |
-| Stone Servant (`stone_summon`) | magic | 4 | 38% | 4.7 | worse than attacking |
-| Crystal Torment (`crystal_torment`) | magic | 5 | 38% | 5.5 | worse than attacking |
-| Rune Smite (`rune_smite`) | magic | 5 | 38% | 5.4 | worse than attacking |
-| Soul Smite (`soul_smite`) | magic | 5 | 38% | 5.4 | worse than attacking |
-| Smelling Salts (`smelling_salts`) | physical | 4 | 37% | 5.0 | worse than attacking |
-| Sleeper Dart (`sleeper_dart`) | physical | 5 | 37% | 6.5 | worse than attacking |
-| Last Stand (`last_stand`) | physical | 4 | 37% | 5.1 | worse than attacking |
-| Water Sprite (`water_summon`) | magic | 4 | 37% | 4.8 | worse than attacking |
-| Ink Beast (`ink_summon`) | magic | 4 | 37% | 5.0 | worse than attacking |
-| Rapier Whirlwind (`rapier_whirlwind`) | physical | 4 | 37% | 4.7 | worse than attacking |
-| Card Torment (`card_torment`) | magic | 5 | 36% | 5.4 | worse than attacking |
-| Force Torment (`force_torment`) | magic | 5 | 36% | 5.2 | worse than attacking |
-| Sand Torment (`sand_torment`) | magic | 5 | 35% | 5.2 | worse than attacking |
-| Arcane Torment (`arcane_torment`) | magic | 5 | 35% | 5.0 | worse than attacking |
-| Bow Volley (`bow_volley`) | physical | 4 | 34% | 4.8 | worse than attacking |
-| Rebound (`mirror_ward`) | magic | 5 | 34% | 5.5 | worse than attacking |
-| *290 others within range* | | | | | |
+| Lay on Hands (`lay_on_hands`) | physical | 4 | 80% | 70% | too strong |
+| Cure Wounds (`cure_wounds`) | magic | 4 | 76% | 65% | too strong |
+| Light Renewal (`light_renewal`) | magic | 4 | 73% | 65% | too strong |
+| Life Renewal (`life_renewal`) | magic | 4 | 73% | 72% | too strong |
+| Thorn Renewal (`thorn_renewal`) | magic | 4 | 72% | 64% | too strong |
+| Holy Renewal (`holy_renewal`) | magic | 4 | 72% | 62% | too strong |
+| Song Renewal (`song_renewal`) | magic | 4 | 69% | 64% | too strong |
+| Suffocate (`suffocate`) | magic | 4 | 44% | 39% | worse than attacking |
+| Curse (`curse`) | magic | 5 | 44% | 42% | worse than attacking |
+| Crystal Torment (`crystal_torment`) | magic | 5 | 44% | 40% | worse than attacking |
+| Moon Moth (`lunar_summon`) | magic | 4 | 44% | 31% | worse than attacking |
+| Puppet (`thread_summon`) | magic | 4 | 44% | 40% | worse than attacking |
+| Shadow Hound (`shadow_summon`) | magic | 4 | 44% | 34% | worse than attacking |
+| Unstoppable (`unstoppable`) | physical | 3 | 40% | 44% | worse than attacking |
+| Stone Torment (`stone_torment`) | magic | 5 | 44% | 42% | worse than attacking |
+| Iron Torment (`metal_torment`) | magic | 5 | 44% | 43% | worse than attacking |
+| Light Wisp (`light_summon`) | magic | 4 | 38% | 44% | worse than attacking |
+| Dark Torment (`dark_torment`) | magic | 5 | 42% | 44% | worse than attacking |
+| Rune Sentinel (`rune_summon`) | magic | 4 | 42% | 44% | worse than attacking |
+| Thorn Creeper (`thorn_summon`) | magic | 4 | 42% | 44% | worse than attacking |
+| Mirror Double (`mirror_summon`) | magic | 4 | 44% | 41% | worse than attacking |
+| Spear Whirlwind (`spear_whirlwind`) | physical | 4 | 44% | 40% | worse than attacking |
+| Spiritual Weapon (`spiritual_weapon`) | magic | 4 | 42% | 43% | worse than attacking |
+| Stone Servant (`stone_summon`) | magic | 4 | 43% | 36% | worse than attacking |
+| Wind Sprite (`wind_summon`) | magic | 4 | 39% | 43% | worse than attacking |
+| Song Torment (`song_torment`) | magic | 5 | 39% | 43% | worse than attacking |
+| Chaos Torment (`chaos_torment`) | magic | 5 | 42% | 43% | worse than attacking |
+| Bone Torment (`bone_torment`) | magic | 5 | 36% | 43% | worse than attacking |
+| Spirit Guide (`soul_summon`) | magic | 4 | 40% | 43% | worse than attacking |
+| Raise Dead (`raise_dead`) | magic | 4 | 39% | 42% | worse than attacking |
+| Sleep (`sleep`) | magic | 5 | 36% | 42% | worse than attacking |
+| Sleeper Dart (`sleeper_dart`) | physical | 5 | 40% | 42% | worse than attacking |
+| Frost Sprite (`frost_summon`) | magic | 4 | 42% | 41% | worse than attacking |
+| Dream Torment (`dream_torment`) | magic | 5 | 36% | 42% | worse than attacking |
+| Card Soldier (`card_summon`) | magic | 4 | 42% | 40% | worse than attacking |
+| Thread Torment (`thread_torment`) | magic | 5 | 31% | 42% | worse than attacking |
+| Storm Hawk (`thunder_summon`) | magic | 4 | 42% | 35% | worse than attacking |
+| Earth Torment (`earth_torment`) | magic | 5 | 40% | 42% | worse than attacking |
+| Spectral Hand (`force_summon`) | magic | 4 | 38% | 42% | worse than attacking |
+| Rune Torment (`rune_torment`) | magic | 5 | 30% | 42% | worse than attacking |
+| Chaos Imp (`chaos_summon`) | magic | 4 | 35% | 42% | worse than attacking |
+| Thorn Torment (`thorn_torment`) | magic | 5 | 32% | 42% | worse than attacking |
+| Spore Torment (`spore_torment`) | magic | 5 | 38% | 42% | worse than attacking |
+| Fungal Creeper (`spore_summon`) | magic | 4 | 42% | 32% | worse than attacking |
+| Animated Chains (`chain_summon`) | magic | 4 | 42% | 40% | worse than attacking |
+| Flame Sprite (`fire_summon`) | magic | 4 | 38% | 42% | worse than attacking |
+| Water Sprite (`water_summon`) | magic | 4 | 38% | 42% | worse than attacking |
+| Iron Hound (`metal_summon`) | magic | 4 | 41% | 42% | worse than attacking |
+| Echo (`sound_summon`) | magic | 4 | 42% | 40% | worse than attacking |
+| Dream Phantom (`dream_summon`) | magic | 4 | 40% | 42% | worse than attacking |
+| Rot Ghoul (`rot_summon`) | magic | 4 | 40% | 42% | worse than attacking |
+| Scattergun Volley (`scattergun_volley`) | physical | 4 | 36% | 42% | worse than attacking |
+| Mud Hound (`earth_summon`) | magic | 4 | 41% | 36% | worse than attacking |
+| Spectral Guardian (`holy_summon`) | magic | 4 | 41% | 40% | worse than attacking |
+| Shadow Torment (`shadow_torment`) | magic | 5 | 38% | 41% | worse than attacking |
+| Gloom Stalker (`dark_summon`) | magic | 4 | 41% | 36% | worse than attacking |
+| Phantasmal Double (`phantasm_summon`) | magic | 4 | 40% | 41% | worse than attacking |
+| Arcane Familiar (`arcane_summon`) | magic | 4 | 41% | 37% | worse than attacking |
+| Death Torment (`death_torment`) | magic | 5 | 41% | 41% | worse than attacking |
+| Chain Torment (`chain_torment`) | magic | 5 | 34% | 41% | worse than attacking |
+| Ink Torment (`ink_torment`) | magic | 5 | 41% | 40% | worse than attacking |
+| Dagger Whirlwind (`dagger_whirlwind`) | physical | 4 | 40% | 41% | worse than attacking |
+| Call Beast (`call_beast`) | magic | 4 | 40% | 38% | worse than attacking |
+| Volley (`volley`) | physical | 4 | 40% | 38% | worse than attacking |
+| Knockout Gas (`knockout_gas`) | physical | 5 | 39% | 40% | worse than attacking |
+| Cinder Hound (`magma_summon`) | magic | 4 | 40% | 36% | worse than attacking |
+| Spark Sprite (`lightning_summon`) | magic | 4 | 39% | 40% | worse than attacking |
+| Star Mote (`star_summon`) | magic | 4 | 36% | 40% | worse than attacking |
+| Thought Wisp (`psychic_summon`) | magic | 4 | 40% | 36% | worse than attacking |
+| Phantasmal Torment (`phantasm_torment`) | magic | 5 | 35% | 40% | worse than attacking |
+| Minor Elemental (`summon_elemental`) | magic | 4 | 38% | 40% | worse than attacking |
+| Sand Torment (`sand_torment`) | magic | 5 | 34% | 40% | worse than attacking |
+| Dread Wisp (`dread_summon`) | magic | 4 | 40% | 34% | worse than attacking |
+| Fang Whirlwind (`fang_whirlwind`) | physical | 4 | 38% | 40% | worse than attacking |
+| Lunar Torment (`lunar_torment`) | magic | 5 | 40% | 40% | worse than attacking |
+| Force Torment (`force_torment`) | magic | 5 | 40% | 34% | worse than attacking |
+| Spirit Wolf (`primal_summon`) | magic | 4 | 40% | 37% | worse than attacking |
+| Ink Beast (`ink_summon`) | magic | 4 | 36% | 40% | worse than attacking |
+| Drown (`drown`) | magic | 4 | 39% | 39% | worse than attacking |
+| Imp (`hellfire_summon`) | magic | 4 | 38% | 39% | worse than attacking |
+| Ice Hound (`ice_summon`) | magic | 4 | 39% | 38% | worse than attacking |
+| Soul Torment (`soul_torment`) | magic | 5 | 36% | 39% | worse than attacking |
+| Venom Torment (`venom_torment`) | magic | 5 | 35% | 39% | worse than attacking |
+| Ash Wisp (`ash_summon`) | magic | 4 | 38% | 36% | worse than attacking |
+| Acid Ooze (`acid_summon`) | magic | 4 | 37% | 34% | worse than attacking |
+| Mirror Torment (`mirror_torment`) | magic | 5 | 32% | 37% | worse than attacking |
+| Bodyguard (`bodyguard`) | physical | 4 | 36% | 36% | worse than attacking |
+| Ice Torment (`ice_torment`) | magic | 5 | 36% | 36% | worse than attacking |
+| Holy Torment (`holy_torment`) | magic | 5 | 36% | 33% | worse than attacking |
+| Arcane Torment (`arcane_torment`) | magic | 5 | 34% | 35% | worse than attacking |
+| Water Torment (`water_torment`) | magic | 5 | 34% | 34% | worse than attacking |
+| Rebound (`mirror_ward`) | magic | 5 | 26% | 32% | worse than attacking |
+| *283 others within range* | | | | | |
 
-## Normal (69 effects, median win rate 63%)
+## Normal (69 effects, median win rate 60% / 61% duel / team)
 
-| Effect | Realm | AP | Win rate | Rounds | Verdict |
+| Effect | Realm | AP | Duel | Team | Verdict |
 |---|---|---|---|---|---|
-| Shadow Doom (`shadow_doom`) | magic | 5 | 42% | 5.3 | worse than attacking |
-| Venom Doom (`venom_doom`) | magic | 5 | 42% | 5.3 | worse than attacking |
-| Berserk (`berserk`) | physical | 4 | 41% | 5.1 | worse than attacking |
-| Soul Doom (`soul_doom`) | magic | 5 | 40% | 5.0 | worse than attacking |
-| Dread Doom (`dread_doom`) | magic | 5 | 40% | 5.3 | worse than attacking |
-| Rot Doom (`rot_doom`) | magic | 5 | 40% | 5.3 | worse than attacking |
-| Hellfire Doom (`hellfire_doom`) | magic | 5 | 38% | 5.1 | worse than attacking |
-| Dark Doom (`dark_doom`) | magic | 5 | 38% | 5.1 | worse than attacking |
-| Chaos Doom (`chaos_doom`) | magic | 5 | 38% | 5.2 | worse than attacking |
-| Death Mark (`death_mark`) | magic | 5 | 37% | 5.1 | worse than attacking |
-| Blood Doom (`blood_doom`) | magic | 5 | 36% | 5.3 | worse than attacking |
-| Acid Doom (`acid_doom`) | magic | 5 | 34% | 5.2 | worse than attacking |
-| Unravel (`unravel`) | magic | 5 | 33% | 5.3 | worse than attacking |
-| Tactical Retreat (`retreat`) | physical | 5 | 0% | 1.0 | too weak |
-| *55 others within range* | | | | | |
+| Dread Doom (`dread_doom`) | magic | 5 | 44% | 38% | worse than attacking |
+| Dark Doom (`dark_doom`) | magic | 5 | 42% | 40% | worse than attacking |
+| Blood Doom (`blood_doom`) | magic | 5 | 36% | 42% | worse than attacking |
+| Death Mark (`death_mark`) | magic | 5 | 40% | 40% | worse than attacking |
+| Shadow Doom (`shadow_doom`) | magic | 5 | 40% | 34% | worse than attacking |
+| Hellfire Doom (`hellfire_doom`) | magic | 5 | 39% | 32% | worse than attacking |
+| *63 others within range* | | | | | |

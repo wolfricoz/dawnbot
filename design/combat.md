@@ -225,6 +225,12 @@ attacks such as Magic Missile and Whirlwind dropped a step; two-hit ones are unc
 (was +2) and Ricochet +2 (was +4); Novas cost 4 (was 3). Measured before the change: Magic Missile 82% → 67%, Ricochet
 74% → 63%, Novas 64–68% → about 58%.
 
+**Balance pass 3** (2026-11-15, after the simulator gained team fights and armor): heals were the only big outlier
+(all 19 "too strong" effects; Cantrip heals never miss, ignore DT and are unlimited, winning about 70%). Heals now roll
+two die steps below the tier's, so a Cantrip heal is 1d4 + modifier and stays unlimited (Rico chose this over limiting
+heals to Weak or making them dearer). Adrenaline Rush and Life Transfer lost their extra die step and Second Wind costs
+2. Measured: every heal 52–60%.
+
 **NPC abilities**: automatic NPCs pick an ability by situation rather than only attacking (see
 `classes/combat/Autopilot.py`): bringing back a downed ally, then healing one below half HP, control on the toughest
 enemy not yet under it (or immune to it), cleansing a controlled ally, damage (area abilities preferred against several
@@ -239,7 +245,7 @@ weapons (and heals on "support").
 | afflict | Save or the condition for the tier's turns. A save failed by 5 or more also triggers the ability's damage type. |
 | doom | Save or doomed: takes the dice when it runs out. |
 | dispel / cleanse | Removes helpful conditions from an enemy / harmful ones from an ally. |
-| heal / shield / revive | Dice + modifier as HP, as a shield, or to bring a downed ally back. Heals reach downed allies. |
+| heal / shield / revive | Dice + modifier as HP, as a shield, or to bring a downed ally back. Heals roll two dice steps below the tier's (they never miss and ignore DT) and reach downed allies. |
 | boost | A helpful condition for the tier's turns. Boosts that only work on the user cost 1 less. |
 | companion | A summon attacks a random enemy at the start of the user's turns for the tier's turns + 1. |
 | escape | The user leaves the fight. |
