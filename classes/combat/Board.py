@@ -2,7 +2,7 @@
 and the timer."""
 import discord
 
-from classes.combat import Conditions as C, Passives
+from classes.combat import Conditions as C, Fortune, Passives
 from classes.combat.Engine import Engine
 from classes.combat.State import ACTIVE, ASYNC, Combatant, DEAD, DOWNED, DYING, ENDED, FLED, Fight, PAUSED, PENDING, \
 	REMOVED, SETUP, STABLE
@@ -51,8 +51,10 @@ def combatant_line(combatant: Combatant, fight: Fight, engine: Engine) -> str :
 
 # ============================================================
 def passive_notes(combatant: Combatant) -> list[str] :
-	"""Stacks gained and last stands used, like `⚡ Spellfed 3/5`."""
+	"""Stacks gained and last stands used, like `⚡ Spellfed 3/5`, and a pending bad-roll reroll."""
 	notes = []
+	if Fortune.armed(combatant.stats.get("bad_streak")) :
+		notes.append("🍀 next failed roll is made again")
 	state = combatant.stats.get("passive_state") or {}
 	for passive in combatant.passives :
 		kept = state.get(str(passive["id"])) or {}

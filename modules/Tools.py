@@ -10,13 +10,17 @@ from translate import Translator
 
 from classes.characters.ImageStorage import ImageStorage
 from classes.characters.Special import STATS, Special
+from classes.combat import Fortune
 from classes.combat.AutoComplete import AutoComplete
-from classes.dice.Dice import Dice, MAX_AMOUNT, MAX_SIDES, MIN_SIDES, Modifier
+from classes.dice.Dice import CRITICAL_FAILURE, Dice, MAX_AMOUNT, MAX_SIDES, MIN_SIDES, Modifier, POOR
 from classes.dice.DiceCard import DiceCard
 from classes.kernel.ConfigData import ConfigData
 from data.languages import LANGUAGES
 from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
 from resources.configs.ConfigMapping import ConfigMapping
+
+# /dice rolls that count as bad for the bad-roll protection.
+BAD_TIERS = (POOR, CRITICAL_FAILURE)
 
 
 class Tools(commands.Cog) :
@@ -63,6 +67,9 @@ class Tools(commands.Cog) :
 		server's starting stat value (5 by default), so 5 adds nothing, 10 adds +5 and 1 adds -4. The modifier option
 		comes on top. Modifiers are added once to the total, and dice of 100 sides or more triple them. Rolling every die
 		on its highest side is a critical success; every die on 1 is a critical failure.
+
+		Rolling as a character counts toward its bad luck: after 3 rolls in a row that come out Poor or worse (or fail
+		in a fight), its next bad roll is made again once and the better result counts.
 		"""
 		stat = stat.value if isinstance(stat, Choice) else stat
 		logging.debug(f"{interaction.user.name} rolled {amount}d{dicetype} modifier {modifier} character {character} "
@@ -91,10 +98,17 @@ class Tools(commands.Cog) :
 		# Fetching a stored avatar can take a moment.
 		await interaction.response.defer(thinking=True)
 		avatar = await ImageStorage.url(self.bot, record.avatar_id) if record else None
-		roll = Dice.roll(dicetype, amount, modifiers)
+		note = None
+		if record is not None :
+			roll, first = Fortune.for_character(record.id, lambda : Dice.roll(dicetype, amount, modifiers),
+			                                    lambda result : result.tier not in BAD_TIERS,
+			                                    lambda result : result.total)
+			note = Fortune.note(str(first.total)) if first is not None else None
+		else :
+			roll = Dice.roll(dicetype, amount, modifiers)
 		embed = DiceCard.embed(roll, roller=interaction.user.display_name, goal=title,
 		                       character_name=record.name if record else None, stat=stat,
-		                       icon_url=avatar or interaction.user.display_avatar.url, thumbnail_url=avatar)
+		                       icon_url=avatar or interaction.user.display_avatar.url, thumbnail_url=avatar, note=note)
 		await interaction.followup.send(embed=embed)
 
 	# ============================================================

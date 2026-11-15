@@ -193,6 +193,7 @@ class CombatFlow :
 				if interaction is not None :
 					await reply(interaction, "That fight no longer exists.")
 				return None
+			CombatFlow.refresh_streaks(fight)
 			engine = CombatFlow.engine(fight)
 			snapshot = fight.snapshot() if undoable else None
 			try :
@@ -203,6 +204,7 @@ class CombatFlow :
 				return None
 			CombatTransactions().save(fight)
 			CombatFlow.use_up(outcome.used_items)
+			CombatFlow.save_streaks(outcome.streaks)
 			if outcome.lines :
 				CombatTransactions().log(fight.id, fight.round, label, "\n".join(outcome.lines), actor_id, target_id,
 				                         snapshot=snapshot)
@@ -226,6 +228,22 @@ class CombatFlow :
 			if updated is not None :
 				logging.info(f"Character {character.id} died in combat")
 				await ForumPost.retire(bot, updated, lock=True)
+
+	# ============================================================
+	@staticmethod
+	def refresh_streaks(fight: Fight) -> None :
+		"""Reads the characters' bad-roll streaks into the fight, as /dice rolls may have changed them."""
+		for combatant in fight.combatants :
+			if combatant.character_id :
+				character = CharacterTransactions().get_by_id(combatant.character_id)
+				if character is not None :
+					combatant.stats["bad_streak"] = int(getattr(character, "bad_streak", 0) or 0)
+
+	# ============================================================
+	@staticmethod
+	def save_streaks(streaks: dict) -> None :
+		for character_id, streak in streaks.items() :
+			CharacterTransactions().update(character_id, bad_streak=int(streak))
 
 	# ============================================================
 	@staticmethod
@@ -261,6 +279,8 @@ class CombatFlow :
 			used_before = CombatFlow.used_items(fight)
 			fight.restore(entry.snapshot)
 			CombatTransactions().save(fight)
+			CombatFlow.save_streaks({combatant.character_id : int(combatant.stats.get("bad_streak") or 0)
+			                         for combatant in fight.combatants if combatant.character_id})
 			CombatFlow.give_back(used_before - CombatFlow.used_items(fight))
 			CombatTransactions().delete_logs_from(fight_id, entry.id)
 		first_line = (entry.text or entry.action).splitlines()[0][:200]

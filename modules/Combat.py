@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
-from classes.combat import Rules
+from classes.combat import Fortune, Rules
 from classes.combat.AutoComplete import AutoComplete
 from classes.combat.CombatFlow import CombatFlow
 from classes.combat.DamageTypes import ALWAYS, DamageTypes, STRONG_HIT
@@ -148,11 +148,15 @@ class Combat(commands.GroupCog, name="Combat", group_name="combat") :
 		if hit_modifier :
 			bonuses.append(Rules.Bonus("extra", hit_modifier))
 		disadvantage = chosen.get("range") == Rules.RANGED and stats["special"]["perception"] <= 0
-		roll = Rules.roll_attack(bonuses, target_ac, stats["crit_min"] - Rules.weapon_crit_widen(chosen),
-		                         stats["fumble_max"], disadvantage=disadvantage, confirm_crits=stats["confirm_crits"])
+		roll, first = Fortune.for_character(record.id, lambda : Rules.roll_attack(
+			bonuses, target_ac, stats["crit_min"] - Rules.weapon_crit_widen(chosen), stats["fumble_max"],
+			disadvantage=disadvantage, confirm_crits=stats["confirm_crits"]), lambda attack : attack.hit,
+		                                    lambda attack : attack.total)
 		embed = discord.Embed(title=title or f"{record.name} attacks with {chosen['name']}",
 		                      color=discord.Color.red())
 		lines = [f"**To hit:** {roll.text()}", f"-# {Rules.bonus_text(bonuses)}"]
+		if first is not None :
+			lines.append(f"-# {Fortune.note(str(first.total))}")
 		if roll.fumble :
 			lines.append("**Fumble!** The attacker is left open (-2 AC until their next turn).")
 		elif not roll.hit :

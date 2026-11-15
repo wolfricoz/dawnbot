@@ -91,7 +91,7 @@ nav_order: 3
 > imported before the combat rework); nothing else about them changes.
 >
 > Pick `legacy` to copy the old global armors and weapons tables instead, with their values converted to the
-> new combat rules and a price of 0 (set prices with /armory edit). Do this before migration 0014 drops them.
+> new combat rules and a price of 0 (set prices with /armory edit). Do this before migration 0015 drops them.
 >
 > **Permissions:**
 > - `Manage Server`

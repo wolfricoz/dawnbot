@@ -276,6 +276,8 @@ class Characters(Timestamps, Base) :
 	# A global character's sheet can also be viewed on the small servers (fewer than 10 members) its player is in.
 	is_global: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 	# Legendary characters have doubled stat limits; legendary_points is what the status gave, taken back on removal.
+	# Failed rolls in a row; at 3 the next failed roll is made again (see classes/combat/Fortune.py).
+	bad_streak: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 	legendary: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 	legendary_points: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 	legendary_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

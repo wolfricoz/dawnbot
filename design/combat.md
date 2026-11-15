@@ -2,7 +2,7 @@
 
 Status: built on branch `feature/combat` from the team proposal ("Dawnbot combat system proposal" in Google Docs,
 15 November 2026). Migrations `0011_combat` (new tables and columns), `0012_bestiary_special` (bestiary entries built
-from SPECIAL), `0013_passive_abilities` (active and passive abilities) and `0014_drop_legacy_combat` (drops the old global armor, weapon, NPC and monster tables; import them
+from SPECIAL), `0013_passive_abilities` (active and passive abilities), `0014_bad_streak` (bad-roll protection) and `0015_drop_legacy_combat` (drops the old global armor, weapon, NPC and monster tables; import them
 first with `/armory import legacy` and `/bestiary import legacy`).
 
 The Google Doc holds the reasoning and the open questions. This file is the source of truth for what was built,
@@ -24,7 +24,7 @@ including the choices made while building that the doc left open.
 | Missed turns | When the timer runs out, characters that have not acted get an automatic move from their autopilot setting; NPCs act from their behavior. After 3 automatic moves in a row the GM is pinged. |
 | Rolls | d20 + attack stat modifier + proficiency + weapon hit modifier + armor hit modifier + level bonus (optional, `COMBAT_LEVEL_BONUS`) + situational modifiers, against AC. Meeting the AC is a hit. |
 | Stat modifier | `stat − STAT_BASE` (5 by default): each point is +1. Formulas such as HP use the stat itself. |
-| Crits | Read from the natural die only. Crit range from Luck: 20 at Luck 1 to 8, one number wider for every 4 points above 8 (19 at 9, 18 at 13, 15 at 25). Excellent proficiency and the `keen` property each widen it by one. A crit counts the dice at their maximum, adds one more roll of the dice and ignores DT. |
+| Crits | Read from the natural die only. Crit range from Luck: one number wider for every 2 points of Luck above 5 (20 at Luck 6 or less, 19-20 at 7, 18-20 at 9, 16-20 at 13, 13-20 at a legendary 20, 10-20 at 26). Excellent proficiency and the `keen` property each widen it by one. A crit counts the dice at their maximum, adds one more roll of the dice and ignores DT. |
 | Fumbles | Natural 1 always misses; Luck 1 to 2 fumbles on 1 to 2, Luck 0 or below on 1 to 3. A fumble leaves the attacker at −2 AC until their next turn. |
 | Strong hit | The attack beats AC by 5 or more, the target fails a save by 5 or more, or a crit. Damage type effects only trigger on a strong hit (Restoration, for healing, always applies). |
 | HP | `15 + STR + (2 × END)`, plus `2 + END modifier` (at least 1, none when END is 0 or below) per level after the first. At least 5. |
@@ -43,6 +43,7 @@ including the choices made while building that the doc left open.
 | Magic schools | A standard set per server plus player-made schools reviewed by staff. A school sets the casting stat (Intelligence or Charisma). |
 | Ability slots | Spellcasters: 6 spells (1 Cantrip, 2 Weak, 2 Normal, 1 Strong). Others: 3 ability slots, where an active ability takes 1 and a passive 2, with at most 1 Strong (active or passive). Spellcasters can't take passives (they are abilities). Not both, unless event-granted. Legendary characters get one extra slot of any tier. Event-granted abilities (`/gm ability grant`) do not count. |
 | Damage types | One table per server (`damage_types`), filled with the defaults the first time it is used; staff edit it with `/damagetype`. Weapons name their type in `combat.type`; abilities pick one. |
+| Bad-roll protection | `characters.bad_streak` counts a character's failed rolls in a row: fight rolls (attacks, ability attacks, saves, revive, flee, death rolls), `/combat attack`, and `/dice` rolls made as the character (Poor or Critical failure counts as failed). After 3, its next failed roll is made again once and the better result counts; any success resets the count. It carries across fights, undo puts it back, and the board shows when it is ready. NPCs don't have it. |
 | Quick roll | `/combat attack` stays for rolls outside a fight: one of the character's weapons against an AC you type. In a fight thread it points to the board. |
 | Use item | Consumables are a third catalog kind (doc open question 11). Use item costs 2 AP and uses the item up (`character_gear.status = used`; undo gives it back). Heal items revive a downed ally automatically, so a character crippled in Intelligence can still bring someone back. The fantasy pack has seven. |
 | Bestiary | An entry has its own stat block from a difficulty preset, or SPECIAL (with a level) plus catalog weapons and armor, derived like a character with Average proficiency and no armor penalty. `/bestiary import` copies a pack's bestiary (the fantasy pack has six entries) or the old `npcs` and `monsters` tables (HP × 0.3 for the new scale, to hit from the old attack, dice from the old damage). |
@@ -75,9 +76,9 @@ including the choices made while building that the doc left open.
 - `character_abilities`: `character_id`, `ability_id`, `event`, `granted_by`.
 - `characters`: `legendary`, `legendary_points`, `legendary_by`, `legendary_at`, `armor_proficiency`.
 - `character_gear`: `proficiency`; `status` can also be `used` (a consumable used in a fight).
-- `characters.state` can also be `dead`.
+- `characters.state` can also be `dead`; migration 0014 adds `characters.bad_streak`.
 
-Migration 0014 drops `armors`, `weapons`, `npcs` and `monsters`. Nothing reads them any more except the legacy imports;
+Migration 0015 drops `armors`, `weapons`, `npcs` and `monsters`. Nothing reads them any more except the legacy imports;
 run `/armory import legacy` and `/bestiary import legacy` first, and confirm before running it against a real database.
 
 ### Combat values on catalog items
@@ -220,7 +221,7 @@ below 15%), support (revives and heals allies first). Player autopilot: weakest,
 - `classes/combat/Rules.py`: modifiers, derived stats, weapon and armor values, attack and damage rolls.
 - `classes/combat/Conditions.py`, `DamageTypes.py`, `Abilities.py`: conditions, damage types, ability rules.
 - `classes/combat/Loadout.py`: a character or bestiary entry as a combatant.
-- `classes/combat/Passives.py`: passive abilities. `classes/combat/Items.py`: consumables. `classes/combat/BestiaryFlow.py`: bestiary values and imports.
+- `classes/combat/Passives.py`: passive abilities. `classes/combat/Fortune.py`: bad-roll protection. `classes/combat/Items.py`: consumables. `classes/combat/BestiaryFlow.py`: bestiary values and imports.
 - `classes/gear/Legacy.py`: reads the old global tables. `classes/characters/Death.py`: the dead status.
 - `classes/combat/State.py`, `Engine.py`, `Autopilot.py`: the fight state and every rule that changes it. No Discord.
 - `classes/combat/Board.py`, `CombatFlow.py`: the board embed and the Discord side (threads, logs, locks, PvP).

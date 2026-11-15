@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from classes.combat import Abilities as AbilityRules
 from classes.combat import Conditions as C
-from classes.combat import Items, Passives as P, Rules
+from classes.combat import Fortune, Items, Passives as P, Rules
 from classes.combat.DamageTypes import ALWAYS, ARC, CLEANSE, CONDITION, IGNORE_DT, RESTORATION, STRONG_HIT
 from classes.combat.State import ACTIVE, ASYNC, AUTO, Combatant, DEAD, DOWNED, DYING, ENDED, FLED, Fight, GM, LIVE, \
 	PAUSED, PLAYER, REMOVED, SETUP, STABLE, STANDING
@@ -72,6 +72,8 @@ class Outcome :
 	deaths: dict = field(default_factory=dict)
 	# Consumables (character_gear ids) used up by this action.
 	used_items: list = field(default_factory=list)
+	# Characters' bad-roll streaks after this action: {character id: streak}.
+	streaks: dict = field(default_factory=dict)
 
 	# ============================================================
 	def add(self, text: str) -> None :
@@ -139,6 +141,21 @@ class Engine :
 		if target is not None and C.has(target.conditions, C.MARKED) :
 			bonuses.append(Rules.Bonus("marked", MARKED_BONUS))
 		return bonuses
+
+	# == bad-roll protection ==
+
+	# ============================================================
+	def fortune(self, combatant: Combatant, make, succeeded, key) :
+		"""Makes a roll for a combatant with the bad-roll protection (characters only; see Fortune.py)."""
+		if not combatant.character_id :
+			return make()
+		streak = int(combatant.stats.get("bad_streak") or 0)
+		result, new_streak, first = Fortune.roll(streak, make, succeeded, key)
+		combatant.stats["bad_streak"] = new_streak
+		self.outcome.streaks[combatant.character_id] = new_streak
+		if first is not None :
+			self.say(f"🍀 After {streak} bad rolls in a row, **{combatant.name}**'s luck turns: the roll is made again.")
+		return result
 
 	# == passives ==
 
@@ -544,8 +561,8 @@ class Engine :
 	# ============================================================
 	def death_roll(self, combatant: Combatant) -> None :
 		dc = DEATH_DC_CRIPPLED if self.crippled(combatant, "endurance") else DEATH_DC
-		roll = self.rng.randint(1, 20)
-		total = roll + self.mod(combatant, "endurance")
+		total = self.fortune(combatant, lambda : self.rng.randint(1, 20) + self.mod(combatant, "endurance"),
+		                     lambda value : value >= dc, lambda value : value)
 		if total >= dc :
 			combatant.death_successes += 1
 			text = f"succeeds ({total} vs {dc})"
@@ -663,9 +680,10 @@ class Engine :
 			bonuses.append(Rules.Bonus("passives", passive_hit))
 		disadvantage = ranged and self.crippled(actor, "perception")
 		crit_from = int(actor.stats.get("crit_min", 20)) - Rules.weapon_crit_widen(weapon)
-		roll = Rules.roll_attack(bonuses, self.effective_ac(target), crit_from, int(actor.stats.get("fumble_max", 1)),
-		                         disadvantage=disadvantage, confirm_crits=bool(actor.stats.get("confirm_crits")),
-		                         rng=self.rng)
+		roll = self.fortune(actor, lambda : Rules.roll_attack(
+			bonuses, self.effective_ac(target), crit_from, int(actor.stats.get("fumble_max", 1)),
+			disadvantage=disadvantage, confirm_crits=bool(actor.stats.get("confirm_crits")), rng=self.rng),
+		                    lambda attack : attack.hit, lambda attack : attack.total)
 		verb = "takes aim at" if aimed else "attacks"
 		head = f"**{actor.name}** {verb} **{target.name}** with {weapon.get('name', 'a weapon')}: {roll.text()}"
 		if roll.fumble :
@@ -761,9 +779,11 @@ class Engine :
 			passive_hit, passive_damage = self.passive_roll(actor, type_name, True, False)
 			if passive_hit :
 				bonuses.append(Rules.Bonus("passives", passive_hit))
-			roll = Rules.roll_attack(bonuses, self.effective_ac(target), int(actor.stats.get("crit_min", 20)),
-			                         int(actor.stats.get("fumble_max", 1)), disadvantage=disadvantage,
-			                         confirm_crits=bool(actor.stats.get("confirm_crits")), rng=self.rng)
+			roll = self.fortune(actor, lambda : Rules.roll_attack(
+				bonuses, self.effective_ac(target), int(actor.stats.get("crit_min", 20)),
+				int(actor.stats.get("fumble_max", 1)), disadvantage=disadvantage,
+				confirm_crits=bool(actor.stats.get("confirm_crits")), rng=self.rng),
+			                    lambda attack : attack.hit, lambda attack : attack.total)
 			head = f"→ {target.name}: {roll.text()}"
 			if roll.fumble :
 				C.add(actor.conditions, C.EXPOSED, turns=1)
@@ -791,8 +811,9 @@ class Engine :
 			name = ability.get("condition")
 			dc = 10 + mod + AbilityRules.dc_bonus(tier)
 			save_stat = C.save_stat(name)
-			rolls = [self.rng.randint(1, 20)]
-			save = rolls[0] + self.mod(target, save_stat) + int(target.stats.get("save_bonus", 0))
+			save = self.fortune(target, lambda : self.rng.randint(1, 20) + self.mod(target, save_stat)
+			                    + int(target.stats.get("save_bonus", 0)), lambda value : value >= dc,
+			                    lambda value : value)
 			if save >= dc :
 				self.say(f"→ {target.name} resists ({save} vs DC {dc}).")
 				return
@@ -856,7 +877,9 @@ class Engine :
 			raise CombatError(f"{target.name} is dead.")
 		self._spend(actor, AP_REVIVE)
 		bonuses = [Rules.Bonus("INT", self.mod(actor, "intelligence"))] + self.situational(actor, None)
-		roll = Rules.roll_attack(bonuses, REVIVE_DC, rng=self.rng, fumble_to=0)
+		roll = self.fortune(actor, lambda : Rules.roll_attack(bonuses, REVIVE_DC, rng=self.rng, fumble_to=0),
+		                    lambda attempt : attempt.total >= REVIVE_DC or attempt.natural == 20,
+		                    lambda attempt : attempt.total)
 		if roll.total >= REVIVE_DC or roll.natural == 20 :
 			target.hp = max(1, target.hp)
 			target.state = STANDING
@@ -926,7 +949,8 @@ class Engine :
 			self.end_turn(actor, quiet=True)
 			return self.finish_action(actor)
 		bonuses = [Rules.Bonus("AGI", self.mod(actor, "agility"))] + self.situational(actor, None)
-		roll = Rules.roll_attack(bonuses, dc, rng=self.rng, fumble_to=0)
+		roll = self.fortune(actor, lambda : Rules.roll_attack(bonuses, dc, rng=self.rng, fumble_to=0),
+		                    lambda attempt : attempt.total >= dc, lambda attempt : attempt.total)
 		if roll.total >= dc :
 			actor.state = FLED
 			actor.acted = True

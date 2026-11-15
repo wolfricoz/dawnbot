@@ -30,6 +30,9 @@ HEAVY = "heavy"
 ARMOR_CLASSES = [CLOTHING, LIGHT, MEDIUM, HEAVY]
 BASE_AC = 10
 AC_CAP = 18
+# Crit range: one number wider for every CRIT_LUCK_STEP points of Luck above CRIT_LUCK_BASE.
+CRIT_LUCK_BASE = 5
+CRIT_LUCK_STEP = 2
 AGILITY_AC_CAP = 2
 SHIELD_AC = 2
 SHIELD_ATTACK = -2
@@ -107,9 +110,10 @@ def sequence(stats: dict) -> int :
 
 # ============================================================
 def crit_min(luck: int, widen: int = 0) -> int :
-	"""The lowest natural roll that crits: 20 at Luck 8 or less, one lower for every 4 points of Luck above 8 (19 at 9,
-	18 at 13, 15 at 25). widen lowers it further (Excellent proficiency, keen weapons)."""
-	value = 20 if luck <= 8 else 20 - ((luck - 9) // 4 + 1)
+	"""The lowest natural roll that crits: 20 at Luck 6 or less, one lower for every 2 points of Luck above 5 (19 at 7,
+	18 at 9, 16 at 13, 13 at a legendary 20, 10 at 26). widen lowers it further (Excellent proficiency, keen
+	weapons). Never below 2, so a natural 1 is always a miss."""
+	value = 20 - max(0, (luck - CRIT_LUCK_BASE) // CRIT_LUCK_STEP)
 	return max(2, value - widen)
 
 

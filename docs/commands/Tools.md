@@ -30,6 +30,9 @@ Roleplay tools: dice, coin flips, scene endings and translation.
 > server's starting stat value (5 by default), so 5 adds nothing, 10 adds +5 and 1 adds -4. The modifier option
 > comes on top. Modifiers are added once to the total, and dice of 100 sides or more triple them. Rolling every die
 > on its highest side is a critical success; every die on 1 is a critical failure.
+>
+> Rolling as a character counts toward its bad luck: after 3 rolls in a row that come out Poor or worse (or fail
+> in a fight), its next bad roll is made again once and the better result counts.
 
 ---
 

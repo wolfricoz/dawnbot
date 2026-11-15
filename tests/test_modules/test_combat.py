@@ -82,9 +82,10 @@ class TestRules(unittest.TestCase) :
 		self.assertEqual(Rules.armor_class({"agility" : 1}, plate), 10)
 
 	def test_crit_and_fumble_ranges(self) :
-		self.assertEqual([Rules.crit_min(luck) for luck in (1, 8, 9, 12, 13, 20, 25, 26)],
-		                 [20, 20, 19, 19, 18, 17, 15, 15])
+		self.assertEqual([Rules.crit_min(luck) for luck in (-2, 1, 5, 6, 7, 8, 9, 13, 20, 26)],
+		                 [20, 20, 20, 20, 19, 19, 18, 16, 13, 10])
 		self.assertEqual(Rules.crit_min(5, widen=2), 18)
+		self.assertEqual(Rules.crit_min(26, widen=20), 2)
 		self.assertEqual([Rules.fumble_max(luck) for luck in (5, 3, 2, 1, 0, -2)], [1, 1, 2, 2, 3, 3])
 
 	def test_old_weapon_and_armor_values_are_converted(self) :

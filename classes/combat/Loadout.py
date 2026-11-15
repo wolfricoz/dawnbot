@@ -141,6 +141,7 @@ class Loadout :
 		        "shield" : shield, "armor_penalty" : Rules.armor_penalty(armor["armor_class"],
 		                                                                  Loadout.armor_proficiency(character)),
 		        "level_bonus" : level_bonus, "abilities" : actives, "passives" : passives, "items" : items,
+		        "bad_streak" : int(getattr(character, "bad_streak", 0) or 0),
 		        "crit_min" : Rules.crit_min(luck), "fumble_max" : Rules.fumble_max(luck), "confirm_crits" : luck <= 0,
 		        "crippled" : Rules.crippled(special)}
 

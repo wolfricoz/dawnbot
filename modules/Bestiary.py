@@ -247,7 +247,7 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 		problems = []
 		if source == LEGACY :
 			if not (Legacy.exists("npcs") or Legacy.exists("monsters")) :
-				return await reply(interaction, "The old npcs and monsters tables are gone (migration 0014 dropped "
+				return await reply(interaction, "The old npcs and monsters tables are gone (migration 0015 dropped "
 				                                "them).")
 			added, skipped = BestiaryFlow.import_legacy(interaction.guild_id, interaction.user.id)
 		else :
