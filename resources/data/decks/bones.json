@@ -1,0 +1,17 @@
+{
+  "title": "Bone casting",
+  "cards": [
+    {"name": "The Wolf's Tooth", "upright": "The bones fall sharp-end up: a fight is coming, and you will not be the prey.", "effect": "boon"},
+    {"name": "The Crow's Skull", "upright": "A watcher in the dark. Someone knows more about you than you'd like."},
+    {"name": "The Broken Rib", "upright": "Something that protected you is cracked. Mend it before it gives way.", "effect": "bane"},
+    {"name": "The Ring of Knuckles", "upright": "Friends close around you; you are not alone in this."},
+    {"name": "The Hollow Bone", "upright": "An empty promise. Check what's inside before you take it."},
+    {"name": "The Antler Fork", "upright": "A choice between two roads, both of them long."},
+    {"name": "The Fish Spine", "upright": "Travel by water, or a slippery bargain."},
+    {"name": "The Bear's Claw", "upright": "Strength answers strength. Stand your ground.", "effect": "boon"},
+    {"name": "The Snake Vertebra", "upright": "A twisting path and a forked tongue. Trust carefully.", "effect": "bane"},
+    {"name": "The Child's Bone", "upright": "Something new and small that will grow into something great."},
+    {"name": "The Charred Bone", "upright": "Fire has passed through. What survives is stronger."},
+    {"name": "The Scattered Pile", "upright": "The bones refuse to speak. The future is your own to make."}
+  ]
+}

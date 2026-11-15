@@ -11,7 +11,10 @@ from classes.characters.Card import Card
 from classes.characters.ImageStorage import ImageStorage
 from classes.kernel.ConfigData import ConfigData
 from database.database import Characters
-from database.transactions.CharacterTransactions import CharacterTransactions, RETIRED
+from database.transactions.CharacterTransactions import CharacterTransactions, DEAD, RETIRED
+
+# States whose post says so and stays locked.
+CLOSED = (RETIRED, DEAD)
 from resources.configs.ConfigMapping import ConfigMapping
 
 THREAD_NAME_LIMIT = 100
@@ -43,8 +46,8 @@ class ForumPost :
 		guild = bot.get_guild(character.guild_id)
 		if guild is None :
 			return False
-		# Only a retired character's post says so; every other post is of an approved character.
-		embeds = Card.embeds(character, show_state=character.state == RETIRED)
+		# Only a retired or dead character's post says so; every other post is of an approved character.
+		embeds = Card.embeds(character, show_state=character.state in CLOSED)
 		avatar = await ImageStorage.file(bot, character.avatar_id)
 		if avatar is not None :
 			embeds[0].set_thumbnail(url=f"attachment://{avatar.filename}")
@@ -91,8 +94,8 @@ class ForumPost :
 			return False
 		if isinstance(target, discord.Thread) :
 			# Messages in an archived thread cannot be edited; a character that came back gets its thread opened.
-			if target.archived or (target.locked and character.state != RETIRED) :
-				await target.edit(archived=False, locked=False if character.state != RETIRED else target.locked)
+			if target.archived or (target.locked and character.state not in CLOSED) :
+				await target.edit(archived=False, locked=False if character.state not in CLOSED else target.locked)
 			if target.name != character.name[:THREAD_NAME_LIMIT] :
 				await target.edit(name=character.name[:THREAD_NAME_LIMIT])
 		message_ids = list(character.forum_message_ids)
@@ -125,10 +128,10 @@ class ForumPost :
 
 	# ============================================================
 	@staticmethod
-	async def retire(bot: discord.Client, character: Characters) -> None :
+	async def retire(bot: discord.Client, character: Characters, lock: bool = False) -> None :
 		"""Handles a retired character's post as the server's RETIRE_THREAD setting says: locked (marked retired, and
-		in a forum locked and archived) or deleted."""
-		if str(ConfigData().get_key(character.guild_id, ConfigMapping.RETIRE_THREAD)).lower() == "delete" :
+		in a forum locked and archived) or deleted. lock always locks it (a dead character's post)."""
+		if not lock and str(ConfigData().get_key(character.guild_id, ConfigMapping.RETIRE_THREAD)).lower() == "delete" :
 			await ForumPost.remove(bot, character)
 			CharacterTransactions().update(character.id, forum_thread_id=None, forum_message_ids=None)
 			return

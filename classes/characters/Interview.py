@@ -21,6 +21,7 @@ from classes.characters.Choices import Choices
 from classes.characters.Edits import Edits
 from classes.characters.ImageStorage import ImageError, ImageStorage
 from classes.characters import SheetPaste
+from classes.combat import SheetAbilities
 from classes.characters.Sheet import INFO, LONG, Sheet
 from classes.characters.SpeciesRules import SpeciesRules
 from classes.characters.Special import POINT_BUY, ROLLED, STATS, Special
@@ -299,7 +300,10 @@ class Interview :
 	# ============================================================
 	@staticmethod
 	def _limits(draft: Drafts) -> dict :
-		return SpeciesRules.limits(Interview._species(draft), Special.rules(draft.guild_id))
+		"""The stat limits for the draft: its species', doubled when it edits a legendary character."""
+		target = CharacterTransactions().get_by_id(draft.target_id) if draft.target_id else None
+		return SpeciesRules.limits(Interview._species(draft), Special.rules(draft.guild_id),
+		                           legendary=bool(target is not None and getattr(target, "legendary", False)))
 
 	# ============================================================
 	@staticmethod
@@ -1006,7 +1010,7 @@ class Interview :
 		"""
 		answers = draft.answers
 		fields = {str(sheet_field.id) : sheet_field for sheet_field in Sheet.questions(draft.guild_id)}
-		filled, refused, extras = [], [], []
+		filled, refused, extras, owned = [], [], [], []
 		trigger = {}
 		for entry in entries :
 			if not entry.value :
@@ -1035,6 +1039,8 @@ class Interview :
 					filled.append("Occupation")
 			elif kind in (SheetPaste.PROXY, SheetPaste.PREFIX, SheetPaste.SUFFIX) :
 				trigger[kind] = (entry.label, " ".join(entry.value.split()))
+			elif SheetAbilities.reserved(entry.label) :
+				owned.append(SheetAbilities.paste_note(entry.label, entry.value))
 			elif Interview._is_new(draft) :
 				extras.append({"key" : entry.label[:100], "value" : entry.value})
 			else :
@@ -1086,6 +1092,9 @@ class Interview :
 		if extras :
 			lines.append(f"Not on this server's sheet, so kept as extra fields: "
 			             f"{Interview._shorten(', '.join(extra['key'] for extra in extras), 300)}.")
+		if owned :
+			lines.append("Left out, because the bot handles these itself:")
+			lines += [f"- {Interview._shorten(line, 500)}" for line in owned]
 		if refused :
 			lines.append("Couldn't use these, so I'll ask again where it's needed:")
 			lines += [f"- {Interview._shorten(line, 300)}" for line in refused]

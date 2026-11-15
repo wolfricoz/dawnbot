@@ -12,7 +12,18 @@
 			"effect": "Can be thrown at a target up to ten paces away.",
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"dice": "1d4", "modifier": "damage:agility", "hitmodifier": 1}
+			"combat": {"kind": "dagger", 
+				"type": "Piercing",
+				"dice": "1d6",
+				"attack_stat": "agility",
+				"damage_stat": "agility",
+				"hit_mod": 1,
+				"range": "melee",
+				"properties": [
+					"light",
+					"thrown"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
@@ -23,7 +34,17 @@
 			"effect": "Any stone you can pick up will do as ammunition.",
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"dice": "1d4", "modifier": "damage:agility", "hitmodifier": 0}
+			"combat": {"kind": "sling", 
+				"type": "Blunt",
+				"dice": "1d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"light"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
@@ -34,7 +55,17 @@
 			"effect": "+1 AC while you hold it in both hands and do nothing but defend.",
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"dice": "1d6", "modifier": "damage:strength", "hitmodifier": 0}
+			"combat": {"kind": "staff", 
+				"type": "Blunt",
+				"dice": "1d6",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"two_handed"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
@@ -45,161 +76,363 @@
 			"effect": "Also works as a tool for chopping wood and clearing brush.",
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"dice": "1d6", "modifier": "damage:strength", "hitmodifier": 0}
+			"combat": {"kind": "hatchet", 
+				"type": "Slashing",
+				"dice": "1d8",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"thrown"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Ash Spear",
 			"description": "A leaf-shaped iron head on a tall ash shaft. Simple, cheap and good at keeping foes at a distance.",
 			"price": 120,
-			"requirements": {"strength": 3},
+			"requirements": {
+				"strength": 3
+			},
 			"effect": "Reach: you can strike a foe one step away.",
 			"effect_met": "+1 to attack rolls against a foe charging at you.",
 			"effect_unmet": "-1 to attack rolls.",
-			"combat": {"dice": "1d8", "modifier": "damage:strength", "hitmodifier": 1}
+			"combat": {"kind": "spear", 
+				"type": "Piercing",
+				"dice": "1d8",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 1,
+				"range": "melee",
+				"properties": [
+					"reach"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Hunting Bow",
 			"description": "A short recurved bow of horn and wood, made for game in thick forest.",
 			"price": 180,
-			"requirements": {"agility": 4},
+			"requirements": {
+				"agility": 4
+			},
 			"effect": null,
 			"effect_met": "+1 to attack rolls at short range.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"dice": "1d6", "modifier": "damage:agility", "hitmodifier": 0}
+			"combat": {"kind": "bow", 
+				"type": "Piercing",
+				"dice": "1d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				]
+			}
+		},
+		{
+			"kind": "weapon",
+			"name": "Oak Round Shield",
+			"price": 150,
+			"description": "A round shield of oak planks, rimmed with iron.",
+			"requirements": {
+				"strength": 3
+			},
+			"effect": "While equipped: +2 AC and -2 to attack with other weapons. It can also bash for 1d4.",
+			"combat": {"kind": "shield", 
+				"type": "Blunt",
+				"dice": "1d4",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"shield",
+					"light"
+				]
+			},
+			"effect_met": "Raised quickly enough to turn aside most blows.",
+			"effect_unmet": "Too heavy to bash with well: -1 to hit for each missing point of Strength."
 		},
 		{
 			"kind": "weapon",
 			"name": "Flanged Mace",
 			"description": "An iron head with raised flanges that bite into armor instead of sliding off it.",
 			"price": 220,
-			"requirements": {"strength": 5},
+			"requirements": {
+				"strength": 5
+			},
 			"effect": null,
 			"effect_met": "Your hits ignore 1 point of the target's AC from metal armor.",
 			"effect_unmet": "-1 to attack rolls.",
-			"combat": {"dice": "1d8", "modifier": "damage:strength", "hitmodifier": 0}
+			"combat": {"kind": "mace", 
+				"type": "Blunt",
+				"dice": "1d10",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": []
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Arming Sword",
 			"description": "A straight, double-edged blade with a cross guard: the dependable sidearm of soldiers and guards.",
 			"price": 250,
-			"requirements": {"strength": 4},
+			"requirements": {
+				"strength": 4
+			},
 			"effect": null,
 			"effect_met": "+1 to rolls to parry a melee attack.",
 			"effect_unmet": "-1 to attack rolls.",
-			"combat": {"dice": "1d8", "modifier": "damage:strength", "hitmodifier": 0}
+			"combat": {"kind": "sword", 
+				"type": "Slashing",
+				"dice": "2d6",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": []
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Bearded War Axe",
 			"description": "A long-hafted axe whose hooked blade can pull a shield aside.",
 			"price": 300,
-			"requirements": {"strength": 5},
+			"requirements": {
+				"strength": 5
+			},
 			"effect": null,
 			"effect_met": "+2 damage against shields, doors and other wooden things.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"dice": "1d10", "modifier": "damage:strength", "hitmodifier": -1}
+			"combat": {"kind": "axe", 
+				"type": "Slashing",
+				"dice": "1d12",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": -1,
+				"range": "melee",
+				"properties": [
+					"heavy"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Hand Crossbow",
 			"description": "A small crossbow that fits in one hand, popular with couriers and cutpurses alike.",
 			"price": 500,
-			"requirements": {"agility": 5},
+			"requirements": {
+				"agility": 5
+			},
 			"effect": "Reloading takes a full turn.",
 			"effect_met": "You can fire it with one hand while the other holds a blade.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"dice": "1d6", "modifier": "", "hitmodifier": 1}
+			"combat": {"kind": "crossbow", 
+				"type": "Piercing",
+				"dice": "2d4",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"loading"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Tallwood Longbow",
 			"description": "A bow as tall as its archer, cut from a single stave of mountain yew.",
 			"price": 600,
-			"requirements": {"agility": 6, "strength": 5},
+			"requirements": {
+				"agility": 6,
+				"strength": 5
+			},
 			"effect": null,
 			"effect_met": "+1 damage at long range.",
 			"effect_unmet": "-3 to attack rolls, and drawing it takes your whole turn.",
-			"combat": {"dice": "1d8", "modifier": "damage:agility", "hitmodifier": 1}
+			"combat": {"kind": "bow", 
+				"type": "Piercing",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Thornpoint Stiletto",
 			"description": "A slim, triangular blade made to slip between armor plates.",
 			"price": 650,
-			"requirements": {"agility": 6},
+			"requirements": {
+				"agility": 6
+			},
 			"effect": null,
 			"effect_met": "+2 to attack rolls against a target that has not noticed you.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"dice": "1d6", "modifier": "damage:agility", "hitmodifier": 2}
+			"combat": {"kind": "dagger", 
+				"type": "Piercing",
+				"dice": "1d8",
+				"attack_stat": "agility",
+				"damage_stat": "agility",
+				"hit_mod": 2,
+				"range": "melee",
+				"properties": [
+					"light",
+					"keen"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Windlass Crossbow",
 			"description": "A heavy steel-armed crossbow spanned with a hand crank. Anyone can aim it; few can carry it far.",
 			"price": 750,
-			"requirements": {"strength": 4},
+			"requirements": {
+				"strength": 4
+			},
 			"effect": "Reloading takes a full turn.",
 			"effect_met": "+1 to attack rolls when you brace it on a wall or rest.",
 			"effect_unmet": "Reloading takes two full turns.",
-			"combat": {"dice": "1d10", "modifier": "", "hitmodifier": 2}
+			"combat": {"kind": "crossbow", 
+				"type": "Piercing",
+				"dice": "2d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 2,
+				"range": "ranged",
+				"properties": [
+					"loading",
+					"two_handed"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Ember Wand",
 			"description": "A rod of blackened wood with a coal-red stone at its tip, warm to the touch.",
 			"price": 800,
-			"requirements": {"intelligence": 6},
+			"requirements": {
+				"intelligence": 6
+			},
 			"effect": "A hit can set dry cloth, straw or wood alight.",
 			"effect_met": "+1 damage.",
 			"effect_unmet": "The spell fizzles and does nothing on an attack roll of 1 to 3.",
-			"combat": {"dice": "1d8", "modifier": "damage:intelligence", "hitmodifier": 1}
+			"combat": {
+				"type": "Fire",
+				"dice": "2d4",
+				"attack_stat": "intelligence",
+				"damage_stat": "intelligence",
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"focus"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Two-Hand Greatblade",
 			"description": "A long, heavy sword swung with both hands, able to clear a path through a crowd.",
 			"price": 900,
-			"requirements": {"strength": 7},
+			"requirements": {
+				"strength": 7
+			},
 			"effect": null,
 			"effect_met": "Your hits push lighter foes back a step.",
 			"effect_unmet": "-3 to attack rolls, and you act last in the round.",
-			"combat": {"dice": "2d6", "modifier": "damage:strength", "hitmodifier": -1}
+			"combat": {"kind": "greatsword", 
+				"type": "Slashing",
+				"dice": "2d8",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": -1,
+				"range": "melee",
+				"properties": [
+					"two_handed"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Riverglass Sabre",
 			"description": "A curved blade with a rippled, water-like sheen, balanced for quick cuts from horseback or on foot.",
 			"price": 1100,
-			"requirements": {"agility": 6, "strength": 4},
+			"requirements": {
+				"agility": 6,
+				"strength": 4
+			},
 			"effect": null,
 			"effect_met": "+1 AC while your other hand is empty.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"dice": "1d8", "modifier": "damage:agility", "hitmodifier": 1}
+			"combat": {"kind": "scimitar", 
+				"type": "Slashing",
+				"dice": "2d6",
+				"attack_stat": "agility",
+				"damage_stat": "agility",
+				"hit_mod": 1,
+				"range": "melee",
+				"properties": []
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Rowan Ward-Rod",
 			"description": "A rowan staff bound with silver wire, carried by hedge-wardens to shield their companions.",
 			"price": 1200,
-			"requirements": {"intelligence": 7, "charisma": 5},
+			"requirements": {
+				"intelligence": 7,
+				"charisma": 5
+			},
 			"effect": "Once per scene, give an ally +2 AC until your next turn.",
 			"effect_met": "The ward gives +3 AC instead of +2.",
 			"effect_unmet": "-2 to attack rolls, and the ward ends at the start of the ally's next turn.",
-			"combat": {"dice": "1d6", "modifier": "damage:intelligence", "hitmodifier": 0}
+			"combat": {
+				"type": "Arcane",
+				"dice": "1d8",
+				"attack_stat": "intelligence",
+				"damage_stat": "intelligence",
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"focus"
+				]
+			}
 		},
 		{
 			"kind": "weapon",
 			"name": "Thunderglass Orb",
 			"description": "A fist-sized sphere of smoky glass with a storm trapped inside. Its blasts can be heard a mile away.",
 			"price": 1500,
-			"requirements": {"intelligence": 8},
+			"requirements": {
+				"intelligence": 8
+			},
 			"effect": "Every blast is deafeningly loud; stealth is out of the question.",
 			"effect_met": "+1 to attack rolls.",
 			"effect_unmet": "-3 to attack rolls, and you take 1d4 damage whenever you miss.",
-			"combat": {"dice": "2d6", "modifier": "damage:intelligence", "hitmodifier": 0}
+			"combat": {
+				"type": "Lightning",
+				"dice": "2d8",
+				"attack_stat": "intelligence",
+				"damage_stat": "intelligence",
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"focus",
+					"two_handed"
+				]
+			}
 		},
 		{
 			"kind": "armor",
@@ -210,7 +443,13 @@
 			"effect": "Keeps you warm and dry on the road.",
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"hp": 75, "ap": 30, "ac": 12, "hitchance": 0}
+			"combat": {
+				"armor_class": "clothing",
+				"ac": 0,
+				"dt": 0,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			}
 		},
 		{
 			"kind": "armor",
@@ -221,95 +460,380 @@
 			"effect": null,
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"hp": 80, "ap": 35, "ac": 13, "hitchance": 0}
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 0,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			}
 		},
 		{
 			"kind": "armor",
 			"name": "Hardened Leather",
 			"description": "A jerkin of leather boiled in wax until it is stiff as wood.",
 			"price": 300,
-			"requirements": {"strength": 3},
+			"requirements": {
+				"strength": 3
+			},
 			"effect": null,
 			"effect_met": "No penalty to sneaking or climbing.",
 			"effect_unmet": "-1 to attack rolls.",
-			"combat": {"hp": 85, "ap": 40, "ac": 14, "hitchance": 0}
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			}
 		},
 		{
 			"kind": "armor",
 			"name": "Fernshadow Leathers",
 			"description": "Supple leathers dyed in mottled greens and browns, favored by scouts and poachers.",
 			"price": 500,
-			"requirements": {"agility": 5},
+			"requirements": {
+				"agility": 5
+			},
 			"effect": null,
 			"effect_met": "+2 to rolls to hide in woodland.",
 			"effect_unmet": "-1 AC while you run.",
-			"combat": {"hp": 85, "ap": 40, "ac": 14, "hitchance": 1}
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 1,
+				"hit_mod": 1,
+				"ability_hit_mod": 0
+			}
 		},
 		{
 			"kind": "armor",
 			"name": "Studded Brigandine",
 			"description": "A cloth coat lined with small riveted plates, a soldier's armor that does not need a squire.",
 			"price": 800,
-			"requirements": {"strength": 5},
+			"requirements": {
+				"strength": 5
+			},
 			"effect": null,
 			"effect_met": "+1 AC against arrows and bolts.",
 			"effect_unmet": "-1 to attack rolls.",
-			"combat": {"hp": 95, "ap": 50, "ac": 15, "hitchance": 0}
+			"combat": {
+				"armor_class": "medium",
+				"ac": 2,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			}
 		},
 		{
 			"kind": "armor",
 			"name": "Starthread Vestments",
 			"description": "Robes embroidered with silver sigils that hum faintly when magic is near.",
 			"price": 900,
-			"requirements": {"intelligence": 6},
+			"requirements": {
+				"intelligence": 6
+			},
 			"effect": "The sigils glow softly when a spell is cast within a few paces.",
 			"effect_met": "+1 damage with wands, rods and orbs.",
 			"effect_unmet": "-1 to attack rolls with wands, rods and orbs.",
-			"combat": {"hp": 80, "ap": 30, "ac": 12, "hitchance": 1}
+			"combat": {
+				"armor_class": "clothing",
+				"ac": 0,
+				"dt": 0,
+				"hit_mod": 0,
+				"ability_hit_mod": 1
+			}
 		},
 		{
 			"kind": "armor",
 			"name": "Chain Hauberk",
 			"description": "A knee-length shirt of riveted iron rings worn over a padded tunic.",
 			"price": 1200,
-			"requirements": {"strength": 6},
+			"requirements": {
+				"strength": 6
+			},
 			"effect": null,
 			"effect_met": "+1 AC against slashing weapons.",
 			"effect_unmet": "-1 AC, and you tire after a few rounds of fighting.",
-			"combat": {"hp": 100, "ap": 60, "ac": 16, "hitchance": -1}
+			"combat": {
+				"armor_class": "medium",
+				"ac": 2,
+				"dt": 2,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			}
 		},
 		{
 			"kind": "armor",
 			"name": "Scale Coat",
 			"description": "Overlapping bronze scales sewn onto a leather backing, rattling with every step.",
 			"price": 1600,
-			"requirements": {"strength": 7, "endurance": 5},
+			"requirements": {
+				"strength": 7,
+				"endurance": 5
+			},
 			"effect": "Too loud for sneaking.",
 			"effect_met": "+1 AC against piercing weapons.",
 			"effect_unmet": "-2 to attack rolls, and you move slowly.",
-			"combat": {"hp": 110, "ap": 70, "ac": 17, "hitchance": -1}
+			"combat": {
+				"armor_class": "medium",
+				"ac": 3,
+				"dt": 2,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			}
 		},
 		{
 			"kind": "armor",
 			"name": "Bastion Half-Plate",
 			"description": "A steel breastplate, pauldrons and greaves over mail, leaving the joints free to move.",
 			"price": 2000,
-			"requirements": {"strength": 7},
+			"requirements": {
+				"strength": 7
+			},
 			"effect": null,
 			"effect_met": "+1 AC against ranged attacks.",
 			"effect_unmet": "-2 to attack rolls and -1 AC.",
-			"combat": {"hp": 115, "ap": 80, "ac": 18, "hitchance": -2}
+			"combat": {
+				"armor_class": "heavy",
+				"ac": 3,
+				"dt": 3,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			}
 		},
 		{
 			"kind": "armor",
 			"name": "Warden's Full Plate",
 			"description": "A complete suit of fitted steel plate, the finest protection a smith can make.",
 			"price": 2600,
-			"requirements": {"strength": 8, "endurance": 6},
+			"requirements": {
+				"strength": 8,
+				"endurance": 6
+			},
 			"effect": "Takes several minutes and a helping hand to put on or take off.",
 			"effect_met": "Critical hits against you count as normal hits.",
 			"effect_unmet": "-3 to attack rolls, -1 AC, and you move at half speed.",
-			"combat": {"hp": 125, "ap": 90, "ac": 19, "hitchance": -2}
+			"combat": {
+				"armor_class": "heavy",
+				"ac": 4,
+				"dt": 3,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Linen Bandages",
+			"description": "A roll of clean linen for binding cuts in a hurry.",
+			"price": 15,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "bleeding",
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Healing Draught",
+			"description": "A small vial of bitter red tonic that knits flesh in moments.",
+			"price": 40,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "2d4",
+				"condition": null,
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Burn Salve",
+			"description": "A tin of cooling herbal paste for scorched skin.",
+			"price": 40,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "burning",
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Smelling Salts",
+			"description": "A sharp-smelling pouch that snaps a dazed fighter back to their senses.",
+			"price": 50,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "stunned",
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Courage Tonic",
+			"description": "A fiery cordial that steadies the hand and lifts the heart.",
+			"price": 120,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "inspired",
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Greater Healing Draught",
+			"description": "A thick golden draught brewed by temple healers.",
+			"price": 150,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "4d4",
+				"condition": null,
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Troll-Blood Elixir",
+			"description": "A murky green elixir; wounds close on their own for a while after drinking it.",
+			"price": 250,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "regenerating",
+				"turns": 3
+			}
+		}
+	],
+	"bestiary": [
+		{
+			"name": "Giant Rat",
+			"preset": "minion",
+			"description": "A dog-sized rat from the sewers and cellars.",
+			"attack_name": "Bite",
+			"damage_type": "Piercing",
+			"behavior": "random",
+			"reward_xp": 5,
+			"reward_currency": 0
+		},
+		{
+			"name": "Grey Wolf",
+			"preset": "standard",
+			"description": "A lean forest wolf; they hunt in packs.",
+			"attack_name": "Bite",
+			"damage_type": "Piercing",
+			"behavior": "aggressive",
+			"sequence": 14,
+			"reward_xp": 15,
+			"reward_currency": 0
+		},
+		{
+			"name": "Road Bandit",
+			"preset": "standard",
+			"description": "A cutthroat who works the trade roads.",
+			"special": {
+				"strength": 6,
+				"perception": 5,
+				"endurance": 5,
+				"charisma": 4,
+				"intelligence": 4,
+				"agility": 6,
+				"luck": 4
+			},
+			"level": 1,
+			"weapons": [
+				"Woodsman's Hatchet"
+			],
+			"armor": "Padded Jack",
+			"behavior": "vengeful",
+			"reward_xp": 20,
+			"reward_currency": 25
+		},
+		{
+			"name": "Bandit Archer",
+			"preset": "standard",
+			"description": "Shoots from the treeline and runs when it goes badly.",
+			"special": {
+				"strength": 4,
+				"perception": 7,
+				"endurance": 4,
+				"charisma": 4,
+				"intelligence": 5,
+				"agility": 6,
+				"luck": 5
+			},
+			"level": 1,
+			"weapons": [
+				"Hunting Bow",
+				"Hedge Knife"
+			],
+			"armor": "Hardened Leather",
+			"behavior": "cautious",
+			"reward_xp": 20,
+			"reward_currency": 25
+		},
+		{
+			"name": "Bandit Captain",
+			"preset": "elite",
+			"description": "Scarred, loud and better armed than the rest.",
+			"special": {
+				"strength": 8,
+				"perception": 6,
+				"endurance": 7,
+				"charisma": 6,
+				"intelligence": 5,
+				"agility": 5,
+				"luck": 5
+			},
+			"level": 4,
+			"weapons": [
+				"Arming Sword",
+				"Oak Round Shield"
+			],
+			"armor": "Chain Hauberk",
+			"behavior": "aggressive",
+			"reward_xp": 60,
+			"reward_currency": 120
+		},
+		{
+			"name": "Cave Troll",
+			"preset": "boss",
+			"description": "A hulking grey brute that smells the living from far away.",
+			"attack_name": "Club",
+			"damage_type": "Blunt",
+			"behavior": "vengeful",
+			"reward_xp": 200,
+			"reward_currency": 150
 		}
 	]
 }

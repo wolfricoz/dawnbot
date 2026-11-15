@@ -6,6 +6,7 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 from classes.characters.Card import Card, STATE_LABELS
+from classes.combat import SheetAbilities
 from classes.characters.CharacterFlow import CharacterFlow
 from classes.characters.Edits import APPLIED, Edits, REVIEW
 from classes.characters.ForumPost import ForumPost
@@ -14,14 +15,16 @@ from classes.characters.ImageStorage import ImageStorage
 from classes.characters.Interview import CREATE, EDIT, IMPORT, RESPEC
 from classes.characters.Retirement import Retirement
 from classes.characters.Special import STATS, Special
+from classes.combat import Rules
 from classes.combat.AutoComplete import AutoComplete
+from classes.combat.Proficiency import Proficiency
 from classes.kernel.ConfigData import ConfigData
 from classes.progression.Progression import Progression
 from classes.proxy.Matcher import PROXY_CHANNEL_TYPES
 from database.database import Characters
 from database.transactions.AutoproxyTransactions import AutoproxyTransactions
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
-from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions, PENDING, RETIRED
+from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions, DEAD, PENDING, RETIRED
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 from views.buttons.Confirm import ask
@@ -93,8 +96,8 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		await interaction.response.defer(ephemeral=True)
 		if (character := await self._own_character(interaction, name)) is None :
 			return
-		if character.state == RETIRED :
-			return await interaction.followup.send(f"{character.name} is retired and cannot be edited.")
+		if character.state in (RETIRED, DEAD) :
+			return await interaction.followup.send(f"{character.name} is {character.state} and cannot be edited.")
 		await CharacterFlow.begin(interaction, EDIT, character)
 
 	# ============================================================
@@ -108,8 +111,8 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		await interaction.response.defer(ephemeral=True)
 		if (character := await self._own_character(interaction, name)) is None :
 			return
-		if character.state == RETIRED :
-			return await interaction.followup.send(f"{character.name} is retired and cannot be changed.")
+		if character.state in (RETIRED, DEAD) :
+			return await interaction.followup.send(f"{character.name} is {character.state} and cannot be changed.")
 		await CharacterFlow.begin(interaction, RESPEC, character)
 
 	# ============================================================
@@ -407,6 +410,9 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		await interaction.response.defer(ephemeral=True)
 		if (character := await self._own_character(interaction, name)) is None :
 			return
+		problem = SheetAbilities.reserved_problem(key)
+		if problem :
+			return await interaction.followup.send(problem)
 		extras = self._extras(character)
 		taken = [field.label.lower() for field in SheetFieldTransactions().get_all(interaction.guild_id)]
 		if self._find_extra(extras, key) is not None or key.lower() in taken :
@@ -470,6 +476,32 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		await self._change_extras(interaction, character, extras,
 		                          f"Moved {extra['key']} of {character.name} to position {position}.")
 
+
+	# ============================================================
+	@app_commands.command(name="armor_proficiency", description="Sets the heaviest armor a character is trained in")
+	@app_commands.autocomplete(name=AutoComplete().character)
+	@app_commands.choices(level=[Choice(name=value.capitalize(), value=value) for value in Rules.ARMOR_CLASSES])
+	async def armor_proficiency(self, interaction: discord.Interaction, name: str, level: Choice[str],
+	                            member: discord.Member = None) :
+		"""
+		Sets the heaviest armor your character can wear without a penalty: clothing, light, medium or heavy. Armor
+		heavier than this gives -2 to hit for each step. You set it once; after that staff can change it with
+		`member`. Until it is set, the "Armor proficiency" answer on the sheet is used, if there is one.
+		"""
+		await interaction.response.defer(ephemeral=True)
+		staff = interaction.user.guild_permissions.manage_messages
+		if member is not None and member.id != interaction.user.id :
+			if not staff :
+				return await interaction.followup.send("Only staff can change another member's character.")
+			character = CharacterTransactions().get(member.id, interaction.guild_id, name)
+			if character is None :
+				return await interaction.followup.send(f"{member.display_name} has no character called {name}.")
+		elif (character := await self._own_character(interaction, name)) is None :
+			return
+		updated, text = Proficiency.set_armor(character, level.value, staff=staff)
+		if updated is not None :
+			logging.info(f"{interaction.user.name} set armor proficiency {level.value} on character {character.id}")
+		await interaction.followup.send(text)
 
 async def setup(bot) :
 	await bot.add_cog(Character(bot))

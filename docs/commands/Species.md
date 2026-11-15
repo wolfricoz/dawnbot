@@ -2,7 +2,7 @@
 layout: default
 title: Species
 parent: Commands
-nav_order: 17
+nav_order: 33
 ---
 
 <h1>Species</h1>
@@ -18,8 +18,8 @@ forum, where tags on a post can restrict who may pick it (see /tagrule).
 **Usage:** `/species create`
 
 > Starts creating a species. The bot asks in your DMs for its name, description, benefits and drawbacks, and how
-it changes the SPECIAL stats: its own highest and lowest values per stat, which have to balance out, and
-changes to the starting stats. Staff review it; once approved, anyone can pick it for their characters.
+> it changes the SPECIAL stats: its own highest and lowest values per stat, which have to balance out, and
+> changes to the starting stats. Staff review it; once approved, anyone can pick it for their characters.
 
 ---
 
@@ -28,7 +28,7 @@ changes to the starting stats. Staff review it; once approved, anyone can pick i
 **Usage:** `/species edit <name>`
 
 > Changes a species you made (staff can change any species). The bot shows the current answers in your DMs.
-Changes to an approved species are reviewed before they apply. Characters keep the stats they have.
+> Changes to an approved species are reviewed before they apply. Characters keep the stats they have.
 
 ---
 
@@ -37,7 +37,7 @@ Changes to an approved species are reviewed before they apply. Characters keep t
 **Usage:** `/species list`
 
 > Lists the server's approved species, marking the ones that are restricted for you. Your own species that are
-waiting for review or were denied are listed too.
+> waiting for review or were denied are listed too.
 
 ---
 
@@ -54,9 +54,9 @@ waiting for review or were denied are listed too.
 **Usage:** `/species delete <name>`
 
 > Deletes a species and its post. A species that characters are cannot be deleted.
-
-**Permissions:**
-- `Manage Messages`
+>
+> **Permissions:**
+> - `Manage Messages`
 
 ---
 

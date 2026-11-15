@@ -1,7 +1,6 @@
 import unittest
 from types import SimpleNamespace
 
-from classes.combat.CombatCache import CombatCache
 from classes.kernel.ConfigData import ConfigData
 from database.database import clear_bot_database, create_bot_database
 from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
@@ -18,7 +17,6 @@ class DatabaseTestCase(unittest.TestCase) :
 		create_bot_database()
 		clear_bot_database()
 		ConfigData().data = {}
-		CombatCache().load_all()
 
 	def tearDown(self) :
 		clear_bot_database()

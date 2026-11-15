@@ -1,3 +1,5 @@
+"""Server settings: XP (roleplay) channels, level roles, characters, currency and the channels the bot posts in.
+"""
 import logging
 
 import discord
@@ -14,7 +16,9 @@ from classes.setup.BotSetup import BotSetup
 from classes.setup.GuidedSetup import GuidedSetup
 from classes.support.PermissionNotice import PermissionNotice, humanise
 from database.transactions.LevelTransactions import LevelTransactions
-from resources.configs.ConfigMapping import ConfigMapping, channels, choice_settings, number_settings, settings
+from classes.kernel import RoleplaySettings
+from resources.configs.ConfigMapping import ConfigMapping, channels, choice_settings, number_settings, settings, \
+	roleplay_settings
 from views.buttons.Confirm import ask
 
 
@@ -212,21 +216,29 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(option=[Choice(name=x.lower(), value=x.value) for x in
 	                              [ConfigMapping.CHARACTER, ConfigMapping.CHARACTER_REVIEW, ConfigMapping.SPECIES_FORUM,
-	                               ConfigMapping.GEAR_FORUM, ConfigMapping.TIMELINE, ConfigMapping.MODLOG]])
+	                               ConfigMapping.GEAR_FORUM, ConfigMapping.TIMELINE, ConfigMapping.MODLOG,
+	                               ConfigMapping.GM_ROLL_LOG, ConfigMapping.CHRONICLE, ConfigMapping.JOB_BOARD,
+	                               ConfigMapping.LETTER_CHANNEL, ConfigMapping.RUMOR_CHANNEL]])
 	async def singlechannels(self, interaction: Interaction, option: Choice[str],
 	                         channel: discord.TextChannel | discord.ForumChannel) :
 		"""
-		Sets the character, character review, species forum, gear forum, timeline or modlog channel. Approved characters and
-		species are posted in the character channel and the species forum (a forum gives each its own thread); new and
-		edited characters and species wait for staff in the character review channel.
+		Sets one of the channels the bot posts in. Approved characters and species are posted in the character channel
+		and the species forum (a forum gives each its own thread); new and edited characters and species wait for staff
+		in the character review channel. The GM roll log gets a copy of every secret roll. The chronicle gets finished
+		scenes, the job board (a forum) jobs, the letter channel notices for members with DMs closed, and the rumor
+		channel rumors.
 
 		**Permissions:**
 		- `Manage Server`
 		"""
 		await interaction.response.defer(ephemeral=True)
 		self._prepare(interaction.guild)
-		if option.value == ConfigMapping.CHARACTER_REVIEW and not isinstance(channel, discord.TextChannel) :
-			return await interaction.followup.send("The character review channel has to be a text channel.")
+		text_only = (ConfigMapping.CHARACTER_REVIEW, ConfigMapping.GM_ROLL_LOG, ConfigMapping.LETTER_CHANNEL,
+		             ConfigMapping.RUMOR_CHANNEL)
+		if option.value in text_only and not isinstance(channel, discord.TextChannel) :
+			return await interaction.followup.send(f"The {option.name} channel has to be a text channel.")
+		if option.value == ConfigMapping.JOB_BOARD and not isinstance(channel, discord.ForumChannel) :
+			return await interaction.followup.send("The job board has to be a forum.")
 		ConfigData().add_key(interaction.guild.id, option.value, channel.id, overwrite=True)
 		await interaction.followup.send(f"{option.name} channel set to {channel.mention}")
 
@@ -406,6 +418,36 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 				await interaction.followup.send(f"{channel.mention} removed from the XP channels")
 
 	# ============================================================
+	async def _roleplay_settings(self, interaction: Interaction, current: str) -> list[Choice[str]] :
+		guild_id = interaction.guild_id
+		return [Choice(name=f"{key.lower()} ({RoleplaySettings.shown(guild_id, key)}; {RoleplaySettings.describe(key)})"[:100],
+		               value=key.value) for key in roleplay_settings if current.lower() in key.lower()][:25]
+
+	# ============================================================
+	@app_commands.command(name='roleplay')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.autocomplete(setting=_roleplay_settings)
+	@app_commands.describe(setting="The setting; the list shows each one's value now and what it takes",
+	                       value="The new value: a number, one of the listed words, on/off, or text")
+	async def roleplay(self, interaction: Interaction, setting: str, value: app_commands.Range[str, 1, 100]) :
+		"""
+		Sets one of the roleplay tools' settings: in-world time and weather, travel, scenes, languages, letters, jobs,
+		downtime, rumors and omens. Start typing to see them all with their current values; /config view lists them
+		too.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		key = setting.strip().upper()
+		stored, problem = RoleplaySettings.parse(key, value)
+		if problem :
+			return await interaction.response.send_message(problem, ephemeral=True)
+		self._prepare(interaction.guild)
+		ConfigData().add_key(interaction.guild.id, key, stored, overwrite=True)
+		await interaction.response.send_message(f"{key.lower()} set to {RoleplaySettings.shown(interaction.guild.id, key)}.",
+		                                        ephemeral=True)
+
+	# ============================================================
 	@app_commands.command(name='view')
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def view(self, interaction: Interaction) :
@@ -426,6 +468,8 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 			# get_key reads "0" and "1" as off and on, so whole-number settings are read as numbers.
 			value = config.get_int(guild.id, key) if key in number_settings else config.get_key(guild.id, key)
 			lines.append(f"**{key.lower()}:** {value}")
+		for key in roleplay_settings :
+			lines.append(f"**{key.lower()}:** {RoleplaySettings.shown(guild.id, key)}")
 		levels = LevelTransactions().get_all(guild.id)
 		lines.append("**Level roles:** " + (
 			", ".join(f"<@&{level.role_id}> ({level.xp_required} xp)" for level in levels) or "none"))

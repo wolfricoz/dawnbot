@@ -2,16 +2,17 @@
 layout: default
 title: Currency
 parent: Commands
-nav_order: 7
+nav_order: 12
 ---
 
 <h1>Currency</h1>
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-Your characters' currency. Each character has its own: it starts with the server's starting amount and earns
-more when you post as it in the roleplay channels. You can't move currency between your characters; staff can
-give or take it.
+Characters' currency: balances and the history of every change.
+
+Currency belongs to characters, not members. A character starts with the server's starting amount and earns more by
+roleplaying as that character; GMs can give or take it with /gm currency.
 
 
 ### `balance`
@@ -27,7 +28,7 @@ give or take it.
 **Usage:** `/currency history <character>`
 
 > Shows the last changes to one of your characters' currency: roleplay earnings, purchases, sales and what
-staff gave or took.
+> staff gave or took.
 
 ---
 

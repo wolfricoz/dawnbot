@@ -23,6 +23,48 @@ class ProxyTransactions(DatabaseTransactions) :
 			self.commit(session)
 
 	# ============================================================
+	def recent_characters(self, channel_id: int, since) -> list[int] :
+		"""The characters that posted in a channel or thread (not deleted) since the given time, most recent first."""
+		with self.createsession() as session :
+			rows = session.execute(Select(ProxyMessages.character_id, func.max(ProxyMessages.created_at))
+			                       .where(ProxyMessages.channel_id == channel_id, ProxyMessages.created_at >= since,
+			                              ProxyMessages.deleted.is_(False), ProxyMessages.character_id.is_not(None))
+			                       .group_by(ProxyMessages.character_id)
+			                       .order_by(func.max(ProxyMessages.created_at).desc())).all()
+			return [row[0] for row in rows]
+
+	# ============================================================
+	def last_channels(self, guild_id: int, since) -> dict[int, int] :
+		"""Where each character posted last (not deleted) since the given time: {character_id: channel_id}."""
+		with self.createsession() as session :
+			rows = session.execute(Select(ProxyMessages.character_id, ProxyMessages.channel_id,
+			                              ProxyMessages.created_at)
+			                       .where(ProxyMessages.guild_id == guild_id, ProxyMessages.created_at >= since,
+			                              ProxyMessages.deleted.is_(False), ProxyMessages.character_id.is_not(None))
+			                       .order_by(ProxyMessages.created_at)).all()
+			latest = {}
+			for character_id, channel_id, _ in rows :
+				latest[character_id] = channel_id
+			return latest
+
+	# ============================================================
+	def last_post_at(self, character_id: int) -> object | None :
+		"""When the character last posted (not deleted), or None."""
+		with self.createsession() as session :
+			return session.scalar(Select(func.max(ProxyMessages.created_at))
+			                      .where(ProxyMessages.character_id == character_id, ProxyMessages.deleted.is_(False)))
+
+	# ============================================================
+	def in_range(self, channel_id: int, first_id: int, last_id: int) -> list[ProxyMessages] :
+		"""The logged messages in a channel or thread between two message ids (both included), oldest first."""
+		with self.createsession() as session :
+			return list(session.scalars(Select(ProxyMessages)
+			                            .where(ProxyMessages.channel_id == channel_id,
+			                                   ProxyMessages.message_id >= first_id,
+			                                   ProxyMessages.message_id <= last_id, ProxyMessages.deleted.is_(False))
+			                            .order_by(ProxyMessages.message_id)).all())
+
+	# ============================================================
 	def get(self, message_id: int) -> ProxyMessages | None :
 		with self.createsession() as session :
 			return session.scalar(Select(ProxyMessages).where(ProxyMessages.message_id == message_id))
