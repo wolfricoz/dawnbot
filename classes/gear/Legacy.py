@@ -1,5 +1,5 @@
 """Reads the global tables from before the combat round (armors, weapons, npcs, monsters), so their rows can be copied
-into a server's gear catalog and bestiary before migration 0015_drop_legacy_combat drops them.
+into a server's gear catalog and bestiary before migration 0016_drop_legacy_combat drops them.
 
 The tables have no models any more; they are read with plain SQL, and only when they still exist.
 """

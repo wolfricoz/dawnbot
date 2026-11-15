@@ -14,7 +14,8 @@ from database.transactions.CombatTransactions import CombatTransactions
 from views.combat.Pickers import Field, Form, Option, number, pick, reply
 
 MAX_NPCS = 20
-CONDITIONS = C.HARMFUL + C.HELPFUL
+# Each group fits one select menu (Discord holds 25 options).
+CONDITION_GROUPS = {"harmful" : C.HARMFUL, "helpful" : C.HELPFUL}
 
 
 class GMButton(discord.ui.Button) :
@@ -266,8 +267,13 @@ class GMPanel(discord.ui.View) :
 	async def do_condition(self, interaction: discord.Interaction, fight: Fight) -> None :
 		async def chosen(next_interaction: discord.Interaction, combatant_id: int) :
 			combatant = fight.combatant(combatant_id)
-			options = [Option(f"{'Remove' if C.has(combatant.conditions, name) else 'Add'} {C.label(name)}", name,
-			                  C.DEFINITIONS[name][2]) for name in CONDITIONS]
+
+			async def group_chosen(group_interaction: discord.Interaction, groups: list[str]) :
+				options = [Option(f"{'Remove' if C.has(combatant.conditions, name) else 'Add'} {C.label(name)}", name,
+				                  C.DEFINITIONS[name][2]) for name in CONDITION_GROUPS[groups[0]]]
+				await pick(group_interaction, f"Conditions of {combatant.name}: "
+				                              f"{C.text(combatant.conditions) or 'none'}", options, "Pick a condition",
+				           condition_chosen)
 
 			async def condition_chosen(condition_interaction: discord.Interaction, values: list[str]) :
 				name = values[0]
@@ -285,7 +291,8 @@ class GMPanel(discord.ui.View) :
 				                                                                           max_length=3)], typed))
 
 			await pick(next_interaction, f"Conditions of {combatant.name}: {C.text(combatant.conditions) or 'none'}",
-			           options, "Pick a condition", condition_chosen)
+			           [Option("Harmful conditions", "harmful"), Option("Helpful conditions", "helpful")],
+			           "Which kind?", group_chosen)
 
 		await self._pick_combatant(interaction, fight, [combatant for combatant in fight.combatants
 		                                                if combatant.in_fight], "Whose conditions?", chosen)

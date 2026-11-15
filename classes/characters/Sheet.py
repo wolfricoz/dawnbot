@@ -21,15 +21,12 @@ MAX_FIELDS = 60
 SEEDED_KEY = "SHEET_SEEDED"
 
 COMBAT_NOTES = (
-	"Actions per round:\n"
-	"- Spellcasters: cast one offensive spell and buff one ally or debuff one enemy (only one buff or debuff may be "
-	"active at a time).\n"
-	"- Melee fighters: make one melee attack and perform one non-attack action (grappling, throwing sand, shoving, "
-	"etc.).\n"
-	"- Ranged fighters: make one ranged attack and provide tactical information to one ally (+1 to their next attack "
-	"or defense).\n"
-	"Attack roll: d20 + weapon proficiency (or spell bonus) + ability bonuses.\n"
-	"Target AC: 10 + armor bonus (or natural armor) + defensive ability bonuses."
+	"Spells, abilities and weapons aren't written on the sheet. Once your character is approved:\n"
+	"- build spells (magic effects, from a magic school) or abilities (physical effects) with /ability create, "
+	"browse the effects with /ability effects, and learn them with /ability learn;\n"
+	"- get weapons, armor and shields from the shop (or a GM) and set your weapon proficiency with /gear proficiency.\n"
+	"Spellcasters know up to 6 spells; everyone else has 3 ability slots. A character can't have both unless an event "
+	"grants them."
 )
 
 
@@ -62,23 +59,9 @@ DEFAULT_SHEET = [
 	_field("About", "Goals / ambitions", LONG, required=True),
 	_field("About", "Past occupations", LONG),
 	_field("Character history", "History", LONG),
-	_field("Combat", "Combat notes", INFO, help=COMBAT_NOTES),
+	_field("Combat", "Combat", INFO, help=COMBAT_NOTES),
 	_field("Combat", "Combat archetype", CHOICE, choices=["Spellcaster", "Melee", "Ranged"]),
-	_field("Combat", "Magic school", help="Only if your character uses spellcasting."),
-	_field("Combat", "Weapon proficiencies", LONG,
-	       help="Up to 2 weapons may be Good or above; the others must be Average or worse. Weapons you do not list "
-	            "are Awful (-2). Example: Sword - Excellent (+2), Spear - Good (+1), Bow - Average (+0), "
-	            "Dagger - Poor (-1)."),
 	_field("Combat", "Armor proficiency", CHOICE, choices=["Unarmored", "Light", "Medium", "Heavy"]),
-	_field("Combat", "Shield", CHOICE, choices=["Yes", "No"],
-	       help="+2 Defense and -2 attack. Melee characters cannot dual-wield with a shield, and spellcasters may "
-	            "only use weak spells while using one."),
-	_field("Combat", "Magics", LONG,
-	       help="Max of 6: 2 Weak (+0 hit/save DC), 2 Normal (+1), 1 Strong with limited use (+2) and 1 Cantrip "
-	            "(+0). Spellcasters cannot have Abilities unless granted by an event."),
-	_field("Combat", "Abilities", LONG,
-	       help="Max of 3. Characters with Abilities cannot have spellcasting unless granted by an event. Examples: "
-	            "a bonus to attacks, defensive boosts, battlefield maneuvers or movement enhancements."),
 ]
 
 

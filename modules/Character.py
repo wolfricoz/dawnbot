@@ -6,6 +6,7 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 from classes.characters.Card import Card, STATE_LABELS
+from classes.combat import SheetAbilities
 from classes.characters.CharacterFlow import CharacterFlow
 from classes.characters.Edits import APPLIED, Edits, REVIEW
 from classes.characters.ForumPost import ForumPost
@@ -409,6 +410,9 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		await interaction.response.defer(ephemeral=True)
 		if (character := await self._own_character(interaction, name)) is None :
 			return
+		problem = SheetAbilities.reserved_problem(key)
+		if problem :
+			return await interaction.followup.send(problem)
 		extras = self._extras(character)
 		taken = [field.label.lower() for field in SheetFieldTransactions().get_all(interaction.guild_id)]
 		if self._find_extra(extras, key) is not None or key.lower() in taken :

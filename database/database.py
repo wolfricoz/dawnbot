@@ -634,8 +634,10 @@ class MagicSchools(Base) :
 	)
 
 
-# kind is spell or ability; tier cantrip, weak, normal or strong; effect damage, heal, condition, shield or boost.
-# condition is the condition a condition or boost ability applies, secondary the one a damage ability adds on a hit.
+# kind is spell or ability; tier cantrip, weak, normal or strong. effects lists the catalog effects it is built from,
+# [{"key": "pyrokinesis"}, ...] (passives can add "target" and "limit"; see classes/combat/Abilities.py). damage_type is
+# the type for effects that take the ability's own. state is draft (made from an old free-text sheet answer, no effects
+# yet), pending, approved or denied.
 class Abilities(Base) :
 	"""A spell or ability a player built, reviewed by staff."""
 	__tablename__ = "abilities"
@@ -650,14 +652,10 @@ class Abilities(Base) :
 	                                              nullable=True)
 	stat: Mapped[str] = mapped_column(String(16), default="intelligence")
 	tier: Mapped[str] = mapped_column(String(16), default="weak")
-	effect: Mapped[str] = mapped_column(String(16), default="damage")
+	effects: Mapped[list | None] = mapped_column(JSON, nullable=True)
 	damage_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
-	condition: Mapped[str | None] = mapped_column(String(16), nullable=True)
-	area: Mapped[bool] = mapped_column(Boolean, default=False)
-	secondary: Mapped[str | None] = mapped_column(String(16), nullable=True)
-	# active (used on a turn) or passive (always on; its parts are in passive, see classes/combat/Passives.py).
+	# active (used on a turn) or passive (always on, built from passive effects).
 	activation: Mapped[str] = mapped_column(String(16), default="active", server_default="active")
-	passive: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 	state: Mapped[str] = mapped_column(String(16), default="pending")
 	review_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	forum_thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

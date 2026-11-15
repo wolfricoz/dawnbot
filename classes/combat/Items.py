@@ -21,6 +21,9 @@ AP_ITEM = 2
 TURNS_LIMIT = 5
 DEFAULTS = {"use" : HEAL, "dice" : "2d4", "condition" : None, "turns" : 2}
 BOOSTS = Conditions.HELPFUL
+# Discord lists hold 25 choices, so the armory only offers the basic ones.
+BOOST_CHOICES = Conditions.BASIC_HELPFUL
+CURE_CHOICES = Conditions.BASIC_HARMFUL
 CURES = Conditions.HARMFUL
 
 

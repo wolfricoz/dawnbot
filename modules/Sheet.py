@@ -6,6 +6,7 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 from classes.characters import SheetPaste
+from classes.combat import SheetAbilities
 from classes.characters.Access import Access
 from classes.characters.Card import chunk_text
 from classes.characters.Choices import Choices
@@ -59,6 +60,9 @@ class Sheet(commands.GroupCog, name="Sheet", group_name="sheet") :
 		"""
 		await interaction.response.defer(ephemeral=True)
 		sync_server(interaction.guild)
+		problem = SheetAbilities.reserved_problem(label)
+		if problem :
+			return await interaction.followup.send(problem)
 		options = self._split_choices(choices) if type.value == CHOICE else None
 		if type.value == INFO and not help :
 			return await interaction.followup.send("An info note needs its text in `help`.")
@@ -95,6 +99,9 @@ class Sheet(commands.GroupCog, name="Sheet", group_name="sheet") :
 		field = SheetFieldTransactions().find(interaction.guild_id, label)
 		if field is None :
 			return await interaction.followup.send(f"The sheet has no question called {label}.")
+		problem = SheetAbilities.reserved_problem(new_label) if new_label else None
+		if problem :
+			return await interaction.followup.send(problem)
 		options = self._split_choices(choices) if choices is not None else field.choices
 		problem = CharacterSheet.validate_definition(
 			field.type, max_length if max_length is not None else field.max_length,

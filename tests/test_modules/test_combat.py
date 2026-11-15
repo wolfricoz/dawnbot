@@ -1,7 +1,8 @@
 import unittest
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
-from classes.combat import Abilities, Conditions as C, Rules
+from classes.combat import Abilities, Conditions as C, EffectCatalog, Effects, Rules
 from classes.combat.DamageTypes import DEFAULTS
 from classes.combat.Engine import CombatError, Engine
 from classes.combat.Loadout import Loadout
@@ -57,6 +58,14 @@ def duel(pacing: str = "async", **fields) -> Fight :
 
 def engine(fight: Fight, *rolls) -> Engine :
 	return Engine(fight, TYPES, rng=Dice(*rolls), now=NOW)
+
+
+def ability(number: int, name: str, kind: str, tier: str, keys: list[str], stat: str = "intelligence",
+            damage_type: str | None = None) -> dict :
+	"""An ability as a fight uses it, built from catalog effect keys."""
+	record = SimpleNamespace(id=number, name=name, kind=kind, tier=tier, stat=stat, damage_type=damage_type,
+	                         activation="active", effects=[{"key" : key} for key in keys])
+	return Loadout.ability_data(record)
 
 
 class TestRules(unittest.TestCase) :
@@ -178,29 +187,40 @@ class TestConditions(unittest.TestCase) :
 
 
 class TestAbilityRules(unittest.TestCase) :
-	TYPES = ["Fire", "Slashing", "Restoration"]
 
-	def check(self, **changes) :
-		values = dict(kind="ability", tier="weak", effect="damage", stat="strength", damage_type="Fire",
-		              condition=None, secondary=None, area=False, school_stat=None, type_names=self.TYPES) | changes
-		return Abilities.check_definition(**values)
+	def check(self, kind: str, tier: str, *keys: str, school_stat: str | None = None, stat: str = "intelligence") :
+		effects = [EffectCatalog.get(key) for key in keys]
+		return Abilities.check_active(kind, tier, effects, school_stat, stat)
 
 	def test_definitions(self) :
-		self.assertIsNone(self.check())
-		self.assertIn("school", self.check(kind="spell"))
-		self.assertIn("Charisma", self.check(kind="spell", school_stat="charisma", stat="intelligence"))
-		self.assertIsNone(self.check(kind="spell", school_stat="intelligence", stat="intelligence"))
-		self.assertIn("Cantrip", self.check(effect="condition", condition="stunned", tier="cantrip"))
-		self.assertIsNone(self.check(effect="condition", condition="stunned", tier="normal"))
-		self.assertIn("damage types", self.check(damage_type="Ice"))
-		self.assertIn("Restoration", self.check(effect="heal", damage_type="Fire"))
-		self.assertIsNone(self.check(effect="heal", damage_type=None))
-		self.assertIn("second", self.check(effect="heal", damage_type=None, secondary="slowed"))
+		self.assertIsNone(self.check("ability", "weak", "strike"))
+		self.assertIn("school", self.check("spell", "weak", "bolt"))
+		self.assertIn("Charisma", self.check("spell", "weak", "bolt", school_stat="charisma"))
+		self.assertIsNone(self.check("spell", "weak", "bolt", school_stat="intelligence"))
+		self.assertIn("physical abilities", self.check("spell", "weak", "strike", school_stat="intelligence"))
+		self.assertIn("for spells", self.check("ability", "weak", "fireball"))
+		self.assertIn("higher tier", self.check("ability", "cantrip", "stunning_strike"))
+		self.assertIsNone(self.check("ability", "weak", "stunning_strike"))
+		self.assertIn("at most 2", self.check("ability", "cantrip", "strike", "rend", "trip"))
+		self.assertIn("not both", self.check("ability", "weak", "strike", "rally"))
+		self.assertIsNone(self.check("ability", "weak", "strike", "rage"))
+		self.assertIn("need an effect", self.check("ability", "weak", "sweeping", "reckless"))
+		self.assertIn("one of the area", self.check("ability", "strong", "strike", "sweeping", "onslaught"))
+		self.assertIn("at most 2 drawbacks", self.check("ability", "strong", "strike", "reckless", "strain",
+		                                                  "exhausting"))
+		self.assertIn("once per fight already", self.check("ability", "strong", "strike", "one_shot"))
+		self.assertIn("picked once", self.check("ability", "weak", "strike", "strike"))
 
-	def test_dice(self) :
-		self.assertEqual(Abilities.dice("normal", "damage"), "3d6")
-		self.assertEqual(Abilities.dice("normal", "damage", secondary="slowed"), "2d6")
-		self.assertEqual(Abilities.dice("strong", "damage", area=True), "2d8")
+	def test_costs_and_dice(self) :
+		effects = [EffectCatalog.get(key) for key in ("pyrokinesis", "widened")]
+		self.assertEqual(Effects.ap_cost("normal", effects), 2 + 3 + 2)
+		self.assertEqual(Effects.ap_cost("normal", effects + [EffectCatalog.get("blood_price")]), 6)
+		self.assertEqual(Effects.target_limit(effects), 3)
+		self.assertEqual(Effects.dice("normal", effects[0], effects), "2d6")
+		self.assertEqual(Effects.dice("strong", EffectCatalog.get("magic_missile"), []), "3d8")
+		self.assertEqual(Effects.dice("cantrip", EffectCatalog.get("bolt"), [EffectCatalog.get("empowered_spell")]),
+		                 "1d8")
+		self.assertEqual(Effects.ability_uses("weak", [EffectCatalog.get("strike"), EffectCatalog.get("one_shot")]), 1)
 
 	def test_slots(self) :
 		spells = [("spell", "cantrip", False), ("spell", "weak", False), ("spell", "weak", False)]
@@ -460,11 +480,8 @@ class TestActions(unittest.TestCase) :
 		self.assertEqual((fight.pending, fight.combatant(2).hp), ([], 26))
 
 	def test_abilities(self) :
-		bolt = {"id" : 7, "name" : "Firebolt", "kind" : "spell", "tier" : "weak", "stat" : "intelligence",
-		        "effect" : "damage", "damage_type" : "Fire", "condition" : None, "area" : False, "secondary" : None}
-		mend = {"id" : 8, "name" : "Mend", "kind" : "spell", "tier" : "cantrip", "stat" : "intelligence",
-		        "effect" : "heal", "damage_type" : "Restoration", "condition" : None, "area" : False,
-		        "secondary" : None}
+		bolt = ability(7, "Firebolt", "spell", "weak", ["fire_bolt"])
+		mend = ability(8, "Mend", "spell", "cantrip", ["mend"], damage_type="Restoration")
 		fight = duel()
 		ayla = fight.combatant(1)
 		ayla.stats["abilities"] = [bolt, mend]
@@ -489,9 +506,7 @@ class TestActions(unittest.TestCase) :
 			engine(fight).use_ability(ayla, 8, [1])
 
 	def test_condition_abilities_use_a_save(self) :
-		hold = {"id" : 9, "name" : "Hold", "kind" : "ability", "tier" : "normal", "stat" : "charisma",
-		        "effect" : "condition", "damage_type" : "Mental", "condition" : "slowed", "area" : False,
-		        "secondary" : None}
+		hold = ability(9, "Hold", "ability", "normal", ["caltrops"], stat="charisma", damage_type="Mental")
 		fight = duel()
 		ayla = fight.combatant(1)
 		ayla.stats["abilities"] = [hold]

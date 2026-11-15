@@ -133,18 +133,25 @@ class TestLearningAbilities(DatabaseTestCase) :
 	def ability(self, name: str, kind: str = Abilities.ABILITY, tier: str = Abilities.WEAK, state: str = APPROVED) :
 		school_id = self.school.id if kind == Abilities.SPELL else None
 		stat = self.school.casting_stat if kind == Abilities.SPELL else "strength"
-		return AbilityTransactions().add(GUILD_ID, name, kind=kind, tier=tier, effect=Abilities.DAMAGE, stat=stat,
+		effects = [{"key" : "bolt" if kind == Abilities.SPELL else "strike"}]
+		return AbilityTransactions().add(GUILD_ID, name, kind=kind, tier=tier, effects=effects, stat=stat,
 		                                 damage_type="Blunt", school_id=school_id, state=state)
 
 	def test_check_corrects_names_and_needs_a_school_for_spells(self) :
-		values, problem = AbilityFlow.check(GUILD_ID, Abilities.ABILITY, Abilities.WEAK, Abilities.DAMAGE, "strength",
-		                                    "blunt", None, None, False, None)
+		values, problem = AbilityFlow.check(GUILD_ID, Abilities.ABILITY, Abilities.WEAK, ["Strike", None], "strength",
+		                                    "blunt", None)
 		self.assertIsNone(problem)
-		self.assertEqual(values["damage_type"], "Blunt")
-		self.assertIsNotNone(AbilityFlow.check(GUILD_ID, Abilities.SPELL, Abilities.WEAK, Abilities.DAMAGE, None,
-		                                       "Fire", None, None, False, None)[1])
-		values, problem = AbilityFlow.check(GUILD_ID, Abilities.SPELL, Abilities.WEAK, Abilities.HEAL, "strength",
-		                                    None, None, None, False, self.school)
+		self.assertEqual((values["damage_type"], values["effects"]), ("Blunt", [{"key" : "strike"}]))
+		self.assertIn("damage_type", AbilityFlow.check(GUILD_ID, Abilities.ABILITY, Abilities.WEAK, ["strike"],
+		                                               "strength", None, None)[1])
+		self.assertIsNone(AbilityFlow.check(GUILD_ID, Abilities.ABILITY, Abilities.WEAK, ["rend"], "strength", None,
+		                                    None)[1])
+		self.assertIn("no effect called", AbilityFlow.check(GUILD_ID, Abilities.ABILITY, Abilities.WEAK, ["laser"],
+		                                                    "strength", None, None)[1])
+		self.assertIsNotNone(AbilityFlow.check(GUILD_ID, Abilities.SPELL, Abilities.WEAK, ["bolt"], None, "Fire",
+		                                       None)[1])
+		values, problem = AbilityFlow.check(GUILD_ID, Abilities.SPELL, Abilities.WEAK, ["mend"], "strength", None,
+		                                    self.school)
 		self.assertIsNone(problem)
 		self.assertEqual(values["stat"], self.school.casting_stat)
 

@@ -3,13 +3,14 @@ from sqlalchemy import Select, func
 from database.database import Abilities, CharacterAbilities, MagicSchools
 from database.transactions.DatabaseTransactions import DatabaseTransactions
 
+DRAFT = "draft"
 PENDING = "pending"
 APPROVED = "approved"
 DENIED = "denied"
 
-ABILITY_FIELDS = ["name", "description", "flavor", "kind", "school_id", "stat", "tier", "effect", "damage_type",
-                  "condition", "area", "secondary", "state", "review_message_id", "forum_thread_id",
-                  "forum_message_id", "tag_ids", "creator_uid", "activation", "passive"]
+ABILITY_FIELDS = ["name", "description", "flavor", "kind", "school_id", "stat", "tier", "effects", "damage_type",
+                  "state", "review_message_id", "forum_thread_id", "forum_message_id", "tag_ids", "creator_uid",
+                  "activation"]
 ACTIVE = "active"
 PASSIVE = "passive"
 SCHOOL_FIELDS = ["name", "description", "casting_stat", "state", "standard", "review_message_id", "creator_uid"]

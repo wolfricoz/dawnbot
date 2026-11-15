@@ -1,7 +1,7 @@
 """Passive abilities: their rules, slots, and what they do in fights."""
 import unittest
 
-from classes.combat import Abilities, Conditions as C, Passives as P
+from classes.combat import Abilities, Conditions as C, PassiveCatalog, Passives as P, Rules
 from classes.combat.AbilityFlow import AbilityFlow
 from classes.combat.Loadout import Loadout
 from classes.combat.State import DOWNED
@@ -16,26 +16,35 @@ def passive(number: int, tier: str, **parts) -> dict :
 	return {"id" : number, "name" : f"Passive {number}", "tier" : tier} | P.normalise(parts)
 
 
+def effects(*keys: str) -> list :
+	return [PassiveCatalog.get(key) for key in keys]
+
+
 class TestPassiveRules(unittest.TestCase) :
 
 	def test_checks(self) :
-		values, problem = P.check("strong", {"type" : "bonus", "field" : "to_hit", "scope" : "piercing"}, TYPE_NAMES)
-		self.assertEqual((values["scope"], problem), ("Piercing", None))
-		self.assertIsNotNone(P.check("weak", {"type" : "bonus", "field" : "hp", "scope" : "melee"}, TYPE_NAMES)[1])
-		self.assertIsNotNone(P.check("cantrip", {"type" : "bonus", "field" : "hp"}, TYPE_NAMES)[1])
-		self.assertIsNotNone(P.check("strong", {"type" : "immune", "condition" : "stunned"}, TYPE_NAMES)[1])
-		self.assertIsNone(P.check("normal", {"type" : "immune", "condition" : "stunned"}, TYPE_NAMES)[1])
-		self.assertIsNotNone(P.check("weak", {"type" : "trigger", "trigger" : "last_stand"}, TYPE_NAMES)[1])
-		self.assertIsNotNone(P.check("weak", {"type" : "trigger", "trigger" : "on_strong_hit"}, TYPE_NAMES)[1])
-		self.assertIsNotNone(P.check("weak", {"type" : "resist", "scope" : "cold"}, TYPE_NAMES)[1])
-		values, _ = P.check("normal", {"type" : "stacks", "field" : "damage"}, TYPE_NAMES)
-		self.assertEqual(values["scope"], "any")
-		self.assertIsNotNone(P.check("weak", {"type" : "aura", "field" : "hp"}, TYPE_NAMES)[1])
+		self.assertEqual(P.check("ability", "strong", effects("trained_aim"), "piercing", None, TYPE_NAMES),
+		                 ("Piercing", None))
+		self.assertIn("needs a target", P.check("ability", "weak", effects("specialist"), None, None, TYPE_NAMES)[1])
+		self.assertIn("takes a target", P.check("ability", "weak", effects("toughness"), "melee", None, TYPE_NAMES)[1])
+		self.assertIsNotNone(P.check("ability", "cantrip", effects("toughness"), None, None, TYPE_NAMES)[1])
+		self.assertIn("higher tier", P.check("ability", "weak", effects("steady"), None, None, TYPE_NAMES)[1])
+		self.assertIsNone(P.check("ability", "normal", effects("steady"), None, None, TYPE_NAMES)[1])
+		self.assertIn("higher tier", P.check("ability", "weak", effects("undying"), None, None, TYPE_NAMES)[1])
+		self.assertIn("needs a target", P.check("ability", "weak", effects("resistance_any"), "cold", None,
+		                                        TYPE_NAMES)[1])
+		self.assertIn("magic", P.check("ability", "weak", effects("spellfed"), None, None, TYPE_NAMES)[1])
+		self.assertIsNone(P.check("spell", "weak", effects("spellfed"), None, None, TYPE_NAMES)[1])
+		self.assertIn("at most 1", P.check("ability", "weak", effects("toughness", "nimble"), None, None,
+		                                   TYPE_NAMES)[1])
+		self.assertIsNone(P.check("ability", "normal", effects("toughness", "nimble"), None, None, TYPE_NAMES)[1])
 
-	def test_describe(self) :
-		self.assertEqual(P.describe("strong", {"type" : "bonus", "field" : "to_hit", "scope" : "Piercing"}),
-		                 "Strong passive · +3 to hit with Piercing · 2 slots")
-		self.assertIn("up to 3", P.describe("normal", {"type" : "stacks", "field" : "damage", "scope" : "magic"}))
+	def test_describe_and_cost(self) :
+		self.assertEqual(P.describe("ability", "strong", effects("trained_aim"), "Piercing", None),
+		                 "Strong passive · -2 AP every turn · 2 slots\n- Trained Aim: +3 to hit with Piercing")
+		self.assertIn("up to 3", P.describe("spell", "normal", effects("spellfed"), None, None))
+		self.assertIn("1 spell slot", P.describe("spell", "normal", effects("spellfed"), None, None))
+		self.assertEqual(P.ap_cost("normal", effects("toughness", "bloodthirst")), 3)
 
 	def test_slots(self) :
 		one_active = [("ability", "weak", False, False)]
@@ -55,11 +64,14 @@ class TestPassivesInFights(unittest.TestCase) :
 
 	def test_join_bonuses(self) :
 		combatant = fighter(1, 1, "Ayla", ac=16)
-		combatant.stats["passives"] = [passive(1, "normal", type="bonus", field="hp"),
-		                               passive(2, "strong", type="bonus", field="ac"),
-		                               passive(3, "weak", type="bonus", field="ap")]
+		combatant.stats["passives"] = [passive(1, "normal", type="bonus", field="hp") | {"ap_cost" : 1},
+		                               passive(2, "strong", type="bonus", field="ac") | {"ap_cost" : 2}]
 		Loadout.apply_passives(combatant)
-		self.assertEqual((combatant.hp, combatant.hp_max, combatant.ac, combatant.ap_max), (40, 40, 18, 8))
+		self.assertEqual((combatant.hp, combatant.hp_max, combatant.ac, combatant.ap_max, combatant.ap),
+		                 (40, 40, 18, 4, 4))
+		combatant.stats["passives"].append(passive(3, "weak", type="bonus", field="dt") | {"ap_cost" : 9})
+		Loadout.apply_passives(combatant)
+		self.assertEqual(combatant.ap_max, Rules.AP_MINIMUM)
 
 	def test_scoped_bonuses_and_auras(self) :
 		fight = duel()
@@ -105,12 +117,10 @@ class TestPassivesInFights(unittest.TestCase) :
 		self.assertEqual(run.effective_ac(ayla), 12)
 
 	def test_own_stack_limits(self) :
-		values, problem = P.check("weak", {"type" : "stacks", "field" : "damage", "scope" : "magic", "limit" : 24},
-		                          TYPE_NAMES)
-		self.assertEqual((values["limit"], problem), (24, None))
-		self.assertIsNotNone(P.check("weak", {"type" : "stacks", "field" : "damage", "limit" : 31}, TYPE_NAMES)[1])
-		self.assertIsNone(P.check("weak", {"type" : "bonus", "field" : "hp", "limit" : 9}, TYPE_NAMES)[0]["limit"])
-		self.assertIn("up to 24", P.describe("weak", values))
+		self.assertIsNone(P.check("spell", "weak", effects("spellfed"), None, 24, TYPE_NAMES)[1])
+		self.assertIsNotNone(P.check("spell", "weak", effects("spellfed"), None, 31, TYPE_NAMES)[1])
+		self.assertIn("stack limit", P.check("ability", "weak", effects("toughness"), None, 9, TYPE_NAMES)[1])
+		self.assertIn("up to 24", P.describe("spell", "weak", effects("spellfed"), None, 24))
 		fight = duel()
 		ayla, bandit = fight.combatant(1), fight.combatant(2)
 		ayla.stats["passives"] = [passive(1, "weak", type="stacks", field="damage", scope="magic", limit=24)]
@@ -147,17 +157,20 @@ class TestPassiveAbilities(DatabaseTestCase) :
 
 	def test_learning_and_loadout(self) :
 		self.add_server()
-		values, problem = AbilityFlow.check_passive(GUILD_ID, "normal", {"type" : "bonus", "field" : "hp"})
+		values, problem = AbilityFlow.check_passive(GUILD_ID, "ability", "normal", ["toughness"], None, None)
 		self.assertIsNone(problem)
 		iron = AbilityTransactions().add(GUILD_ID, "Iron Skin", state=APPROVED, creator_uid=USER_ID, **values)
-		values, _ = AbilityFlow.check_passive(GUILD_ID, "weak", {"type" : "resist", "scope" : "fire"})
+		values, _ = AbilityFlow.check_passive(GUILD_ID, "ability", "weak", ["Resilient"], "fire", None)
 		self.assertEqual(values["damage_type"], "Fire")
 		salamander = AbilityTransactions().add(GUILD_ID, "Salamander", state=APPROVED, **values)
+		self.assertIn("magic school", AbilityFlow.check_passive(GUILD_ID, "spell", "weak", ["spellfed"], None,
+		                                                        None)[1])
 		character = self.add_character()
 		self.assertIsNone(AbilityFlow.learn_problem(character, iron, None))
 		AbilityTransactions().learn(character.id, iron.id)
 		self.assertIn("passive 2", AbilityFlow.learn_problem(character, salamander, None))
 		combatant = Loadout.for_character(character, 1)
 		self.assertEqual([entry["name"] for entry in combatant.passives], ["Iron Skin"])
-		self.assertEqual((combatant.abilities, combatant.hp), ([], 40))
+		# Toughness: +10 max HP at Normal, and it takes 1 AP every turn.
+		self.assertEqual((combatant.abilities, combatant.hp, combatant.ap_max), ([], 40, 6))
 		self.assertIn("Normal passive", AbilityFlow.summary(iron))

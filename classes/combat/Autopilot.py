@@ -4,7 +4,8 @@ Players pick an autopilot for each fight (attack the weakest enemy, attack whoev
 revive allies first); NPCs have a behavior (aggressive, vengeful, random, cautious, support). Attacks use the weapon
 with the best expected damage that the remaining AP pays for, and the turn ends with the AP left as AC.
 """
-from classes.combat import Abilities as AbilityRules
+from classes.combat import Conditions as C
+from classes.combat import Effects as FX
 from classes.combat import Items, Rules
 from classes.combat.Engine import AP_REVIVE, CAUTIOUS, CombatError, DEFEND, Engine, IDLE_PING, RANDOM, \
 	REVENGE, SUPPORT, VENGEFUL
@@ -79,7 +80,7 @@ class Autopilot :
 
 	# ============================================================
 	def target(self, combatant: Combatant, behavior: str) -> Combatant | None :
-		enemies = self.fight.enemies(combatant)
+		enemies = self.engine.targetable(combatant, self.fight.enemies(combatant), offensive=True)
 		if not enemies :
 			return None
 		if behavior in (REVENGE, VENGEFUL) :
@@ -94,7 +95,7 @@ class Autopilot :
 	def weapon(self, combatant: Combatant, target: Combatant) -> dict | None :
 		"""The weapon with the best expected damage that the combatant's AP pays for."""
 		options = []
-		for weapon in combatant.weapons :
+		for weapon in self.engine.usable_weapons(combatant) :
 			cost = self.engine.attack_cost(combatant, weapon)
 			if cost > combatant.ap :
 				continue
@@ -110,7 +111,7 @@ class Autopilot :
 		engine = self.engine
 		cost = engine.attack_cost(combatant, weapon)
 		engine._spend(combatant, cost)
-		engine.resolve_attack(combatant, target, weapon)
+		engine.resolve_attack(combatant, engine.confusion(combatant, target), weapon)
 		combatant.weapon_key = weapon.get("key")
 		engine.check_victory()
 
@@ -133,13 +134,14 @@ class Autopilot :
 	# ============================================================
 	def _offensive_ability(self, combatant: Combatant) -> dict | None :
 		"""An attack ability the combatant can use now, for NPCs (players' autopilot sticks to weapons)."""
-		if combatant.controller == PLAYER :
+		if combatant.controller == PLAYER or C.has(combatant.conditions, C.SILENCED) :
 			return None
 		for ability in combatant.abilities :
-			if ability.get("effect") != AbilityRules.DAMAGE :
+			mechanics = {effect.get("mechanic") for effect in ability.get("effects") or []}
+			if self.engine.ability_aim(ability) != FX.ENEMY or not mechanics & {FX.ATTACK, FX.BLAST} :
 				continue
 			left = self.engine.ability_uses_left(combatant, ability)
-			if (left is None or left > 0) and AbilityRules.ap(ability["tier"]) <= combatant.ap :
+			if (left is None or left > 0) and self.engine.ability_ap(ability) <= combatant.ap :
 				return ability
 		return None
 
@@ -158,10 +160,12 @@ class Autopilot :
 				engine.apply_item(combatant, healing[0], downed[0])
 			return self._try(use)
 		for ability in combatant.abilities :
-			if ability.get("effect") != AbilityRules.HEAL :
+			mechanics = {effect.get("mechanic") for effect in ability.get("effects") or []}
+			if engine.ability_aim(ability) != FX.ALLY or FX.HEAL not in mechanics \
+					or C.has(combatant.conditions, C.SILENCED) :
 				continue
 			left = engine.ability_uses_left(combatant, ability)
-			if (left is not None and left <= 0) or AbilityRules.ap(ability["tier"]) > combatant.ap :
+			if (left is not None and left <= 0) or engine.ability_ap(ability) > combatant.ap :
 				continue
 			hurt = [ally for ally in self.fight.allies(combatant)
 			        if ally.standing and ally.hp_max and ally.hp / ally.hp_max < SUPPORT_HEAL_BELOW]

@@ -71,7 +71,11 @@ class Card :
 	@staticmethod
 	def sheet_text(infos: list[CharacterInfo], fields: list[SheetFields]) -> str :
 		"""The character's answers and extra fields as text, grouped under the sheet's section headings."""
+		from classes.combat.SheetAbilities import reserved
+
 		sections = {field.id : field.section for field in fields}
+		# Spells, abilities and weapons come from the bot's own systems; old free-text answers about them stay hidden.
+		infos = [info for info in infos if not reserved(info.key)]
 		lines, current = [], None
 		has_sections = any(sections.get(info.sheet_field_id) for info in infos)
 		for info in infos :
@@ -121,7 +125,7 @@ class Card :
 
 		lines = []
 		for link, ability in AbilityTransactions().known(character.id) :
-			note = " · event" if link.event else ("" if ability.state == "approved" else f" · {ability.state}")
+			note = " · event" if link.event else ("" if ability.state == "approved" else " · blank" if ability.state == "draft" else f" · {ability.state}")
 			kind = "passive" if ability.activation == "passive" else ability.kind
 			lines.append(f"{ability.name} ({ability.tier.capitalize()} {kind}{note})")
 		return "\n".join(lines)[:1024]

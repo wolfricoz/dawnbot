@@ -6,11 +6,11 @@ import discord
 
 from classes.characters.Access import Access, Requirement
 from classes.characters.CharacterFlow import CharacterFlow
-from classes.combat import Abilities as AbilityRules, Passives
-from classes.combat.DamageTypes import DamageTypes, RESTORATION
+from classes.combat import Abilities as AbilityRules, EffectCatalog, Effects, PassiveCatalog, Passives, Rules
+from classes.combat.DamageTypes import DamageTypes
 from classes.kernel.ConfigData import ConfigData
 from database.database import Abilities, Characters, MagicSchools
-from database.transactions.AbilityTransactions import APPROVED, AbilityTransactions, DENIED, PASSIVE, PENDING
+from database.transactions.AbilityTransactions import ACTIVE, APPROVED, AbilityTransactions, DENIED, PASSIVE, PENDING
 from database.transactions.TagRuleTransactions import TagRuleTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 
@@ -57,48 +57,82 @@ class AbilityFlow :
 
 	# ============================================================
 	@staticmethod
-	def check(guild_id: int, kind: str, tier: str, effect: str, stat: str | None, damage_type: str | None,
-	          condition: str | None, secondary: str | None, area: bool,
-	          school: MagicSchools | None) -> tuple[dict | None, str | None] :
-		"""Checks an ability's parts. @return: the values to store (type name and stat corrected), or the problem."""
+	def find_effects(names: list[str | None], passive: bool) -> tuple[list[Effects.Effect], str | None] :
+		"""Catalog effects by key or name (empty options left out), or the first name that isn't one."""
+		catalog = PassiveCatalog if passive else EffectCatalog
+		found = []
+		for name in names :
+			if not name :
+				continue
+			effect = catalog.find(name)
+			if effect is None :
+				kind = "passive effect" if passive else "effect"
+				return [], f"There is no {kind} called {name}. See /ability effects."
+			found.append(effect)
+		return found, None
+
+	# ============================================================
+	@staticmethod
+	def check(guild_id: int, kind: str, tier: str, effect_names: list[str | None], stat: str | None,
+	          damage_type: str | None, school: MagicSchools | None) -> tuple[dict | None, str | None] :
+		"""Checks an active ability's parts. @return: the values to store (stat, type name and effects corrected), or
+		the problem."""
 		if kind == AbilityRules.SPELL :
 			if school is None or school.state != APPROVED :
 				return None, "A spell needs an approved magic school (see /school list)."
 			stat = school.casting_stat
-		names = DamageTypes.names(guild_id)
-		if effect == AbilityRules.HEAL :
-			damage_type = RESTORATION
-		elif damage_type :
-			damage_type = next((name for name in names if name.lower() == damage_type.lower()), damage_type)
-		problem = AbilityRules.check_definition(kind, tier, effect, stat or "", damage_type, condition, secondary, area,
-		                                        school.casting_stat if school else None, names)
+		if stat not in Rules.STATS :
+			return None, "Pick the stat the ability uses."
+		effects, problem = AbilityFlow.find_effects(effect_names, passive=False)
 		if problem :
 			return None, problem
-		return {"kind" : kind, "tier" : tier, "effect" : effect, "stat" : stat, "damage_type" : damage_type,
-		        "condition" : condition, "secondary" : secondary, "area" : area,
-		        "school_id" : school.id if school else None}, None
+		problem = AbilityRules.check_active(kind, tier, effects, school.casting_stat if school else None, stat)
+		if problem :
+			return None, problem
+		names = DamageTypes.names(guild_id)
+		typeless = [effect.name for effect in effects
+		            if effect.mechanic in (Effects.ATTACK, Effects.BLAST, Effects.COMPANION)
+		            and not effect.params.get("type")]
+		if damage_type :
+			matched = next((name for name in names if name.lower() == damage_type.lower()), None)
+			if matched is None :
+				return None, "Pick one of the server's damage types (see /damagetype list)."
+			damage_type = matched
+		elif typeless :
+			return None, f"{', '.join(typeless)} takes the ability's damage type; pick one with damage_type."
+		return {"kind" : kind, "tier" : tier, "stat" : stat, "damage_type" : damage_type,
+		        "school_id" : school.id if school else None, "effects" : AbilityRules.store(effects),
+		        "activation" : ACTIVE}, None
 
 	# ============================================================
 	@staticmethod
-	def check_passive(guild_id: int, tier: str, parts: dict) -> tuple[dict | None, str | None] :
+	def check_passive(guild_id: int, kind: str, tier: str, effect_names: list[str | None], target: str | None,
+	                  limit: int | None, school: MagicSchools | None = None) -> tuple[dict | None, str | None] :
 		"""Checks a passive's parts. @return: the values to store, or the problem."""
-		passive, problem = Passives.check(tier, parts, DamageTypes.names(guild_id))
+		if kind == AbilityRules.SPELL and (school is None or school.state != APPROVED) :
+			return None, "A passive spell needs an approved magic school (see /school list)."
+		effects, problem = AbilityFlow.find_effects(effect_names, passive=True)
 		if problem :
 			return None, problem
-		names = {name.lower() for name in DamageTypes.names(guild_id)}
-		scope = passive.get("scope")
-		return {"kind" : AbilityRules.ABILITY, "tier" : tier, "effect" : passive["type"], "stat" : "endurance",
-		        "damage_type" : scope if scope and scope.lower() in names else None,
-		        "condition" : passive.get("condition"), "secondary" : None, "area" : False, "school_id" : None,
-		        "activation" : PASSIVE, "passive" : passive}, None
+		names = DamageTypes.names(guild_id)
+		target, problem = Passives.check(kind, tier, effects, target, limit, names)
+		if problem :
+			return None, problem
+		is_type = bool(target) and target.lower() in {name.lower() for name in names}
+		return {"kind" : kind, "tier" : tier, "stat" : school.casting_stat if school else "endurance",
+		        "damage_type" : target if is_type else None, "school_id" : school.id if school else None,
+		        "effects" : AbilityRules.store(effects, target, limit), "activation" : PASSIVE}, None
 
 	# ============================================================
 	@staticmethod
 	def summary(ability: Abilities) -> str :
-		if ability.activation == PASSIVE :
-			return Passives.describe(ability.tier, ability.passive)
-		return AbilityRules.summary(ability.kind, ability.tier, ability.effect, ability.stat, ability.damage_type,
-		                            ability.condition, ability.secondary, bool(ability.area))
+		return AbilityRules.summary(ability.kind, ability.tier, ability.stat, ability.effects, ability.damage_type,
+		                            ability.activation == PASSIVE)
+
+	# ============================================================
+	@staticmethod
+	def short(ability: Abilities) -> str :
+		return AbilityRules.short(ability.kind, ability.tier, ability.effects, ability.activation == PASSIVE)
 
 	# ============================================================
 	@staticmethod
@@ -106,6 +140,7 @@ class AbilityFlow :
 		embed = discord.Embed(title=ability.name[:256], description=(ability.description or "")[:4000],
 		                      color=discord.Color.purple())
 		embed.add_field(name="Rules", value=AbilityFlow.summary(ability)[:1024], inline=False)
+		embed.add_field(name="Realm", value="Magic" if ability.kind == AbilityRules.SPELL else "Physical")
 		school = AbilityTransactions().school(ability.school_id)
 		if school is not None :
 			embed.add_field(name="School", value=school.name)
@@ -150,9 +185,38 @@ class AbilityFlow :
 		known = AbilityTransactions().known(character.id)
 		if any(other.id == ability.id for _, other in known) :
 			return f"{character.name} already knows {ability.name}."
-		return AbilityRules.check_learn([(other.kind, other.tier, link.event, other.activation == PASSIVE)
-		                                 for link, other in known], ability.kind, ability.tier,
-		                                bool(character.legendary), ability.activation == PASSIVE)
+		problem = AbilityRules.check_learn([(other.kind, other.tier, link.event, other.activation == PASSIVE)
+		                                    for link, other in known], ability.kind, ability.tier,
+		                                   bool(character.legendary), ability.activation == PASSIVE)
+		if problem :
+			return problem
+		return AbilityFlow.ap_problem(character, ability, [other for _, other in known])
+
+	# ============================================================
+	@staticmethod
+	def character_ap(character: Characters, known: list[Abilities]) -> int :
+		"""The AP the character has each turn after its approved passives take theirs."""
+		special = {stat : int(getattr(character, stat) or 0) for stat in Rules.STATS}
+		penalty = sum(Passives.ap_cost(other.tier, AbilityRules.passive_effects(other.effects)) for other in known
+		              if other.activation == PASSIVE and other.state == APPROVED)
+		return Rules.ap_max(special) - penalty
+
+	# ============================================================
+	@staticmethod
+	def ap_problem(character: Characters, ability: Abilities, known: list[Abilities]) -> str | None :
+		"""Why the character's AP can't carry the ability: an active one it could never pay for, or a passive that
+		would leave it with fewer than Passives.AP_FLOOR AP."""
+		have = AbilityFlow.character_ap(character, known)
+		if ability.activation == PASSIVE :
+			cost = Passives.ap_cost(ability.tier, AbilityRules.passive_effects(ability.effects))
+			if have - cost < Passives.AP_FLOOR :
+				return (f"{ability.name} takes {cost} AP every turn, which would leave {character.name} with "
+				        f"{have - cost} (at least {Passives.AP_FLOOR} must remain).")
+			return None
+		cost = AbilityRules.ap(ability.tier, ability.effects)
+		if cost > have :
+			return f"{ability.name} costs {cost} AP and {character.name} only has {have} AP a turn."
+		return None
 
 	# == review ==
 

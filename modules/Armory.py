@@ -33,7 +33,7 @@ USE_CHOICES = [Choice(name="Heal (revives a downed ally)", value=Items.HEAL),
                Choice(name="Cure a condition", value=Items.CURE), Choice(name="Boost an ally", value=Items.BOOST),
                Choice(name="Nothing automatic (the GM settles it)", value=Items.NONE)]
 ITEM_CONDITION_CHOICES = [Choice(name="None", value="none")] + [Choice(name=Conditions.label(name), value=name)
-                                                                for name in Items.BOOSTS + Items.CURES]
+                                                                for name in Items.BOOST_CHOICES + Items.CURE_CHOICES]
 STAT_CHOICES = [Choice(name=stat.capitalize(), value=stat) for stat in STATS]
 DAMAGE_STAT_CHOICES = [Choice(name="None", value="none")] + STAT_CHOICES
 RANGE_CHOICES = [Choice(name=value.capitalize(), value=value) for value in Rules.RANGES]

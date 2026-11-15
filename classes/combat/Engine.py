@@ -14,10 +14,10 @@ import random
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
-from classes.combat import Abilities as AbilityRules
 from classes.combat import Conditions as C
 from classes.combat import Fortune, Items, Passives as P, Rules
-from classes.combat.DamageTypes import ALWAYS, ARC, CLEANSE, CONDITION, IGNORE_DT, RESTORATION, STRONG_HIT
+from classes.combat.DamageTypes import ALWAYS, ARC, CONDITION, IGNORE_DT, STRONG_HIT
+from classes.combat.Resolver import Resolver
 from classes.combat.State import ACTIVE, ASYNC, AUTO, Combatant, DEAD, DOWNED, DYING, ENDED, FLED, Fight, GM, LIVE, \
 	PAUSED, PLAYER, REMOVED, SETUP, STABLE, STANDING
 
@@ -38,6 +38,7 @@ WEAKENED_PENALTY = -2
 BLINDED_PENALTY = -4
 SLOWED_AC = -2
 EXPOSED_AC = -2
+CORRODED_DT = 2
 DOT_DICE = "1d4"
 # A fight where nobody needs to act (only automatic NPCs) runs by itself; this stops it after so many turns.
 AUTO_LIMIT = 400
@@ -81,7 +82,7 @@ class Outcome :
 			self.lines.append(text)
 
 
-class Engine :
+class Engine(Resolver) :
 
 	def __init__(self, fight: Fight, types: dict[str, dict] | None = None, rng: random.Random | None = None,
 	             now: datetime | None = None, async_seconds: int = DEFAULT_ASYNC_SECONDS,
@@ -116,30 +117,57 @@ class Engine :
 	# ============================================================
 	def effective_ac(self, combatant: Combatant) -> int :
 		"""AC with unspent AP and conditions; this may go above the cap of 18."""
-		value = combatant.ac + C.amount(combatant.conditions, C.GUARD)
+		value = combatant.ac + C.amount(combatant.conditions, C.GUARD) + C.total(combatant.conditions, C.AC_MODIFIER)
 		value += self.stacks(combatant, P.AC) + self.aura(combatant, P.AC)
-		if C.has(combatant.conditions, C.SLOWED) :
-			value += SLOWED_AC
-		if C.has(combatant.conditions, C.EXPOSED) :
-			value += EXPOSED_AC
 		return value
+
+	# ============================================================
+	def effective_dt(self, combatant: Combatant) -> int :
+		"""DT after corrosion."""
+		return max(0, combatant.dt - (CORRODED_DT if C.has(combatant.conditions, C.CORRODED) else 0))
+
+	# ============================================================
+	def damage_conditions(self, combatant: Combatant) -> int :
+		"""Damage added or taken away by conditions (weakened, empowered) and a berserk passive at half HP."""
+		value = C.total(combatant.conditions, C.DAMAGE_MODIFIER)
+		if combatant.hp_max and combatant.hp * 2 <= combatant.hp_max :
+			value += P.total(combatant.passives, P.BERSERK, P.BERSERK_DAMAGE)
+		return value
+
+	# ============================================================
+	def saving_throw(self, target: Combatant, stat: str) :
+		"""A function that rolls the target's save with a stat: d20 (the lower of two when cursed) + modifier +
+		save bonuses from the entry, conditions and passives."""
+		def roll() -> int :
+			value = self.rng.randint(1, 20)
+			if C.has(target.conditions, C.CURSED) :
+				value = min(value, self.rng.randint(1, 20))
+			return value + self.mod(target, stat) + int(target.stats.get("save_bonus", 0)) \
+			       + C.total(target.conditions, C.SAVE_MODIFIER) + P.total(target.passives, P.SAVE, P.SAVE_BONUS)
+		return roll
+
+	# ============================================================
+	def tick(self, combatant: Combatant) -> list[str] :
+		"""Counts down the combatant's conditions at the end of its turn; a doom that runs out deals its damage."""
+		doom = C.get(combatant.conditions, C.DOOMED)
+		if doom is not None and int(doom.get("turns") or 0) <= 1 and combatant.standing :
+			amount = int(doom.get("amount") or C.AMOUNTS[C.DOOMED])
+			C.remove(combatant.conditions, C.DOOMED)
+			self.say(f"☠️ {combatant.name}'s doom comes due: {amount} damage.")
+			self.damage(combatant, amount)
+		return C.count_down(combatant.conditions)
 
 	# ============================================================
 	def situational(self, attacker: Combatant, target: Combatant | None) -> list[Rules.Bonus] :
 		"""Bonuses from conditions: the attacker's and the target's."""
-		bonuses = []
 		conditions = attacker.conditions
-		if C.has(conditions, C.WEAKENED) :
-			bonuses.append(Rules.Bonus("weakened", WEAKENED_PENALTY))
-		if C.has(conditions, C.BLINDED) :
-			bonuses.append(Rules.Bonus("blinded", BLINDED_PENALTY))
-		if C.has(conditions, C.INSPIRED) :
-			bonuses.append(Rules.Bonus("inspired", INSPIRED_BONUS))
+		bonuses = [Rules.Bonus(name, value) for name, value in C.HIT_MODIFIER.items() if C.has(conditions, name)]
 		if C.has(conditions, C.HELPED) :
 			bonuses.append(Rules.Bonus("helped", C.amount(conditions, C.HELPED)))
 			C.remove(conditions, C.HELPED)
-		if target is not None and C.has(target.conditions, C.MARKED) :
-			bonuses.append(Rules.Bonus("marked", MARKED_BONUS))
+		if target is not None :
+			bonuses += [Rules.Bonus(name, value) for name, value in C.TARGET_MODIFIER.items()
+			            if C.has(target.conditions, name)]
 		return bonuses
 
 	# == bad-roll protection ==
@@ -193,12 +221,17 @@ class Engine :
 		return to_hit, damage
 
 	# ============================================================
-	def inflict(self, target: Combatant, name: str, turns: int) -> bool :
-		"""Gives the target a harmful condition, unless a passive makes it immune. False when it didn't take hold."""
+	def inflict(self, target: Combatant, name: str, turns: int, value: int | None = None,
+	            source: int | None = None) -> bool :
+		"""Gives the target a harmful condition, unless a passive makes it immune. value is the number it carries
+		(vulnerable, drained, doomed) and source who caused it (charmed, taunted). False when it didn't take hold."""
 		if any(passive.get("condition") == name for passive in P.of_type(target.passives, P.IMMUNE)) :
 			self.say(f"-# {target.name} is immune to being {C.label(name).lower()}.")
 			return False
-		return C.add(target.conditions, name, turns=turns)
+		if value is None and name in (C.VULNERABLE, C.DRAINED, C.DOOMED) :
+			value = C.AMOUNTS.get(name)
+		return C.add(target.conditions, name, turns=turns, value=value,
+		             source=source if name in (C.CHARMED, C.TAUNTED) else None)
 
 	# ============================================================
 	def strong_hit_triggers(self, actor: Combatant, target: Combatant) -> None :
@@ -271,7 +304,16 @@ class Engine :
 		"""
 		amount = max(0, int(amount))
 		if source is not None :
+			if not magic and C.has(target.conditions, C.INTANGIBLE) and amount :
+				self.say(f"-# The blow passes straight through {target.name}.")
+				return 0
+			if amount and C.has(target.conditions, C.VULNERABLE) :
+				amount += C.amount(target.conditions, C.VULNERABLE)
 			amount = self.resist(target, amount, type_name, magic, ranged)
+			if magic and amount and C.has(target.conditions, C.WARDED) :
+				warded = max(1, amount // 2)
+				self.say(f"-# {target.name}'s ward takes {amount - warded}.")
+				amount = warded
 		shield = C.get(target.conditions, C.SHIELDED)
 		if shield and amount :
 			absorbed = min(int(shield.get("amount") or 0), amount)
@@ -284,7 +326,12 @@ class Engine :
 		target.hp -= amount
 		if source is not None :
 			target.last_attacker_id = source.id
-		if target.hp <= 0 and target.standing and amount > 0 and self.last_stand(target) :
+		if amount > 0 and C.remove(target.conditions, C.ASLEEP) :
+			self.say(f"-# {target.name} wakes up.")
+		if target.hp <= 0 and target.standing and amount > 0 and C.remove(target.conditions, C.UNDYING) :
+			target.hp = 1
+			self.say(f"🛡️ **{target.name}** refuses to fall and stays at 1 HP.")
+		elif target.hp <= 0 and target.standing and amount > 0 and self.last_stand(target) :
 			pass
 		elif target.hp <= 0 and target.standing :
 			target.hp = 0
@@ -295,10 +342,29 @@ class Engine :
 		target.hp = max(0, target.hp)
 		if source is not None and amount > 0 and target.standing :
 			self.gain_stacks(target, type_name, magic, ranged)
+		if amount > 0 and target.standing and target.hp_max and target.hp * 2 <= target.hp_max :
+			self.second_wind(target)
 		return amount
 
 	# ============================================================
+	def second_wind(self, target: Combatant) -> None :
+		"""A second wind passive heals once per fight when the combatant drops to half HP or less."""
+		for passive in P.triggers(target.passives, P.SECOND_WIND) :
+			state = self.passive_state(target, passive)
+			if state.get("used") :
+				continue
+			state["used"] = True
+			dice = P.SECOND_WIND_DICE[P.index(passive["tier"])]
+			amount, rolls = Rules.roll_dice(dice, rng=self.rng)
+			healed = self.heal(target, amount)
+			self.say(f"💚 {passive['name']}: {target.name} gets a second wind, +{healed} HP ({dice} {rolls}).")
+			return
+
+	# ============================================================
 	def heal(self, target: Combatant, amount: int) -> int :
+		if C.has(target.conditions, C.WITHERED) and amount > 0 :
+			self.say(f"-# {target.name} is withered and can't be healed.")
+			return 0
 		before = target.hp
 		target.hp = min(target.hp_max, target.hp + max(0, int(amount)))
 		if target.down and target.hp > 0 :
@@ -425,7 +491,7 @@ class Engine :
 			combatant.acted = True
 			if self.fight.lethal and combatant.state == DOWNED :
 				self.death_roll(combatant)
-			C.count_down(combatant.conditions)
+			self.tick(combatant)
 			return
 		if not combatant.standing :
 			return
@@ -446,9 +512,10 @@ class Engine :
 			healed = self.heal(combatant, amount)
 			if healed :
 				self.say(f"💚 {passive['name']}: {combatant.name} heals {healed} HP.")
+		self.companion_attack(combatant)
 		if not combatant.standing :
 			combatant.acted = True
-			C.count_down(combatant.conditions)
+			self.tick(combatant)
 			self.check_victory()
 			return
 		if C.has(combatant.conditions, C.STUNNED) :
@@ -456,10 +523,22 @@ class Engine :
 			C.add(combatant.conditions, C.STUN_IMMUNE, turns=2)
 			combatant.ap = 0
 			combatant.acted = True
-			C.count_down(combatant.conditions)
+			self.tick(combatant)
 			self.say(f"💫 **{combatant.name}** is stunned and loses the turn.")
 			return
-		combatant.ap = combatant.ap_max
+		for name, text in ((C.ASLEEP, "is asleep"), (C.BANISHED, "is banished")) :
+			if C.has(combatant.conditions, name) :
+				combatant.ap = 0
+				combatant.acted = True
+				self.say(f"💤 **{combatant.name}** {text} and loses the turn.")
+				for expired in self.tick(combatant) :
+					self.say(f"-# {combatant.name} is no longer {C.label(expired).lower()}.")
+				return
+		drained = C.amount(combatant.conditions, C.DRAINED)
+		C.remove(combatant.conditions, C.DRAINED)
+		combatant.ap = max(0, combatant.ap_max + C.amount(combatant.conditions, C.HASTED) - drained)
+		if drained :
+			self.say(f"-# {combatant.name} is drained and has {drained} AP less.")
 		combatant.acted = False
 
 	# ============================================================
@@ -473,7 +552,7 @@ class Engine :
 				self.say(f"-# {combatant.name} keeps {combatant.ap} AP as +{combatant.ap} AC.")
 		combatant.ap = 0
 		combatant.acted = True
-		for name in C.count_down(combatant.conditions) :
+		for name in self.tick(combatant) :
 			self.say(f"-# {combatant.name} is no longer {C.label(name).lower()}.")
 
 	# ============================================================
@@ -515,8 +594,8 @@ class Engine :
 		ap = combatant.ap
 		if ap <= 0 :
 			return False
-		if any(self.attack_cost(combatant, weapon) <= ap for weapon in combatant.weapons) and self.fight.enemies(
-				combatant) :
+		if any(self.attack_cost(combatant, weapon) <= ap for weapon in self.usable_weapons(combatant)) \
+				and self.targetable(combatant, self.fight.enemies(combatant), offensive=True) :
 			return True
 		allies = self.fight.allies(combatant, include_self=False)
 		if ap >= AP_HELP and any(ally.standing for ally in allies) and not self.crippled(combatant, "charisma") :
@@ -525,9 +604,17 @@ class Engine :
 			return True
 		for ability in combatant.abilities :
 			left = self.ability_uses_left(combatant, ability)
-			if (left is None or left > 0) and AbilityRules.ap(ability["tier"]) <= ap :
+			if (left is None or left > 0) and self.ability_ap(ability) <= ap \
+					and not C.has(combatant.conditions, C.SILENCED) :
 				return True
 		return False
+
+	# ============================================================
+	def usable_weapons(self, combatant: Combatant) -> list[dict] :
+		"""The weapons the combatant can attack with: a disarmed one only has its fists and natural weapons."""
+		if not C.has(combatant.conditions, C.DISARMED) :
+			return combatant.weapons
+		return [weapon for weapon in combatant.weapons if weapon.get("key") in (Rules.UNARMED_KEY, "natural")]
 
 	# ============================================================
 	def finish_action(self, combatant: Combatant) -> Outcome :
@@ -614,6 +701,10 @@ class Engine :
 			raise CombatError(f"{target.name} is not on your side.")
 		if standing and not target.standing :
 			raise CombatError(f"{target.name} is {target.state}.")
+		if enemy :
+			problem = self.target_problem(actor, target)
+			if problem :
+				raise CombatError(problem)
 		return target
 
 	# ============================================================
@@ -662,9 +753,11 @@ class Engine :
 		weapon = actor.weapon(weapon_key or actor.weapon_key) or (actor.weapons[0] if actor.weapons else None)
 		if weapon is None :
 			raise CombatError(f"{actor.name} has no weapon.")
+		if weapon not in self.usable_weapons(actor) :
+			raise CombatError(f"{actor.name} is disarmed and can only fight unarmed.")
 		cost = self.attack_cost(actor, weapon, aimed)
 		self._spend(actor, cost)
-		self.resolve_attack(actor, target, weapon, aimed)
+		self.resolve_attack(actor, self.confusion(actor, target), weapon, aimed)
 		actor.weapon_key = weapon.get("key")
 		return self.finish_action(actor)
 
@@ -678,8 +771,17 @@ class Engine :
 		passive_hit, passive_damage = self.passive_roll(actor, weapon.get("type"), False, ranged)
 		if passive_hit :
 			bonuses.append(Rules.Bonus("passives", passive_hit))
-		disadvantage = ranged and self.crippled(actor, "perception")
-		crit_from = int(actor.stats.get("crit_min", 20)) - Rules.weapon_crit_widen(weapon)
+		disadvantage = (ranged and self.crippled(actor, "perception")) or C.has(actor.conditions, C.CURSED)
+		crit_from = int(actor.stats.get("crit_min", 20)) - Rules.weapon_crit_widen(weapon) \
+		            - P.total(actor.passives, P.CRIT, P.CRIT_WIDEN)
+		C.remove(actor.conditions, C.HIDDEN)
+		melee = not ranged
+		if C.has(target.conditions, C.EVASIVE) :
+			C.remove(target.conditions, C.EVASIVE)
+			self.say(f"**{actor.name}** attacks **{target.name}** with {weapon.get('name', 'a weapon')} → evaded.")
+			self.counter(target, actor, weapon)
+			self.after_miss(target, actor, melee)
+			return
 		roll = self.fortune(actor, lambda : Rules.roll_attack(
 			bonuses, self.effective_ac(target), crit_from, int(actor.stats.get("fumble_max", 1)),
 			disadvantage=disadvantage, confirm_crits=bool(actor.stats.get("confirm_crits")), rng=self.rng),
@@ -690,160 +792,28 @@ class Engine :
 			C.add(actor.conditions, C.EXPOSED, turns=1)
 			self.say(f"{head} → **fumble!** {actor.name} is left open (-2 AC).")
 			self.counter(target, actor, weapon)
+			self.after_miss(target, actor, melee)
 			return
 		if not roll.hit :
 			self.say(f"{head} → miss.")
 			self.counter(target, actor, weapon)
+			self.after_miss(target, actor, melee)
 			return
 		type_name = weapon.get("type")
 		effect, trigger = self.effect_of(type_name)
 		triggered = effect is not None and (trigger == ALWAYS or (trigger == STRONG_HIT and roll.strong))
 		ignore_dt = aimed or (triggered and effect.get("kind") == IGNORE_DT)
-		bonus = Rules.damage_bonus(actor.stats, weapon, actor.base) + passive_damage
-		if C.has(actor.conditions, C.WEAKENED) :
-			bonus += WEAKENED_PENALTY
-		damage = Rules.roll_damage(weapon.get("dice", "1d4"), bonus, target.dt, crit=roll.crit,
+		bonus = Rules.damage_bonus(actor.stats, weapon, actor.base) + passive_damage + self.damage_conditions(actor)
+		damage = Rules.roll_damage(weapon.get("dice", "1d4"), bonus, self.effective_dt(target), crit=roll.crit,
 		                           extra_dice=1 if aimed else 0, ignore_dt=ignore_dt, rng=self.rng)
 		label = "**crit!**" if roll.crit else ("strong hit" if roll.strong else "hit")
 		self.say(f"{head} → {label} for **{damage.total}** ({damage.text()}).")
 		done = self.damage(target, damage.total, actor, type_name=type_name, ranged=ranged)
+		self.after_hit(actor, target, done, melee)
 		if triggered :
 			self.apply_type_effect(effect, target, done, actor, type_name)
 		if roll.strong :
 			self.strong_hit_triggers(actor, target)
-
-	# ============================================================
-	def ability_uses_left(self, actor: Combatant, ability: dict) -> int | None :
-		limit = AbilityRules.uses(ability["tier"])
-		if limit is None :
-			return None
-		return limit - int(actor.ability_uses.get(str(ability["id"]), 0))
-
-	# ============================================================
-	def ability_targets(self, actor: Combatant, ability: dict) -> list[Combatant] :
-		"""Who an ability can be aimed at: standing enemies, or allies (healing also reaches downed allies)."""
-		if AbilityRules.offensive(ability["effect"]) :
-			return self.fight.enemies(actor)
-		if ability["effect"] == AbilityRules.HEAL :
-			return [ally for ally in self.fight.allies(actor) if ally.standing or ally.down]
-		return [ally for ally in self.fight.allies(actor) if ally.standing]
-
-	# ============================================================
-	def use_ability(self, actor: Combatant, ability_id, target_ids: list) -> Outcome :
-		self.require_turn(actor)
-		ability = actor.ability(ability_id)
-		if ability is None :
-			raise CombatError(f"{actor.name} doesn't know that ability.")
-		limit = AbilityRules.AREA_TARGETS if ability.get("area") else 1
-		ids = list(dict.fromkeys(target_ids or []))[:limit]
-		allowed = {target.id : target for target in self.ability_targets(actor, ability)}
-		targets = [allowed[target_id] for target_id in ids if target_id in allowed]
-		self._use_ability(actor, ability, targets)
-		return self.finish_action(actor)
-
-	# ============================================================
-	def resolve_and_use(self, actor: Combatant, ability: dict, target: Combatant) -> None :
-		"""Uses an ability on one target without the turn checks (automatic moves)."""
-		self._use_ability(actor, ability, [target])
-		self.check_victory()
-
-	# ============================================================
-	def _use_ability(self, actor: Combatant, ability: dict, targets: list[Combatant]) -> None :
-		if C.has(actor.conditions, C.SILENCED) :
-			raise CombatError(f"{actor.name} is silenced and can't use abilities.")
-		left = self.ability_uses_left(actor, ability)
-		if left is not None and left <= 0 :
-			raise CombatError(f"{ability['name']} has no uses left this fight.")
-		if not targets :
-			raise CombatError("Pick a target the ability can reach.")
-		self._spend(actor, AbilityRules.ap(ability["tier"]))
-		actor.ability_uses[str(ability["id"])] = int(actor.ability_uses.get(str(ability["id"]), 0)) + 1
-		self.say(f"✨ **{actor.name}** uses **{ability['name']}**.")
-		for target in targets :
-			self.resolve_ability(actor, ability, target)
-
-	# ============================================================
-	def resolve_ability(self, actor: Combatant, ability: dict, target: Combatant) -> None :
-		effect = ability["effect"]
-		stat = ability.get("stat") or "intelligence"
-		mod = self.mod(actor, stat)
-		tier = ability["tier"]
-		dice = AbilityRules.dice(tier, effect, bool(ability.get("area")), ability.get("secondary"))
-		type_name = ability.get("damage_type")
-		type_effect, trigger = self.effect_of(type_name)
-		disadvantage = self.crippled(actor, stat)
-		if effect == AbilityRules.DAMAGE :
-			bonuses = [Rules.Bonus(Rules.STAT_SHORT.get(stat, stat), mod),
-			           Rules.Bonus("armor", int((actor.stats.get("armor") or {}).get("ability_hit_mod") or 0))]
-			bonuses += self.situational(actor, target)
-			passive_hit, passive_damage = self.passive_roll(actor, type_name, True, False)
-			if passive_hit :
-				bonuses.append(Rules.Bonus("passives", passive_hit))
-			roll = self.fortune(actor, lambda : Rules.roll_attack(
-				bonuses, self.effective_ac(target), int(actor.stats.get("crit_min", 20)),
-				int(actor.stats.get("fumble_max", 1)), disadvantage=disadvantage,
-				confirm_crits=bool(actor.stats.get("confirm_crits")), rng=self.rng),
-			                    lambda attack : attack.hit, lambda attack : attack.total)
-			head = f"→ {target.name}: {roll.text()}"
-			if roll.fumble :
-				C.add(actor.conditions, C.EXPOSED, turns=1)
-				self.say(f"{head} → **fumble!**")
-				return
-			if not roll.hit :
-				self.say(f"{head} → miss.")
-				return
-			triggered = type_effect is not None and (trigger == ALWAYS or (trigger == STRONG_HIT and roll.strong))
-			ignore_dt = triggered and type_effect.get("kind") == IGNORE_DT
-			bonus = mod + passive_damage + (WEAKENED_PENALTY if C.has(actor.conditions, C.WEAKENED) else 0)
-			damage = Rules.roll_damage(dice, bonus, target.dt, crit=roll.crit, ignore_dt=ignore_dt, rng=self.rng)
-			label = "**crit!**" if roll.crit else ("strong hit" if roll.strong else "hit")
-			self.say(f"{head} → {label} for **{damage.total}** ({damage.text()}).")
-			done = self.damage(target, damage.total, actor, type_name=type_name, magic=True)
-			secondary = ability.get("secondary")
-			if secondary and target.standing and self.inflict(target, secondary, AbilityRules.turns(tier)) :
-				self.say(f"-# {target.name} is {C.label(secondary).lower()}.")
-			if triggered :
-				self.apply_type_effect(type_effect, target, done, actor, type_name)
-			if roll.strong :
-				self.strong_hit_triggers(actor, target)
-			return
-		if effect == AbilityRules.CONDITION :
-			name = ability.get("condition")
-			dc = 10 + mod + AbilityRules.dc_bonus(tier)
-			save_stat = C.save_stat(name)
-			save = self.fortune(target, lambda : self.rng.randint(1, 20) + self.mod(target, save_stat)
-			                    + int(target.stats.get("save_bonus", 0)), lambda value : value >= dc,
-			                    lambda value : value)
-			if save >= dc :
-				self.say(f"→ {target.name} resists ({save} vs DC {dc}).")
-				return
-			strong = save <= dc - Rules.STRONG_MARGIN
-			if self.inflict(target, name, AbilityRules.turns(tier)) :
-				self.say(f"→ {target.name} fails ({save} vs DC {dc}) and is {C.label(name).lower()}.")
-			else :
-				self.say(f"→ {target.name} fails ({save} vs DC {dc}) but shakes it off.")
-			if strong and type_effect is not None and trigger == STRONG_HIT :
-				self.apply_type_effect(type_effect, target, 0, actor, type_name)
-			return
-		if effect == AbilityRules.HEAL :
-			amount, rolls = Rules.roll_dice(dice, mod, rng=self.rng)
-			healed = self.heal(target, max(1, amount))
-			self.say(f"→ {target.name} heals {healed} ({dice} {rolls} {mod:+d}).")
-			if (type_name or RESTORATION).lower() == RESTORATION.lower() or (type_effect or {}).get("kind") == CLEANSE :
-				removed = C.cleanse(target.conditions)
-				if removed :
-					self.say(f"-# {target.name} is no longer {C.label(removed).lower()}.")
-			return
-		if effect == AbilityRules.SHIELD :
-			amount, rolls = Rules.roll_dice(dice, mod, rng=self.rng)
-			amount = max(1, amount)
-			C.add(target.conditions, C.SHIELDED, turns=AbilityRules.turns(tier) + 1, value=amount)
-			self.say(f"→ {target.name} is shielded for {amount} ({dice} {rolls} {mod:+d}).")
-			return
-		if effect == AbilityRules.BOOST :
-			name = ability.get("condition") or C.INSPIRED
-			C.add(target.conditions, name, turns=AbilityRules.turns(tier))
-			self.say(f"→ {target.name} is {C.label(name).lower()}.")
 
 	# ============================================================
 	def help(self, actor: Combatant, target_id) -> Outcome :
@@ -941,6 +911,8 @@ class Engine :
 	# ============================================================
 	def flee(self, actor: Combatant) -> Outcome :
 		self.require_turn(actor)
+		if C.has(actor.conditions, C.RESTRAINED) :
+			raise CombatError(f"{actor.name} is restrained and can't flee.")
 		helped = C.has(actor.conditions, C.HELPED)
 		dc = FLEE_DC + len(self.fight.enemies(actor))
 		actor.ap = 0
@@ -1078,8 +1050,9 @@ class Engine :
 			if C.remove(combatant.conditions, name) :
 				self.say(f"🛠️ {combatant.name} is no longer {C.label(name).lower()}.")
 			return self.outcome
-		value = turns if name == C.SHIELDED else None
-		C.add(combatant.conditions, name, turns=turns if name != C.SHIELDED else 3, value=value)
+		value = turns if name == C.SHIELDED else C.AMOUNTS.get(name)
+		extra = {"dice" : "1d6"} if name in (C.COMPANION, C.RIPOSTE) else {}
+		C.add(combatant.conditions, name, turns=turns if name != C.SHIELDED else 3, value=value, **extra)
 		self.say(f"🛠️ {combatant.name} is {C.label(name).lower()}.")
 		return self.outcome
 

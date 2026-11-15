@@ -2,7 +2,7 @@
 then press Do it. It shows the AP left and refreshes after every action."""
 import discord
 
-from classes.combat import Abilities as AbilityRules, Items
+from classes.combat import Effects, Items
 from classes.combat.CombatFlow import CombatFlow
 from classes.combat.Engine import AP_HELP, AP_REVIVE, Engine
 from classes.combat.Loadout import Loadout
@@ -144,18 +144,21 @@ class ActionPanel(discord.ui.View) :
 			for ability in abilities :
 				left = engine.ability_uses_left(combatant, ability)
 				uses = "∞" if left is None else f"{left} left"
-				options.append(discord.SelectOption(label=f"{ability['name']} · {AbilityRules.ap(ability['tier'])} AP "
+				options.append(discord.SelectOption(label=f"{ability['name']} · {engine.ability_ap(ability)} AP "
 				                                          f"· {uses}"[:100], value=str(ability["id"]),
 				                                    default=str(ability["id"]) == self.ability_id))
 			self.add_item(PanelSelect("ability", options, "Ability", row=2))
 			ability = combatant.ability(self.ability_id)
+			if engine.ability_aim(ability) == Effects.SELF :
+				self.targets = [combatant.id]
+				return Loadout.ability_line(ability)
 			targets = engine.ability_targets(combatant, ability)
-			limit = AbilityRules.AREA_TARGETS if ability.get("area") else 1
+			limit = int(ability.get("targets") or 1)
 			valid = [target.id for target in targets]
 			self.targets = [target for target in self.targets if target in valid][:limit] or valid[:1]
 			if targets :
 				self.add_item(PanelSelect("targets", self._target_options(targets, engine),
-				                          f"Target{'s (up to 3)' if limit > 1 else ''}", max_values=limit, row=1))
+				                          f"Target{f's (up to {limit})' if limit > 1 else ''}", max_values=limit, row=1))
 			return Loadout.ability_line(ability)
 		if self.action in (HELP, REVIVE) :
 			allies = [ally for ally in fight.allies(combatant, include_self=False)

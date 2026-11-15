@@ -32,6 +32,9 @@ DEFAULTS = [
 	("Poison", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.WEAKENED, "turns" : 2}),
 	("Radiant", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.BLINDED, "turns" : 1}),
 	("Mental", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.SILENCED, "turns" : 1}),
+	("Acid", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.CORRODED, "turns" : 2}),
+	("Necrotic", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.WITHERED, "turns" : 2}),
+	("Sonic", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.PRONE, "turns" : 1}),
 	(RESTORATION, ALWAYS, {"kind" : CLEANSE}),
 ]
 

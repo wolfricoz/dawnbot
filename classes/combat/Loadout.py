@@ -4,7 +4,7 @@ uses, and the derived numbers (HP, AP, AC, DT, Sequence).
 The snapshot is taken when the combatant joins, so changing gear mid-fight does not change the fight.
 """
 from classes.combat import Abilities as AbilityRules
-from classes.combat import Items, Passives, Rules
+from classes.combat import Effects, Items, Passives, Rules
 from classes.combat.State import AUTO, CHARACTER, Combatant, NPC, PLAYER
 from classes.kernel.ConfigData import ConfigData
 from database.database import Bestiary, Characters
@@ -61,37 +61,55 @@ class Loadout :
 	# ============================================================
 	@staticmethod
 	def ability_data(ability) -> dict :
-		return {"id" : ability.id, "name" : ability.name, "kind" : ability.kind, "tier" : ability.tier,
-		        "stat" : ability.stat, "effect" : ability.effect, "damage_type" : ability.damage_type,
-		        "condition" : ability.condition, "area" : bool(ability.area), "secondary" : ability.secondary,
-		        "activation" : getattr(ability, "activation", None) or "active",
-		        "passive" : getattr(ability, "passive", None)}
+		"""An ability as the fight uses it, with its effects copied from the catalog so a running fight doesn't change
+		when the catalog does. Active abilities carry their AP, uses, how many targets and who they aim at; passive
+		ones their entries (see Passives.entries)."""
+		passive = (getattr(ability, "activation", None) or "active") == "passive"
+		data = {"id" : ability.id, "name" : ability.name, "kind" : ability.kind, "tier" : ability.tier,
+		        "stat" : ability.stat, "damage_type" : ability.damage_type,
+		        "activation" : "passive" if passive else "active", "magic" : ability.kind == AbilityRules.SPELL,
+		        "summary" : AbilityRules.summary(ability.kind, ability.tier, ability.stat, ability.effects,
+		                                         ability.damage_type, passive)}
+		if passive :
+			target, limit = AbilityRules.options(ability.effects)
+			data["entries"] = Passives.entries(ability.id, ability.name, ability.tier,
+			                                   AbilityRules.passive_effects(ability.effects), target, limit)
+			return data
+		effects = AbilityRules.active_effects(ability.effects)
+		data.update({"effects" : [Effects.snapshot(effect) for effect in effects],
+		             "ap" : Effects.ap_cost(ability.tier, effects), "uses" : Effects.ability_uses(ability.tier, effects),
+		             "targets" : Effects.target_limit(effects), "aim" : Effects.aim(effects),
+		             "steps" : Effects.dice_steps(effects), "modifiers" : sorted(Effects.modifiers(effects)),
+		             "drawbacks" : sorted(Effects.drawbacks(effects))})
+		return data
 
 	# ============================================================
 	@staticmethod
 	def split(abilities: list[dict]) -> tuple[list[dict], list[dict]] :
-		"""Abilities as the fight uses them: the active ones, and the passive ones as {id, name, tier, type, ...}."""
+		"""Abilities as the fight uses them: the active ones (with at least one effect), and the passive ones as their
+		entries."""
 		actives, passives = [], []
 		for ability in abilities :
 			if ability.get("activation") == "passive" :
-				passives.append({"id" : ability["id"], "name" : ability["name"], "tier" : ability["tier"]}
-				                | Passives.normalise(ability.get("passive")))
-			else :
+				passives += ability.get("entries") or []
+			elif ability.get("effects") :
 				actives.append(ability)
 		return actives, passives
 
 	# ============================================================
 	@staticmethod
 	def apply_passives(combatant: Combatant) -> Combatant :
-		"""Adds the passives' join bonuses (max HP, AP, AC within the cap, DT, Sequence) to a new combatant."""
+		"""Adds the passives' join bonuses (max HP, AC within the cap, DT, Sequence) to a new combatant and takes away
+		the AP they cost (it keeps at least the minimum AP)."""
 		passives = combatant.stats.get("passives") or []
 		hp = Passives.join_bonus(passives, Passives.HP)
-		ap = Passives.join_bonus(passives, Passives.AP)
 		ac = Passives.join_bonus(passives, Passives.AC)
 		combatant.hp += hp
 		combatant.hp_max += hp
-		combatant.ap += ap
-		combatant.ap_max += ap
+		penalty = Passives.ap_penalty(passives)
+		if penalty :
+			combatant.ap_max = max(Rules.AP_MINIMUM, combatant.ap_max - penalty)
+			combatant.ap = min(combatant.ap, combatant.ap_max)
 		if ac :
 			combatant.ac = max(combatant.ac, min(Rules.AC_CAP, combatant.ac + ac))
 		combatant.dt += Passives.join_bonus(passives, Passives.DT)
@@ -279,7 +297,4 @@ class Loadout :
 	# ============================================================
 	@staticmethod
 	def ability_line(ability: dict) -> str :
-		return f"{ability['name']}: " + AbilityRules.summary(ability["kind"], ability["tier"], ability["effect"],
-		                                                      ability.get("stat") or "intelligence",
-		                                                      ability.get("damage_type"), ability.get("condition"),
-		                                                      ability.get("secondary"), bool(ability.get("area")))
+		return f"{ability['name']}: {ability.get('summary') or ''}"
