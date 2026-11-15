@@ -38,7 +38,7 @@ including the choices made while building that the doc left open.
 | Downed | At 0 HP a combatant is downed and cannot act until revived. A side with no one standing loses. Automatic moves and NPCs never target downed combatants. |
 | Lethal | `COMBAT_LETHAL`: `off`, `gm` (default; staff can start a fight as lethal) or `agreed` (each player confirms when joining). In a lethal fight a downed combatant rolls `d20 + END modifier` against 10 (12 when END is 0 or below) at the start of each of its turns: 3 successes is stable, 3 failures is dying, and the GM confirms the death. A dead character gets the `dead` status (doc section 11): it stops proxying, frees its place under the cap and in its occupation, and its forum post is locked and archived. Staff bring it back with `/gm resurrect`. |
 | After the fight | HP is not carried over. The GM gives the winning characters (not the ones that fled) XP, currency and catalog items, with XP and currency suggested from the defeated bestiary entries; PvP fights suggest nothing. From the GM panel ("Injuries / broken gear") the GM adds an injury to a character's sheet (an `Injuries` field, one line per injury with the fight's title) or marks one of its items broken. |
-| Legendary | `characters.legendary`, set with `/character legendary` (staff): stat limits double (10 → 20, species 13 → 26), `LEGENDARY_POINTS` extra points (default 5) and one extra ability slot. Removing the status lowers stats above the normal limit, returns those points, then takes the legendary points back (from unspent points first, then from the highest stats). |
+| Legendary | `characters.legendary`, set with `/gm legendary grant` and `/gm legendary take`: stat limits double (10 → 20, species 13 → 26), `LEGENDARY_POINTS` extra points (default 5) and one extra ability slot. Removing the status lowers stats above the normal limit, returns those points, then takes the legendary points back (from unspent points first, then from the highest stats). |
 | Abilities | Built from parts (kind, tier, stat, effect, damage type, optional area and second condition), reviewed by staff in `CHARACTER_REVIEW`, posted to `ABILITY_FORUM` when set. Created with `/ability create` (slash options and a modal) rather than a DM interview. Every ability is active (used on a turn) or passive (always on, `/ability passive`; see section 4). |
 | Magic schools | A standard set per server plus player-made schools reviewed by staff. A school sets the casting stat (Intelligence or Charisma). |
 | Ability slots | Spellcasters: 6 spells (1 Cantrip, 2 Weak, 2 Normal, 1 Strong). Others: 3 ability slots, where an active ability takes 1 and a passive 2, with at most 1 Strong (active or passive). Spellcasters can't take passives (they are abilities). Not both, unless event-granted. Legendary characters get one extra slot of any tier. Event-granted abilities (`/gm ability grant`) do not count. |
@@ -212,8 +212,8 @@ below 15%), support (revives and heals allies first). Player autopilot: weakest,
   view`.
 - `/damagetype add | edit | remove | list | reset` (Manage Server).
 - `/armory add | edit` take consumables (`use`, `condition`); `/armory import legacy` copies the old armors and weapons.
-- `/gear proficiency`, `/character armor_proficiency` (staff), `/character legendary` (staff).
-- `/gm gear proficiency`, `/gm ability grant | take`, `/gm resurrect`.
+- `/gear proficiency`, `/character armor_proficiency` (staff).
+- `/gm gear proficiency`, `/gm ability grant | take`, `/gm legendary grant | take`, `/gm resurrect`.
 
 ## 6. Code map
 
