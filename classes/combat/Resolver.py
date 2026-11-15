@@ -239,9 +239,15 @@ class Resolver :
 		if FX.RECKLESS in kinds :
 			C.add(actor.conditions, C.EXPOSED, turns=1)
 		if FX.WEAKEN in kinds :
-			C.add(actor.conditions, C.WEAKENED, turns=1)
+			C.add(actor.conditions, C.WEAKENED, turns=self.fresh_turns(actor, 1))
 
 	# == the numbers an effect uses ==
+
+	# ============================================================
+	def fresh_turns(self, target: Combatant, turns: int) -> int :
+		"""A duration for a condition put on someone whose turn is still going: durations count down at the end of the
+		target's own turn, so without one more turn a 1-turn buff on yourself would run out before anyone else acts."""
+		return turns + (1 if target in self.actors() else 0)
 
 	# ============================================================
 	def effect_dice(self, ability: dict, effect: dict) -> str :
@@ -514,7 +520,8 @@ class Resolver :
 		extra = {}
 		if name == C.RIPOSTE :
 			extra["dice"] = FX.RIPOSTE_DICE[FX.tier_index(ability["tier"])]
-		C.add(target.conditions, name, turns=self.effect_turns(ability, effect), value=amount, **extra)
+		C.add(target.conditions, name, turns=self.fresh_turns(target, self.effect_turns(ability, effect)), value=amount,
+		      **extra)
 		if target.id != actor.id or effect.get("aim") != FX.SELF :
 			self.track(target, name)
 		self.say(f"→ {effect['name']}: {target.name} is {C.label(name).lower()}{f' ({amount})' if amount else ''}.")

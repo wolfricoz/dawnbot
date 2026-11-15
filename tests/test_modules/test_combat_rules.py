@@ -192,10 +192,11 @@ class TestBalanceSimulator(unittest.TestCase) :
 
 		effects = [EffectCatalog.get(key) for key in ("fireball", "rage", "spear_crippling", "widened")]
 		baseline, results = Balance.run(20, effects)
-		self.assertTrue(0.2 < baseline < 0.8)
+		self.assertTrue(all(0.2 < baseline[scenario] < 0.8 for scenario in Balance.SCENARIOS))
 		self.assertEqual([result.key for result in results], ["fireball", "rage", "spear_crippling", "widened"])
-		self.assertTrue(all(0 <= result.wins <= 1 for result in results))
+		self.assertTrue(all(0 <= result.duel <= 1 and 0 <= result.team <= 1 for result in results))
 		text = Balance.report(baseline, results, 20)
+		self.assertIn("duel / team", text)
 		self.assertIn("# Effect balance report", text)
 
 
@@ -296,3 +297,20 @@ class TestBluntRevision(DatabaseTestCase) :
 		transactions.add(GUILD_ID, "Blunt", trigger="strong_hit", effect=edited, pack="default")
 		DamageTypes.ensure(GUILD_ID)
 		self.assertEqual(transactions.find(GUILD_ID, "Blunt").effect, edited)
+
+
+class TestFreshDurations(unittest.TestCase) :
+
+	def test_a_buff_on_yourself_outlasts_your_turn(self) :
+		fight = duel()
+		ayla = fight.combatant(1)
+		ayla.stats["abilities"] = [ability(1, "Rage", "ability", "cantrip", ["rage"])]
+		run = engine(fight)
+		run.start()
+		run.use_ability(ayla, 1, [])
+		run.end_turn(ayla)
+		# Still empowered while the enemy acts, and until the end of Ayla's next turn.
+		self.assertTrue(C.has(ayla.conditions, C.EMPOWERED))
+		ayla.acted = False
+		run.end_turn(ayla)
+		self.assertFalse(C.has(ayla.conditions, C.EMPOWERED))

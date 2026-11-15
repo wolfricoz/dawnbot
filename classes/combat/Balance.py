@@ -4,15 +4,21 @@ for their AP cost. It uses the real engine but no Discord or database, so it can
     .venv/Scripts/python.exe -m classes.combat.Balance [fights per effect] [report path]
 
 Each effect is tried on its own at the lowest tier that allows it (modifiers and drawbacks ride on a plain Bolt or
-Strike). A hero with the ability fights a copy of itself without one: both have average SPECIAL, 30 HP, AC 12 and a
-1d8 weapon. The hero uses the ability whenever it can afford it and has uses left, and attacks with the rest of its AP;
-the foe just attacks. A hero that only attacks wins about half the time, so an effect's win rate shows what it is worth
-once its AP cost is paid. Weapon techniques get a matching weapon.
+Strike), in two scenarios:
 
-Outliers are judged against the other effects of the same tier: above the third quartile + 1.5 × the spread is "too
-strong", below the first quartile − 1.5 × the spread "too weak", and anything that wins less often than just attacking
-is "worse than attacking". The report is a Markdown file with a table per tier; the numbers move with the random seed,
-so a borderline effect is worth a second run before its cost is changed.
+- duel: a hero with the ability against a copy of itself without one;
+- team: the hero and an ally against two foes, so healing, buffs, area and support effects have something to work on.
+
+Everyone has average SPECIAL, 30 HP, AC 12, armor with DT 2 and a 1d8 sword (weapon techniques get a matching weapon).
+Every fighter is played by the autopilot (classes/combat/Autopilot.py), so the hero uses its ability the way an NPC
+would: when it does something useful, otherwise it attacks. A side that only attacks wins about half the time, so an
+effect's win rate shows what it is worth once its AP cost is paid. Fights that nobody wins in time count as half a win.
+
+Outliers are judged per scenario against the other effects of the same tier: above the third quartile + 1.5 × the
+spread is "too strong", below the first quartile − 1.5 × the spread "too weak". An effect is too strong if it stands out
+in either scenario, and too weak (or "worse than attacking", winning less often than just attacking) only when it does
+so in both, since a support effect can't show its worth in a duel. The report is a Markdown file with a table per tier;
+the numbers move with the random seed, so a borderline effect is worth a second run before its cost is changed.
 """
 import random
 import statistics
@@ -21,18 +27,24 @@ from dataclasses import dataclass
 
 from classes.combat import Abilities, EffectCatalog, Effects, Rules
 from classes.combat.DamageTypes import DEFAULTS
-from classes.combat.Engine import CombatError, Engine
-from classes.combat.State import AUTO, Combatant, Fight, PLAYER, Side
+from classes.combat.Engine import Engine
+from classes.combat.State import AUTO, Combatant, Fight, Side
 
 TYPES = {name.lower() : {"name" : name, "trigger" : trigger, "effect" : effect} for name, trigger, effect in DEFAULTS}
 WEAPON = {"key" : "sword", "name" : "Sword", "type" : "Slashing", "dice" : "1d8", "attack_stat" : "strength",
           "damage_stat" : "strength", "hit_mod" : 0, "range" : "melee", "properties" : [], "proficiency" : "average"}
 HP = 30
 AC = 12
+DT = 2
 AP = 7
-MAX_ROUNDS = 30
 DEFAULT_FIGHTS = 200
 BASE = {Effects.MAGIC : "bolt", Effects.PHYSICAL : "strike"}
+DUEL = "duel"
+TEAM = "team"
+SCENARIOS = [DUEL, TEAM]
+TOO_STRONG = "too strong"
+TOO_WEAK = "too weak"
+WORSE = "worse than attacking"
 
 
 @dataclass
@@ -43,20 +55,24 @@ class Result :
 	realm: str
 	tier: str
 	ap: int
-	wins: float
-	rounds: float
+	duel: float
+	team: float
 	verdict: str = ""
+
+	# ============================================================
+	def wins(self, scenario: str) -> float :
+		return self.duel if scenario == DUEL else self.team
 
 
 # ============================================================
-def fighter(number: int, side: int, name: str, controller: str) -> Combatant :
+def fighter(number: int, side: int, name: str) -> Combatant :
 	special = {stat : 5 for stat in Rules.STATS}
 	stats = {"base" : 5, "special" : special, "level" : 1, "weapons" : [dict(WEAPON), dict(Rules.UNARMED)],
-	         "armor" : {"armor_class" : "clothing", "ac" : 0, "dt" : 0}, "abilities" : [], "passives" : [],
+	         "armor" : {"armor_class" : "light", "ac" : 0, "dt" : DT}, "abilities" : [], "passives" : [],
 	         "crit_min" : 20, "fumble_max" : 1}
 	return Combatant(id=number, side_id=side, kind="character", name=name, stats=stats, character_id=number,
-	                 uid=number, controller=controller, hp=HP, hp_max=HP, ap=AP, ap_max=AP, ac=AC, dt=0, sequence=10,
-	                 weapon_key="sword", position=number)
+	                 uid=number, controller=AUTO, behavior="aggressive", hp=HP, hp_max=HP, ap=AP, ap_max=AP, ac=AC,
+	                 dt=DT, sequence=10, weapon_key="sword", position=number)
 
 
 # ============================================================
@@ -83,158 +99,99 @@ def build(effect: Effects.Effect) -> tuple[dict | None, str] :
 
 
 # ============================================================
-def worth_using(ability: dict, hero: Combatant, foe: Combatant, used_this_turn: int) -> bool :
-	"""Whether a sensible player would use the ability now: damage as often as AP allows; anything else at most once a
-	turn, and only when it would change something (a condition not there yet, healing when hurt)."""
-	mechanics = {effect.get("mechanic") for effect in ability.get("effects") or []}
-	if mechanics & {Effects.ATTACK, Effects.BLAST} :
-		return True
-	if used_this_turn :
-		return False
-	if mechanics & {Effects.HEAL, Effects.REVIVE} and not mechanics - {Effects.HEAL, Effects.REVIVE, Effects.MODIFIER,
-	                                                                   Effects.DRAWBACK} :
-		return hero.hp < hero.hp_max * 0.6
-	for effect in ability.get("effects") or [] :
-		params = effect.get("params") or {}
-		name = params.get("condition")
-		if effect.get("mechanic") == Effects.COMPANION :
-			name = "companion"
-		if effect.get("mechanic") == Effects.DOOM :
-			name = "doomed"
-		if effect.get("mechanic") == Effects.SHIELD :
-			name = "shielded"
-		target = foe if effect.get("aim") == Effects.ENEMY else hero
-		if name is None or not any(condition.get("name") == name for condition in target.conditions) :
-			return True
-	return False
-
-
-# ============================================================
-def hero_turn(engine: Engine, hero: Combatant, foe: Combatant) -> None :
-	"""Uses the ability when it is worth it, then attacks with what is left."""
-	used_this_turn = 0
-	for _ in range(10) :
-		if hero not in engine.actors() :
-			return
-		ability = hero.abilities[0] if hero.abilities else None
-		used = False
-		if ability is not None and worth_using(ability, hero, foe, used_this_turn) :
-			left = engine.ability_uses_left(hero, ability)
-			if (left is None or left > 0) and engine.ability_ap(ability) <= hero.ap :
-				aim = engine.ability_aim(ability)
-				targets = [foe.id] if aim == Effects.ENEMY else [hero.id]
-				try :
-					engine.use_ability(hero, 1, targets)
-					used = True
-					used_this_turn += 1
-				except CombatError :
-					used = False
-		if not used :
-			try :
-				engine.attack(hero, foe.id)
-			except CombatError :
-				engine.end_turn_action(hero)
-				return
-		if engine.fight.state != "active" :
-			return
-
-
-# ============================================================
-def duel(ability: dict | None, needs: list[str], seed: int) -> tuple[float, int] :
-	"""One fight. @return: 1 when the hero won, 0 when it lost, 0.5 when nobody won in time; and the rounds it took."""
-	fight = Fight(id=1, guild_id=0, gm_uid=0, pacing="live", sides=[Side(1, "Hero", 1), Side(2, "Foe", 2)])
-	hero = fighter(1, 1, "Hero", PLAYER)
-	foe = fighter(2, 2, "Foe", AUTO)
-	foe.behavior = "aggressive"
+def fight(scenario: str, ability: dict | None, needs: list[str], seed: int) -> float :
+	"""One fight, played entirely by the autopilot. @return: 1 when the hero's side won, 0 when it lost, 0.5 when
+	nobody won in time."""
+	names = [("Hero", 1), ("Foe", 2)] if scenario == DUEL else [("Hero", 1), ("Ally", 1), ("Foe", 2), ("Brute", 2)]
+	combatants = [fighter(number + 1, side, name) for number, (name, side) in enumerate(names)]
+	hero = combatants[0]
 	if ability is not None :
 		hero.stats["abilities"] = [ability]
 	for requirement in needs :
 		hero.stats["weapons"].append(weapon_for(requirement))
-	fight.combatants = [hero, foe]
-	rng = random.Random(seed)
 	# Who goes first alternates, so going first isn't counted as the effect's value.
-	hero.sequence, foe.sequence = (11, 10) if seed % 2 else (10, 11)
-	engine = Engine(fight, TYPES, rng=rng)
-	engine.start()
-	while fight.state == "active" and fight.round <= MAX_ROUNDS :
-		if hero in engine.actors() :
-			hero_turn(engine, hero, foe)
-		elif not engine.actors() :
-			engine.settle()
-			if not engine.actors() and fight.state == "active" :
-				break
-		else :
-			break
-	if fight.state == "active" or fight.winner_side_id is None :
-		return 0.5, fight.round
-	return (1.0 if fight.winner_side_id == 1 else 0.0), fight.round
+	for combatant in combatants :
+		combatant.sequence = 11 if (combatant.side_id == 1) == bool(seed % 2) else 10
+	state = Fight(id=1, guild_id=0, gm_uid=0, pacing="live", sides=[Side(1, "Heroes", 1), Side(2, "Foes", 2)])
+	state.combatants = combatants
+	Engine(state, TYPES, rng=random.Random(seed)).start()
+	if state.state != "ended" or state.winner_side_id is None :
+		return 0.5
+	return 1.0 if state.winner_side_id == 1 else 0.0
 
 
 # ============================================================
-def measure(ability: dict | None, needs: list[str], fights: int, seed: int = 0) -> tuple[float, float] :
-	wins = rounds = 0
-	for number in range(fights) :
-		won, length = duel(ability, needs, seed * 100003 + number)
-		wins += won
-		rounds += length
-	return wins / fights, rounds / fights
+def measure(scenario: str, ability: dict | None, needs: list[str], fights: int, seed: int = 0) -> float :
+	return sum(fight(scenario, ability, needs, seed * 100003 + number) for number in range(fights)) / fights
 
 
 # ============================================================
-def run(fights: int = DEFAULT_FIGHTS, effects: list | None = None) -> tuple[float, list[Result]] :
-	"""Measures every effect (or the given ones). @return: the baseline win rate and one result per effect."""
-	baseline, _ = measure(None, [], fights * 2)
+def run(fights: int = DEFAULT_FIGHTS, effects: list | None = None) -> tuple[dict[str, float], list[Result]] :
+	"""Measures every effect (or the given ones). @return: the baseline win rate per scenario and one result per
+	effect."""
+	baseline = {scenario : measure(scenario, None, [], fights * 2) for scenario in SCENARIOS}
 	results = []
 	for number, effect in enumerate(effects or EffectCatalog.ACTIVE_EFFECTS) :
 		ability, tier = build(effect)
 		if ability is None :
 			continue
-		wins, rounds = measure(ability, Effects.requirements(ability["effects"]), fights, number + 1)
-		results.append(Result(effect.key, effect.name, effect.realm, tier, ability["ap"], wins, rounds))
+		needs = Effects.requirements(ability["effects"])
+		results.append(Result(effect.key, effect.name, effect.realm, tier, ability["ap"],
+		                      measure(DUEL, ability, needs, fights, number + 1),
+		                      measure(TEAM, ability, needs, fights, number + 1)))
 	judge(baseline, results)
 	return baseline, results
 
 
 # ============================================================
-def judge(baseline: float, results: list[Result]) -> None :
+def bounds(group: list[Result], scenario: str) -> tuple[float, float] :
+	"""The low and high outlier limits of a tier in a scenario."""
+	q1, _, q3 = statistics.quantiles([result.wins(scenario) for result in group], n=4)
+	spread = q3 - q1
+	return q1 - 1.5 * spread, q3 + 1.5 * spread
+
+
+# ============================================================
+def judge(baseline: dict[str, float], results: list[Result]) -> None :
 	"""Marks the outliers of each tier."""
 	for tier in Effects.TIERS :
 		group = [result for result in results if result.tier == tier]
 		if len(group) < 4 :
 			continue
-		q1, _, q3 = statistics.quantiles([result.wins for result in group], n=4)
-		spread = q3 - q1
+		limits = {scenario : bounds(group, scenario) for scenario in SCENARIOS}
 		for result in group :
-			if result.wins > q3 + 1.5 * spread :
-				result.verdict = "too strong"
-			elif result.wins < q1 - 1.5 * spread :
-				result.verdict = "too weak"
-			elif result.wins < baseline - 0.05 :
-				result.verdict = "worse than attacking"
+			if any(result.wins(scenario) > limits[scenario][1] for scenario in SCENARIOS) :
+				result.verdict = TOO_STRONG
+			elif all(result.wins(scenario) < limits[scenario][0] for scenario in SCENARIOS) :
+				result.verdict = TOO_WEAK
+			elif all(result.wins(scenario) < baseline[scenario] - 0.05 for scenario in SCENARIOS) :
+				result.verdict = WORSE
 
 
 # ============================================================
-def report(baseline: float, results: list[Result], fights: int) -> str :
-	lines = [f"# Effect balance report", "",
-	         f"{len(results)} effects, {fights} fights each. A hero that only attacks wins {baseline:.0%} of the time. "
-	         f"Run `python -m classes.combat.Balance` to make a new one; see classes/combat/Balance.py for the method.",
-	         ""]
-	flagged = [result for result in results if result.verdict]
-	counts = {verdict : len([result for result in flagged if result.verdict == verdict])
-	          for verdict in ("too strong", "too weak", "worse than attacking")}
+def report(baseline: dict[str, float], results: list[Result], fights: int) -> str :
+	lines = ["# Effect balance report", "",
+	         f"{len(results)} effects, {fights} fights each in two scenarios (a duel and a 2-vs-2 team fight, everyone "
+	         f"in DT 2 armor). A side that only attacks wins {baseline[DUEL]:.0%} of duels and {baseline[TEAM]:.0%} of "
+	         f"team fights. Run `python -m classes.combat.Balance` to make a new one; see classes/combat/Balance.py for "
+	         f"the method.", ""]
+	counts = {verdict : len([result for result in results if result.verdict == verdict])
+	          for verdict in (TOO_STRONG, TOO_WEAK, WORSE)}
 	lines.append(", ".join(f"{count} {verdict}" for verdict, count in counts.items()) + ".")
 	for tier in Effects.TIERS :
-		group = sorted((result for result in results if result.tier == tier), key=lambda result : -result.wins)
+		group = sorted((result for result in results if result.tier == tier),
+		               key=lambda result : -max(result.duel, result.team))
 		if not group :
 			continue
-		median = statistics.median(result.wins for result in group)
-		lines += ["", f"## {tier.capitalize()} ({len(group)} effects, median win rate {median:.0%})", "",
-		          "| Effect | Realm | AP | Win rate | Rounds | Verdict |", "|---|---|---|---|---|---|"]
+		medians = " / ".join(f"{statistics.median(result.wins(scenario) for result in group):.0%}"
+		                     for scenario in SCENARIOS)
+		lines += ["", f"## {tier.capitalize()} ({len(group)} effects, median win rate {medians} duel / team)", "",
+		          "| Effect | Realm | AP | Duel | Team | Verdict |", "|---|---|---|---|---|---|"]
 		for result in group :
 			if result.verdict :
-				lines.append(f"| {result.name} (`{result.key}`) | {result.realm} | {result.ap} | {result.wins:.0%} | "
-				             f"{result.rounds:.1f} | {result.verdict} |")
-		lines.append(f"| *{len([r for r in group if not r.verdict])} others within range* | | | | | |")
+				lines.append(f"| {result.name} (`{result.key}`) | {result.realm} | {result.ap} | {result.duel:.0%} | "
+				             f"{result.team:.0%} | {result.verdict} |")
+		lines.append(f"| *{len([result for result in group if not result.verdict])} others within range* | | | | | |")
 	return "\n".join(lines) + "\n"
 
 
@@ -246,7 +203,8 @@ def main() -> None :
 	with open(path, "w", encoding="utf-8") as file :
 		file.write(report(baseline, results, fights))
 	flagged = len([result for result in results if result.verdict])
-	print(f"Baseline {baseline:.0%}; {flagged} of {len(results)} effects flagged; report in {path}")
+	print(f"Baseline {baseline[DUEL]:.0%} duel, {baseline[TEAM]:.0%} team; {flagged} of {len(results)} effects "
+	      f"flagged; report in {path}")
 
 
 if __name__ == "__main__" :

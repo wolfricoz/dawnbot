@@ -164,7 +164,10 @@ to hit and DC), Blessed (+2 on saves), Riposte (melee attackers that miss take d
 the start of each of its turns), Thorns (melee attackers that hit take damage), Undying (the next downing hit leaves
 1 HP).
 
-Durations count the affected combatant's own turns. The GM panel picks harmful or helpful first, since Discord menus
+Durations count the affected combatant's own turns. A condition an ability puts on someone whose turn is still going
+(the caster, or an ally acting in the same phase) gets one more turn, since durations count down at the end of that
+turn; without it a 1-turn buff on yourself ran out before anyone else acted (found by the simulator; the Strain
+drawback's weakness had the same flaw). The GM panel picks harmful or helpful first, since Discord menus
 hold 25 options; the armory's item options only offer the conditions from before the effect catalog.
 
 **Control immunity** (Rico's call): when a control condition ends (Stunned, Asleep, Charmed, Restrained, Cursed,
@@ -337,8 +340,10 @@ below 15%), support (revives and heals allies first). Player autopilot: weakest,
   checks and AP costs, the hand-written catalogs and the themed bulk of them. `classes/combat/Resolver.py`: resolving abilities and their effects in a fight (a mixin of the engine).
 - `classes/combat/SheetAbilities.py`: reserved sheet labels and turning old free-text answers into blank abilities.
 - `classes/combat/Balance.py`: the balance simulator. `python -m classes.combat.Balance [fights] [path]` plays each
-  effect in simulated duels (a hero with it against one that only attacks) and writes `design/balance-report.md` with
-  the outliers per tier (too strong, too weak, worse than attacking). It needs no database or Discord.
+  effect in two scenarios, a duel and a 2-vs-2 team fight, with everyone in DT 2 armor and every fighter played by the
+  autopilot (so the hero uses its ability as an NPC would), and writes `design/balance-report.md` with the outliers per
+  tier: too strong if it stands out in either scenario, too weak or worse than attacking only if it does in both. It
+  needs no database or Discord; a full run takes about 20 minutes.
 - `classes/combat/Loadout.py`: a character or bestiary entry as a combatant. Crafted masterwork and cursed gear
   (`character_gear.quality`, see design/roleplay-tools.md) add +1 or −1 to a weapon's hit modifier or an armor's DT.
 - `classes/combat/Passives.py`: passive abilities. `classes/combat/Fortune.py`: bad-roll protection. `classes/combat/Items.py`: consumables. `classes/combat/BestiaryFlow.py`: bestiary values and imports.
