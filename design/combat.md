@@ -1,8 +1,9 @@
 # Combat: design
 
 Status: built on branch `feature/combat` from the team proposal ("Dawnbot combat system proposal" in Google Docs,
-15 November 2026). Migrations `0011_combat` (new tables and columns) and `0012_drop_legacy_combat` (drops the old global
-armor, weapon, NPC and monster tables).
+15 November 2026). Migrations `0011_combat` (new tables and columns), `0012_bestiary_special` (bestiary entries built
+from SPECIAL) and `0013_drop_legacy_combat` (drops the old global armor, weapon, NPC and monster tables; import them
+first with `/armory import legacy` and `/bestiary import legacy`).
 
 The Google Doc holds the reasoning and the open questions. This file is the source of truth for what was built,
 including the choices made while building that the doc left open.
@@ -35,15 +36,17 @@ including the choices made while building that the doc left open.
 | Shields | A catalog weapon with the `shield` property. While it is equipped: +2 AC and −2 to attack. |
 | Crippled stats | A stat at 0 or below adds the effects in section 4. |
 | Downed | At 0 HP a combatant is downed and cannot act until revived. A side with no one standing loses. Automatic moves and NPCs never target downed combatants. |
-| Lethal | `COMBAT_LETHAL`: `off`, `gm` (default; staff can start a fight as lethal) or `agreed` (each player confirms when joining). In a lethal fight a downed combatant rolls `d20 + END modifier` against 10 (12 when END is 0 or below) at the start of each of its turns: 3 successes is stable, 3 failures is dying, and the GM confirms the death. A confirmed death retires the character (the doc leaves the final status open). |
-| After the fight | HP is not carried over. The GM can hand out XP and currency to the winning characters. |
-| Legendary | `characters.legendary`, set with `/gm legendary grant` and `/gm legendary take`: stat limits double (10 → 20, species 13 → 26), `LEGENDARY_POINTS` extra points (default 5) and one extra ability slot. Removing the status lowers stats above the normal limit, returns those points, then takes the legendary points back (from unspent points first, then from the highest stats). |
+| Lethal | `COMBAT_LETHAL`: `off`, `gm` (default; staff can start a fight as lethal) or `agreed` (each player confirms when joining). In a lethal fight a downed combatant rolls `d20 + END modifier` against 10 (12 when END is 0 or below) at the start of each of its turns: 3 successes is stable, 3 failures is dying, and the GM confirms the death. A dead character gets the `dead` status (doc section 11): it stops proxying, frees its place under the cap and in its occupation, and its forum post is locked and archived. Staff bring it back with `/gm resurrect`. |
+| After the fight | HP is not carried over. The GM gives the winning characters (not the ones that fled) XP, currency and catalog items, with XP and currency suggested from the defeated bestiary entries; PvP fights suggest nothing. From the GM panel ("Injuries / broken gear") the GM adds an injury to a character's sheet (an `Injuries` field, one line per injury with the fight's title) or marks one of its items broken. |
+| Legendary | `characters.legendary`, set with `/character legendary` (staff): stat limits double (10 → 20, species 13 → 26), `LEGENDARY_POINTS` extra points (default 5) and one extra ability slot. Removing the status lowers stats above the normal limit, returns those points, then takes the legendary points back (from unspent points first, then from the highest stats). |
 | Abilities | Built from parts (kind, tier, stat, effect, damage type, optional area and second condition), reviewed by staff in `CHARACTER_REVIEW`, posted to `ABILITY_FORUM` when set. Created with `/ability create` (slash options and a modal) rather than a DM interview. |
 | Magic schools | A standard set per server plus player-made schools reviewed by staff. A school sets the casting stat (Intelligence or Charisma). |
 | Ability slots | Spellcasters: 6 spells (1 Cantrip, 2 Weak, 2 Normal, 1 Strong). Others: 3 abilities, at most 1 Strong. Not both, unless event-granted. Legendary characters get one extra slot of any tier. Event-granted abilities (`/gm ability grant`) do not count. |
 | Damage types | One table per server (`damage_types`), filled with the defaults the first time it is used; staff edit it with `/damagetype`. Weapons name their type in `combat.type`; abilities pick one. |
 | Quick roll | `/combat attack` stays for rolls outside a fight: one of the character's weapons against an AC you type. In a fight thread it points to the board. |
-| Use item | Not built: the gear catalog has no consumables yet (open question 12 in the doc). |
+| Use item | Consumables are a third catalog kind (doc open question 11). Use item costs 2 AP and uses the item up (`character_gear.status = used`; undo gives it back). Heal items revive a downed ally automatically, so a character crippled in Intelligence can still bring someone back. The fantasy pack has seven. |
+| Bestiary | An entry has its own stat block from a difficulty preset, or SPECIAL (with a level) plus catalog weapons and armor, derived like a character with Average proficiency and no armor penalty. `/bestiary import` copies a pack's bestiary (the fantasy pack has six entries) or the old `npcs` and `monsters` tables (HP × 0.3 for the new scale, to hit from the old attack, dice from the old damage). |
+| Weapon proficiency | Buying a weapon asks for its tier straight away; it can also be set later with `/gear proficiency`. |
 
 ## 2. Data model (migration 0011)
 
@@ -60,7 +63,8 @@ including the choices made while building that the doc left open.
 - `combat_log` (replaces `combat_instance_log`): `instance_id`, `round`, `actor_id`, `target_id`, `action`, `text`,
   `details` (JSON), `snapshot` (JSON, for undo).
 - `bestiary`: `guild_id`, `name`, `description`, `avatar_url`, `preset`, `hp`, `ac`, `dt`, `to_hit`, `damage`,
-  `damage_type`, `ap`, `sequence`, `behavior`, `ability_ids` (JSON), `reward_xp`, `reward_currency`, `creator_uid`.
+  `damage_type`, `ap`, `sequence`, `behavior`, `ability_ids` (JSON), `reward_xp`, `reward_currency`, `creator_uid`;
+  migration 0012 adds `special` (JSON), `level`, `weapon_ids` (JSON) and `armor_id`.
 - `damage_types`: `guild_id`, `name`, `trigger` (`strong_hit`, `always`), `effect` (JSON), `description`, `pack`.
 - `magic_schools`: `guild_id`, `name`, `description`, `casting_stat`, `creator_uid`, `state`, `standard`,
   `review_message_id`.
@@ -69,10 +73,11 @@ including the choices made while building that the doc left open.
   `secondary`, `state`, `review_message_id`, `forum_thread_id`, `forum_message_id`, `tag_ids`.
 - `character_abilities`: `character_id`, `ability_id`, `event`, `granted_by`.
 - `characters`: `legendary`, `legendary_points`, `legendary_by`, `legendary_at`, `armor_proficiency`.
-- `character_gear`: `proficiency`.
+- `character_gear`: `proficiency`; `status` can also be `used` (a consumable used in a fight).
+- `characters.state` can also be `dead`.
 
-Migration 0012 drops `armors`, `weapons`, `npcs` and `monsters`. Nothing reads them any more; confirm before running it
-against a real database.
+Migration 0013 drops `armors`, `weapons`, `npcs` and `monsters`. Nothing reads them any more except the legacy imports;
+run `/armory import legacy` and `/bestiary import legacy` first, and confirm before running it against a real database.
 
 ### Combat values on catalog items
 
@@ -81,6 +86,10 @@ against a real database.
   `loading`, `keen`, `focus`, `shield`. AP cost: 5 with `loading`, 4 with `heavy` or `two_handed`, 2 with `light`,
   otherwise 3; an `ap` value overrides it.
 - Armor: `{"armor_class": "medium", "ac": 2, "dt": 2, "hit_mod": 0, "ability_hit_mod": 0}`.
+- Consumable: `{"use": "heal", "dice": "2d4", "condition": null, "turns": 2}`. `use` is `heal`, `cure` (removes
+  `condition`, or the first harmful one), `boost` (gives Inspired, Regenerating or Shielded for `turns`; a shield
+  absorbs the dice) or `none` (the GM settles it).
+- In a pack, `"damage_stat": null` means no damage stat (bows and crossbows).
 - Items with the old shape (`modifier`, `hitmodifier`, `hp`, `ap`, `hitchance`) are read through a converter, and
   `/armory import <pack> refresh:true` rewrites pack items with the pack's current values.
 
@@ -109,6 +118,7 @@ against a real database.
 | Ability | 3 (Cantrip, Weak), 4 (Normal), 5 (Strong) | Uses per fight: unlimited, 3, 2, 1. |
 | Help | 2 | An ally gets +2 on their next roll. |
 | Revive | 3 | A downed ally returns at 1 HP on `d20 + INT modifier` of 10 or more. |
+| Use item | 2 | A consumable on yourself or an ally; a heal item on a downed ally revives them. |
 | Flee | all | `d20 + AGI modifier` against 10 + standing enemies; success leaves the fight. |
 | Other | all | Free text the GM settles; unsettled, it counts as defending with the AP. |
 | End turn | 0 | Unspent AP becomes AC. |
@@ -121,7 +131,7 @@ against a real database.
 | Perception | Ranged attacks roll twice and keep the lower. Acts last. |
 | Endurance | No HP from levels; death rolls need 12. |
 | Charisma | Charisma abilities roll twice and keep the lower; can't Help. |
-| Intelligence | Intelligence abilities roll twice and keep the lower; can't Revive. |
+| Intelligence | Intelligence abilities roll twice and keep the lower; can't Revive without a healing item. |
 | Agility | Flee fails unless the character was helped this turn. |
 | Luck | A natural 20 must be confirmed by a second roll that also hits; fumbles on 1 to 3. |
 
@@ -177,17 +187,20 @@ below 15%), support (revives and heals allies first). Player autopilot: weakest,
 
 - `/combat start [title] [pacing] [lethal]`, `/combat challenge <member> <character> [lethal]`,
   `/combat invite <member>`, `/combat attack` (quick roll), `/combat board` (posts the board again).
-- `/bestiary add | edit | remove | list | view` (Manage Messages).
-- `/ability create | edit | list | view | learn | forget`, `/school create | list | view`.
+- `/bestiary add | edit | remove | list | view | import` (Manage Messages).
+- `/ability create | edit | list | view | learn | forget`, `/school create | edit | list | view`.
 - `/damagetype add | edit | remove | list | reset` (Manage Server).
-- `/gear proficiency`, `/character armor_proficiency` (staff).
-- `/gm gear proficiency`, `/gm ability grant | take`, `/gm legendary grant | take`.
+- `/armory add | edit` take consumables (`use`, `condition`); `/armory import legacy` copies the old armors and weapons.
+- `/gear proficiency`, `/character armor_proficiency` (staff), `/character legendary` (staff).
+- `/gm gear proficiency`, `/gm ability grant | take`, `/gm resurrect`.
 
 ## 6. Code map
 
 - `classes/combat/Rules.py`: modifiers, derived stats, weapon and armor values, attack and damage rolls.
 - `classes/combat/Conditions.py`, `DamageTypes.py`, `Abilities.py`: conditions, damage types, ability rules.
 - `classes/combat/Loadout.py`: a character or bestiary entry as a combatant.
+- `classes/combat/Items.py`: consumables. `classes/combat/BestiaryFlow.py`: bestiary values and imports.
+- `classes/gear/Legacy.py`: reads the old global tables. `classes/characters/Death.py`: the dead status.
 - `classes/combat/State.py`, `Engine.py`, `Autopilot.py`: the fight state and every rule that changes it. No Discord.
 - `classes/combat/Board.py`, `CombatFlow.py`: the board embed and the Discord side (threads, logs, locks, PvP).
 - `classes/combat/Legendary.py`: granting and removing legendary status.

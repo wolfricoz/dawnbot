@@ -1,11 +1,11 @@
 """drop the legacy armors, weapons, npcs and monsters tables
 
 THIS DELETES THE OLD ARMOR SETS, WEAPONS, NPCS AND MONSTERS. Nothing reads them any more: weapons and armor live in the
-gear catalog (gear_items) and NPCs and monsters in the bestiary. Copy anything worth keeping into those first. A
-downgrade brings the tables back empty.
+gear catalog (gear_items) and NPCs and monsters in the bestiary. Copy anything worth keeping into those first
+with /armory import legacy and /bestiary import legacy. A downgrade brings the tables back empty.
 
-Revision ID: 0012_drop_legacy_combat
-Revises: 0011_combat
+Revision ID: 0013_drop_legacy_combat
+Revises: 0012_bestiary_special
 Create Date: 2026-11-15 20:30:00.000000
 
 """
@@ -16,8 +16,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0012_drop_legacy_combat'
-down_revision: Union[str, None] = '0011_combat'
+revision: str = '0013_drop_legacy_combat'
+down_revision: Union[str, None] = '0012_bestiary_special'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

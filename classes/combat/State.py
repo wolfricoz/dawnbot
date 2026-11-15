@@ -124,6 +124,17 @@ class Combatant :
 		return self.stats.get("abilities") or []
 
 	# ============================================================
+	@property
+	def items(self) -> list[dict] :
+		"""The consumables it carries and hasn't used in this fight."""
+		used = set(self.stats.get("used_items") or [])
+		return [item for item in self.stats.get("items") or [] if item.get("entry_id") not in used]
+
+	# ============================================================
+	def item(self, key: str | None) -> dict | None :
+		return next((item for item in self.items if item.get("key") == key), None)
+
+	# ============================================================
 	def weapon(self, key: str | None) -> dict | None :
 		return next((weapon for weapon in self.weapons if weapon.get("key") == key), None)
 

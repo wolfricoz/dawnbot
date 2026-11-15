@@ -21,6 +21,16 @@ Magic schools that spells belong to.
 
 ---
 
+### `edit`
+
+**Usage:** `/school edit <name> <new_name> <casting_stat> <description>`
+
+> Changes a magic school you proposed (staff can change any, including the standard ones). A member's change
+> sends the school back to staff for review. Changing the casting stat changes it for every spell of the
+> school too.
+
+---
+
 ### `list`
 
 **Usage:** `/school list`

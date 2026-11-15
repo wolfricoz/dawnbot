@@ -7,14 +7,16 @@ OWNED = "owned"
 LOST = "lost"
 BROKEN = "broken"
 SOLD = "sold"
-STATUSES = [OWNED, LOST, BROKEN, SOLD]
+# A consumable used up in a fight.
+USED = "used"
+STATUSES = [OWNED, LOST, BROKEN, SOLD, USED]
 
 # Columns update() accepts as keyword arguments.
 FIELDS = ["equipped", "status", "changed_by", "price_paid", "proficiency"]
 
 
 class CharacterGearTransactions(DatabaseTransactions) :
-	"""The gear characters own. Lost, broken and sold items are kept with their status, as history."""
+	"""The gear characters own. Lost, broken, sold and used items are kept with their status, as history."""
 
 	# ============================================================
 	def add(self, character_id: int, gear_item_id: int | None, name: str, kind: str, source: str, price_paid: int,
@@ -34,7 +36,7 @@ class CharacterGearTransactions(DatabaseTransactions) :
 
 	# ============================================================
 	def get_all(self, character_id: int, include_gone: bool = False) -> list[CharacterGear] :
-		"""The character's gear, oldest first; include_gone adds lost, broken and sold items."""
+		"""The character's gear, oldest first; include_gone adds lost, broken, sold and used items."""
 		with self.createsession() as session :
 			query = Select(CharacterGear).where(CharacterGear.character_id == character_id)
 			if not include_gone :

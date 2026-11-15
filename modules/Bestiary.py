@@ -1,4 +1,9 @@
-"""The server's bestiary: NPCs and monsters GMs add to fights. Managed by staff (Manage Messages)."""
+"""The server's bestiary: NPCs and monsters GMs add to fights. Managed by staff (Manage Messages).
+
+An entry has its own stat block from a difficulty preset, or SPECIAL with catalog weapons and armor, derived like a
+character. /bestiary import copies a genre pack's bestiary, or the old global npcs and monsters tables. The rules live
+in classes/combat/BestiaryFlow.py.
+"""
 import logging
 
 import discord
@@ -6,13 +11,15 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
-from classes.combat import Rules
+from classes.combat.BestiaryFlow import BestiaryFlow
 from classes.combat.DamageTypes import DamageTypes
 from classes.combat.Engine import BEHAVIORS
 from classes.combat.Loadout import PRESETS
-from database.database import Bestiary as BestiaryEntry
-from database.transactions.AbilityTransactions import APPROVED, AbilityTransactions
+from classes.gear.Gear import ARMOR, WEAPON
+from classes.gear.Legacy import Legacy
+from classes.gear.Packs import Packs
 from database.transactions.BestiaryTransactions import BestiaryTransactions
+from database.transactions.GearItemTransactions import GearItemTransactions
 from views.combat.Pickers import reply
 
 PRESET_CHOICES = [Choice(name=f"{preset.capitalize()} (HP {hp}, AC {ac}, DT {dt}, {to_hit:+d}, {damage}, AP {ap})",
@@ -33,7 +40,12 @@ OPTION_HELP = {
 	"abilities"       : "Approved abilities it can use, separated by commas",
 	"reward_xp"       : "XP it is worth to the winners",
 	"reward_currency" : "Currency it is worth to the winners",
+	"special"         : "Optional SPECIAL, like 6 5 5 4 4 7 5 or str 6, agi 7: derives HP, AC, AP and Sequence",
+	"level"           : "With SPECIAL: its level (HP per level, level bonus)",
+	"weapons"         : "With SPECIAL: catalog weapons it fights with, separated by commas",
+	"armor"           : "With SPECIAL: the catalog armor it wears",
 }
+LEGACY = "legacy"
 
 
 @app_commands.guild_only()
@@ -56,61 +68,34 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 		        if current.lower() in name.lower()][:25]
 
 	# ============================================================
-	@staticmethod
-	def values(guild_id: int, current: dict, **options) -> dict :
-		"""The entry's fields with the filled-in options applied. Raises ValueError for bad values."""
-		values = dict(current)
-		for key, value in options.items() :
-			if value is None :
-				continue
-			if isinstance(value, Choice) :
-				value = value.value
-			if key == "damage" :
-				Rules.parse_dice(value)
-				value = value.strip().lower()
-			elif key == "damage_type" :
-				if str(value).strip().lower() in ("", "none", "-") :
-					value = None
-				else :
-					value = next((name for name in DamageTypes.names(guild_id) if name.lower() == value.lower()), None)
-					if value is None :
-						raise ValueError(f"The server has no damage type called {options[key]}; see /damagetype list.")
-			elif key == "abilities" :
-				ids = []
-				for name in [part.strip() for part in str(value).split(",") if part.strip()] :
-					ability = AbilityTransactions().find(guild_id, name)
-					if ability is None or ability.state != APPROVED :
-						raise ValueError(f"There is no approved ability called {name}.")
-					ids.append(ability.id)
-				key, value = "ability_ids", ids
-			values[key] = value
-		return values
+	async def _weapons(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		return self._catalog(interaction, current, WEAPON)
+
+	# ============================================================
+	async def _armor(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		return self._catalog(interaction, current, ARMOR)
 
 	# ============================================================
 	@staticmethod
-	def describe(entry: BestiaryEntry) -> discord.Embed :
-		embed = discord.Embed(title=entry.name[:256], description=(entry.description or "")[:4000],
-		                      color=discord.Color.dark_red())
-		attack = f"{entry.attack_name}: {entry.damage}, {entry.to_hit:+d} to hit" + \
-		         (f" ({entry.damage_type})" if entry.damage_type else "")
-		embed.add_field(name="Stats", inline=False,
-		                value=f"HP {entry.hp} · AC {entry.ac} · DT {entry.dt} · AP {entry.ap} · Sequence "
-		                      f"{entry.sequence}\n{attack}\nBehavior: {entry.behavior} · preset {entry.preset}")
-		abilities = [AbilityTransactions().get(ability_id) for ability_id in entry.ability_ids or []]
-		if any(abilities) :
-			embed.add_field(name="Abilities", value=", ".join(ability.name for ability in abilities if ability)[:1024],
-			                inline=False)
-		if entry.reward_xp or entry.reward_currency :
-			embed.add_field(name="Rewards", value=f"{entry.reward_xp} XP, {entry.reward_currency} currency")
-		if entry.avatar_url :
-			embed.set_thumbnail(url=entry.avatar_url)
-		return embed
+	def _catalog(interaction: discord.Interaction, current: str, kind: str) -> list[Choice[str]] :
+		"""Catalog names; for a list, the part after the last comma is completed."""
+		done, _, typed = current.rpartition(",")
+		prefix = f"{done}, " if done else ""
+		return [Choice(name=f"{prefix}{item.name}"[:100], value=f"{prefix}{item.name}"[:100])
+		        for item in GearItemTransactions().get_all(interaction.guild_id)
+		        if item.kind == kind and typed.strip().lower() in item.name.lower()][:25]
+
+	# ============================================================
+	async def _sources(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		choices = [Choice(name=f"{title} (genre pack)", value=name) for name, title in Packs.available()]
+		choices.append(Choice(name="The old npcs and monsters tables", value=LEGACY))
+		return [choice for choice in choices if current.lower() in choice.name.lower()][:25]
 
 	# ============================================================
 	@app_commands.command(name="add")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	@app_commands.choices(preset=PRESET_CHOICES, behavior=BEHAVIOR_CHOICES)
-	@app_commands.autocomplete(damage_type=_types)
+	@app_commands.autocomplete(damage_type=_types, weapons=_weapons, armor=_armor)
 	@app_commands.describe(**OPTION_HELP)
 	async def add(self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100], preset: Choice[str],
 	              description: app_commands.Range[str, 1, 1000] = None, hp: app_commands.Range[int, 1, 10000] = None,
@@ -121,38 +106,42 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 	              behavior: Choice[str] = None, abilities: app_commands.Range[str, 1, 300] = None,
 	              avatar_url: app_commands.Range[str, 1, 500] = None,
 	              reward_xp: app_commands.Range[int, 0, 1000000] = None,
-	              reward_currency: app_commands.Range[int, 0, 1000000] = None) :
+	              reward_currency: app_commands.Range[int, 0, 1000000] = None,
+	              special: app_commands.Range[str, 1, 100] = None, level: app_commands.Range[int, 1, 50] = None,
+	              weapons: app_commands.Range[str, 1, 300] = None, armor: str = None) :
 		"""
 		Adds an NPC or monster to the bestiary. The `preset` (minion, standard, elite, boss) fills in its numbers;
 		the options you fill in replace them. A boss has 14 AP, so it acts about twice as much. GMs add bestiary
 		entries to a fight from the board's GM tools.
 
+		Give it `special` instead (seven numbers, or like `str 6, agi 7`) to build it like a character: HP, AC, AP
+		and Sequence come from SPECIAL and `level`, and it fights with catalog `weapons` (Average proficiency) and
+		`armor`. Its own attack options are then not used.
+
 		**Permissions:**
 		- `Manage Messages`
 		"""
-		hp_value, ac_value, dt_value, to_hit_value, damage_value, ap_value = PRESETS[preset.value]
-		base = {"preset" : preset.value, "hp" : hp_value, "ac" : ac_value, "dt" : dt_value, "to_hit" : to_hit_value,
-		        "damage" : damage_value, "ap" : ap_value, "sequence" : 10, "behavior" : "aggressive",
-		        "attack_name" : "Attack", "ability_ids" : []}
 		try :
-			values = self.values(interaction.guild_id, base, description=description, hp=hp, ac=ac, dt=dt,
-			                     to_hit=to_hit, damage=damage, damage_type=damage_type, attack_name=attack_name, ap=ap,
-			                     sequence=sequence, behavior=behavior, abilities=abilities, avatar_url=avatar_url,
-			                     reward_xp=reward_xp, reward_currency=reward_currency)
+			values = BestiaryFlow.values(interaction.guild_id, BestiaryFlow.preset_values(preset.value),
+			                             description=description, hp=hp, ac=ac, dt=dt, to_hit=to_hit, damage=damage,
+			                             damage_type=damage_type, attack_name=attack_name, ap=ap, sequence=sequence,
+			                             behavior=behavior, abilities=abilities, avatar_url=avatar_url,
+			                             reward_xp=reward_xp, reward_currency=reward_currency, special=special,
+			                             level=level, weapons=weapons, armor=armor)
 		except ValueError as e :
 			return await reply(interaction, str(e))
 		entry = BestiaryTransactions().add(interaction.guild_id, name.strip(), creator_uid=interaction.user.id, **values)
 		if entry is None :
 			return await reply(interaction, f"The bestiary already has {name}.")
 		logging.info(f"{interaction.user.name} added bestiary entry {entry.id} in {interaction.guild.name}")
-		await interaction.response.send_message(f"Added **{entry.name}** to the bestiary.", embed=self.describe(entry),
+		await interaction.response.send_message(f"Added **{entry.name}** to the bestiary.", embed=BestiaryFlow.embed(entry),
 		                                        ephemeral=True)
 
 	# ============================================================
 	@app_commands.command(name="edit")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	@app_commands.choices(behavior=BEHAVIOR_CHOICES)
-	@app_commands.autocomplete(name=_names, damage_type=_types)
+	@app_commands.autocomplete(name=_names, damage_type=_types, weapons=_weapons, armor=_armor)
 	@app_commands.describe(**{key : text for key, text in OPTION_HELP.items() if key != "preset"})
 	async def edit(self, interaction: discord.Interaction, name: str, new_name: app_commands.Range[str, 1, 100] = None,
 	               description: app_commands.Range[str, 1, 1000] = None, hp: app_commands.Range[int, 1, 10000] = None,
@@ -163,10 +152,13 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 	               behavior: Choice[str] = None, abilities: app_commands.Range[str, 1, 300] = None,
 	               avatar_url: app_commands.Range[str, 1, 500] = None,
 	               reward_xp: app_commands.Range[int, 0, 1000000] = None,
-	               reward_currency: app_commands.Range[int, 0, 1000000] = None) :
+	               reward_currency: app_commands.Range[int, 0, 1000000] = None,
+	               special: app_commands.Range[str, 1, 100] = None, level: app_commands.Range[int, 1, 50] = None,
+	               weapons: app_commands.Range[str, 1, 300] = None, armor: str = None) :
 		"""
-		Changes a bestiary entry; options you leave out keep their value. Type `none` as `abilities` or
-		`damage_type` to clear them. NPCs already in a fight keep the numbers they joined with.
+		Changes a bestiary entry; options you leave out keep their value. Type `none` as `abilities`,
+		`damage_type`, `special`, `weapons` or `armor` to clear them; clearing `special` turns it back into a stat
+		block. NPCs already in a fight keep the numbers they joined with.
 
 		**Permissions:**
 		- `Manage Messages`
@@ -180,10 +172,11 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 		if abilities is not None and abilities.strip().lower() in ("none", "-") :
 			abilities = ""
 		try :
-			values = self.values(interaction.guild_id, {}, description=description, hp=hp, ac=ac, dt=dt,
-			                     to_hit=to_hit, damage=damage, damage_type=damage_type, attack_name=attack_name, ap=ap,
-			                     sequence=sequence, behavior=behavior, abilities=abilities, avatar_url=avatar_url,
-			                     reward_xp=reward_xp, reward_currency=reward_currency)
+			values = BestiaryFlow.values(interaction.guild_id, {}, description=description, hp=hp, ac=ac, dt=dt,
+			                             to_hit=to_hit, damage=damage, damage_type=damage_type, attack_name=attack_name,
+			                             ap=ap, sequence=sequence, behavior=behavior, abilities=abilities,
+			                             avatar_url=avatar_url, reward_xp=reward_xp, reward_currency=reward_currency,
+			                             special=special, level=level, weapons=weapons, armor=armor)
 		except ValueError as e :
 			return await reply(interaction, str(e))
 		if new_name :
@@ -191,7 +184,7 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 		if not values :
 			return await reply(interaction, "Nothing to change: fill in at least one option.")
 		updated = BestiaryTransactions().update(entry.id, **values)
-		await interaction.response.send_message(f"Updated **{updated.name}**.", embed=self.describe(updated),
+		await interaction.response.send_message(f"Updated **{updated.name}**.", embed=BestiaryFlow.embed(updated),
 		                                        ephemeral=True)
 
 	# ============================================================
@@ -217,8 +210,7 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 		"""
 		Lists the bestiary.
 		"""
-		lines = [f"**{entry.name}** · {entry.preset} · HP {entry.hp} · AC {entry.ac} · {entry.damage}"
-		         for entry in BestiaryTransactions().get_all(interaction.guild_id)]
+		lines = [BestiaryFlow.line(entry) for entry in BestiaryTransactions().get_all(interaction.guild_id)]
 		await interaction.response.send_message(embed=discord.Embed(
 			title="Bestiary", description="\n".join(lines)[:4000] or "Empty. Add NPCs with /bestiary add.",
 			color=discord.Color.dark_red()), ephemeral=True)
@@ -233,7 +225,44 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 		entry = BestiaryTransactions().find(interaction.guild_id, name)
 		if entry is None :
 			return await reply(interaction, f"The bestiary has no {name}.")
-		await interaction.response.send_message(embed=self.describe(entry), ephemeral=True)
+		await interaction.response.send_message(embed=BestiaryFlow.embed(entry), ephemeral=True)
+
+	# ============================================================
+	@app_commands.command(name="import")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(source=_sources)
+	async def import_entries(self, interaction: discord.Interaction, source: str) :
+		"""
+		Copies NPCs and monsters into the bestiary: a genre pack's ready-made bestiary (import the pack's gear with
+		/armory import first, so its fighters get their weapons), or `legacy`, the old global npcs and monsters
+		tables. Names the bestiary already has are skipped, so importing again only adds what is missing.
+
+		Old NPCs had HP on the old scale (about 100 for a character), so their HP is scaled down to the new rules;
+		check the imported numbers with /bestiary view.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		problems = []
+		if source == LEGACY :
+			if not (Legacy.exists("npcs") or Legacy.exists("monsters")) :
+				return await reply(interaction, "The old npcs and monsters tables are gone (migration 0013 dropped "
+				                                "them).")
+			added, skipped = BestiaryFlow.import_legacy(interaction.guild_id, interaction.user.id)
+		else :
+			try :
+				added, skipped, problems = BestiaryFlow.import_pack(interaction.guild_id, source, interaction.user.id)
+			except ValueError as e :
+				return await reply(interaction, str(e))
+		logging.info(f"{interaction.user.name} imported bestiary {source} in {interaction.guild.name}: "
+		             f"{len(added)} added, {len(skipped)} skipped")
+		lines = [f"Added {len(added)} entr{'y' if len(added) == 1 else 'ies'}"
+		         + (f": {', '.join(entry.name for entry in added)}" if added else "") + "."]
+		if skipped :
+			lines.append(f"Skipped (already in the bestiary): {', '.join(skipped)}.")
+		lines += problems
+		await reply(interaction, "\n".join(lines)[:2000])
 
 
 async def setup(bot) :

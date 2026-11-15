@@ -22,6 +22,10 @@ from database.transactions.CombatTransactions import CombatTransactions
 from resources.configs.ConfigMapping import ConfigMapping, defaults
 from views.combat.Pickers import reply
 
+# The sheet field injuries are written to, and how long it may get.
+INJURIES = "Injuries"
+INJURY_LIMIT = 2000
+
 MESSAGE_LIMIT = 2000
 THREAD_ARCHIVE_MINUTES = 10080
 DEFAULT_SIDES = ["Party", "Enemies"]
@@ -198,6 +202,7 @@ class CombatFlow :
 					await reply(interaction, str(e))
 				return None
 			CombatTransactions().save(fight)
+			CombatFlow.use_up(outcome.used_items)
 			if outcome.lines :
 				CombatTransactions().log(fight.id, fight.round, label, "\n".join(outcome.lines), actor_id, target_id,
 				                         snapshot=snapshot)
@@ -209,18 +214,41 @@ class CombatFlow :
 	# ============================================================
 	@staticmethod
 	async def after_deaths(bot: discord.Client, outcome: Outcome) -> None :
-		"""Retires characters whose death the GM confirmed."""
+		"""Marks characters whose death the GM confirmed as dead: they stop posting and their post is locked."""
+		from classes.characters.Death import Death
 		from classes.characters.ForumPost import ForumPost
-		from classes.characters.Retirement import Retirement
 
 		for character_id in outcome.deaths.values() :
 			character = CharacterTransactions().get_by_id(character_id)
 			if character is None :
 				continue
-			updated, _, problem = Retirement.retire(character)
+			updated, _ = Death.die(character)
 			if updated is not None :
-				logging.info(f"Character {character.id} died in combat and was retired")
-				await ForumPost.retire(bot, updated)
+				logging.info(f"Character {character.id} died in combat")
+				await ForumPost.retire(bot, updated, lock=True)
+
+	# ============================================================
+	@staticmethod
+	def used_items(fight: Fight) -> set[int] :
+		return {entry_id for combatant in fight.combatants for entry_id in combatant.stats.get("used_items") or []}
+
+	# ============================================================
+	@staticmethod
+	def use_up(entry_ids: list[int]) -> None :
+		"""Marks consumables used in a fight as used on the characters' gear."""
+		from classes.gear.Gear import Gear
+
+		for entry_id in entry_ids :
+			Gear.use_up(entry_id)
+
+	# ============================================================
+	@staticmethod
+	def give_back(entry_ids: set[int]) -> None :
+		"""Gives back consumables whose use the GM undid."""
+		from classes.gear.Gear import Gear
+
+		for entry_id in entry_ids :
+			Gear.restore(entry_id)
 
 	# ============================================================
 	@staticmethod
@@ -230,8 +258,10 @@ class CombatFlow :
 			entry = CombatTransactions().last_undoable(fight_id) if fight else None
 			if fight is None or entry is None :
 				return await reply(interaction, "There is nothing to undo.")
+			used_before = CombatFlow.used_items(fight)
 			fight.restore(entry.snapshot)
 			CombatTransactions().save(fight)
+			CombatFlow.give_back(used_before - CombatFlow.used_items(fight))
 			CombatTransactions().delete_logs_from(fight_id, entry.id)
 		first_line = (entry.text or entry.action).splitlines()[0][:200]
 		await CombatFlow.post(bot, fight, Outcome(lines=[f"↩️ The GM undid: {first_line}"]))
@@ -504,14 +534,23 @@ class CombatFlow :
 	# ============================================================
 	@staticmethod
 	async def give_rewards(bot: discord.Client, interaction: discord.Interaction, fight_id: int, xp: int,
-	                       currency: int) -> None :
+	                       currency: int, gear: str | None = None) -> None :
+		"""Gives every winning character (not the ones that fled) the XP, currency and catalog items (names
+		separated by commas)."""
 		from classes.characters.ForumPost import ForumPost
 		from classes.characters.Special import Special
 		from classes.gear.Gear import Gear
+		from database.transactions.GearItemTransactions import GearItemTransactions
 
 		fight = CombatTransactions().load(fight_id)
 		if fight is None or fight.state != ENDED :
 			return await reply(interaction, "Rewards are given once the fight is over.")
+		items = []
+		for name in [part.strip() for part in (gear or "").split(",") if part.strip()] :
+			item = GearItemTransactions().find(fight.guild_id, name)
+			if item is None :
+				return await reply(interaction, f"The catalog has no item called {name}; nothing was given.")
+			items.append(item)
 		names = []
 		for combatant in fight.combatants :
 			if combatant.side_id != fight.winner_side_id or not combatant.character_id or combatant.state == "fled" :
@@ -523,6 +562,8 @@ class CombatFlow :
 				character, _ = Special.add_xp(character, xp)
 			if currency > 0 :
 				Gear.give_currency(character, currency, interaction.user.id, note=f"Fight: {fight.title}")
+			for item in items :
+				Gear.grant(character, item, interaction.user.id)
 			names.append(character.name)
 			updated = CharacterTransactions().get_by_id(character.id)
 			if updated is not None and updated.state == APPROVED :
@@ -530,10 +571,77 @@ class CombatFlow :
 		if not names :
 			return await reply(interaction, "No winning characters to reward.")
 		text = f"🎁 The GM rewards {', '.join(names)}: {xp} XP and {currency} " \
-		       f"{ConfigData().get_key(fight.guild_id, ConfigMapping.CURRENCY_NAME)} each."
-		CombatTransactions().log(fight.id, fight.round, "rewards", text, details={"xp" : xp, "currency" : currency})
+		       f"{ConfigData().get_key(fight.guild_id, ConfigMapping.CURRENCY_NAME)} each"
+		text += f", plus {', '.join(item.name for item in items)}." if items else "."
+		CombatTransactions().log(fight.id, fight.round, "rewards", text,
+		                         details={"xp" : xp, "currency" : currency, "gear" : [item.id for item in items]})
 		await CombatFlow.post(bot, fight, Outcome(lines=[text]))
 		await reply(interaction, "Rewards given.")
+
+	# == after the fight ==
+
+	# ============================================================
+	@staticmethod
+	async def break_gear(bot: discord.Client, interaction: discord.Interaction, fight_id: int, entry_id: int) -> None :
+		"""Marks a fighter's gear broken (the GM's call after the fight)."""
+		from classes.gear.Gear import Gear
+		from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions
+
+		fight = CombatTransactions().load(fight_id)
+		entry = CharacterGearTransactions().get(entry_id)
+		character_ids = {combatant.character_id for combatant in fight.combatants} if fight else set()
+		if fight is None or entry is None or entry.character_id not in character_ids :
+			return await reply(interaction, "That gear isn't carried by anyone in this fight.")
+		updated, problem = Gear.set_status(entry, BROKEN, interaction.user.id)
+		if updated is None :
+			return await reply(interaction, problem)
+		character = CharacterTransactions().get_by_id(entry.character_id)
+		text = f"💥 {character.name}'s **{entry.name}** is broken."
+		CombatTransactions().log(fight.id, fight.round, "broken", text, details={"entry_id" : entry.id})
+		await CombatFlow.post(bot, fight, Outcome(lines=[text]))
+		await CombatFlow.refresh_post(bot, character.id)
+		await reply(interaction, "Marked broken.")
+
+	# ============================================================
+	@staticmethod
+	async def refresh_post(bot: discord.Client, character_id: int) -> None :
+		"""Updates an approved character's forum post after its sheet or gear changed."""
+		from classes.characters.ForumPost import ForumPost
+
+		character = CharacterTransactions().get_by_id(character_id)
+		if character is not None and character.state == APPROVED :
+			await ForumPost.sync(bot, character)
+
+	# ============================================================
+	@staticmethod
+	def injury_text(current: str | None, title: str, text: str) -> str :
+		"""The character's Injuries field with a new line added."""
+		line = f"{text.strip()} ({title})"
+		return f"{current.rstrip()}\n{line}" if current and current.strip() else line
+
+	# ============================================================
+	@staticmethod
+	async def add_injury(bot: discord.Client, interaction: discord.Interaction, fight_id: int, character_id: int,
+	                     text: str) -> None :
+		"""Adds an injury to a fighter's sheet (the Injuries field), as free text the GM writes."""
+		from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
+
+		fight = CombatTransactions().load(fight_id)
+		if fight is None or character_id not in {combatant.character_id for combatant in fight.combatants} :
+			return await reply(interaction, "That character isn't in this fight.")
+		character = CharacterTransactions().get_by_id(character_id)
+		infos = CharacterInfoTransactions()
+		current = next((info.value for info in infos.get_all(character_id) if info.key == INJURIES), None)
+		value = CombatFlow.injury_text(current, fight.title, text)[:INJURY_LIMIT]
+		if current is None :
+			infos.add(character_id, INJURIES, value)
+		else :
+			infos.edit(character_id, INJURIES, value)
+		line = f"🩸 {character.name} is injured: {text.strip()}"
+		CombatTransactions().log(fight.id, fight.round, "injury", line)
+		await CombatFlow.post(bot, fight, Outcome(lines=[line]))
+		await CombatFlow.refresh_post(bot, character_id)
+		await reply(interaction, f"Added to {character.name}'s sheet under {INJURIES}.")
 
 	# == NPC voices ==
 

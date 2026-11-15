@@ -7,7 +7,7 @@ import discord
 from classes.characters.Special import STATS
 from classes.gear.Gear import ARMOR, KINDS, WEAPON
 from classes.gear.GearPost import GearPost
-from classes.gear.Packs import ARMOR_COMBAT, Packs, WEAPON_COMBAT
+from classes.gear.Packs import ARMOR_COMBAT, COMBAT_DEFAULTS, Packs, WEAPON_COMBAT
 from database.transactions.GearItemTransactions import GearItemTransactions
 from listeners.GearListener import GearListener
 from modules.Armory import Armory
@@ -56,8 +56,7 @@ class TestPacks(DatabaseTestCase) :
 					self.assertTrue(item["effect_unmet"])
 				for minimum in item["requirements"].values() :
 					self.assertTrue(1 <= minimum <= 10)
-				expected = WEAPON_COMBAT if item["kind"] == WEAPON else ARMOR_COMBAT
-				self.assertEqual(set(item["combat"]), set(expected))
+				self.assertEqual(set(item["combat"]), set(COMBAT_DEFAULTS[item["kind"]]))
 
 	def test_import_adds_everything_then_skips_everything(self) :
 		count = len(Packs.load("fantasy")["items"])

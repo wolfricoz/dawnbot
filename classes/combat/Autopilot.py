@@ -5,7 +5,7 @@ revive allies first); NPCs have a behavior (aggressive, vengeful, random, cautio
 with the best expected damage that the remaining AP pays for, and the turn ends with the AP left as AC.
 """
 from classes.combat import Abilities as AbilityRules
-from classes.combat import Rules
+from classes.combat import Items, Rules
 from classes.combat.Engine import AP_REVIVE, CAUTIOUS, CombatError, DEFEND, Engine, IDLE_PING, RANDOM, \
 	REVENGE, SUPPORT, VENGEFUL
 from classes.combat.State import Combatant, PLAYER
@@ -150,6 +150,13 @@ class Autopilot :
 		downed = [ally for ally in self.fight.allies(combatant, include_self=False) if ally.down]
 		if downed and combatant.ap >= AP_REVIVE and not engine.crippled(combatant, "intelligence") :
 			return self._try(lambda : engine.revive_now(combatant, downed[0]))
+		# Too dim to revive: a healing item still brings the ally back.
+		healing = [item for item in combatant.items if item["use"] == Items.HEAL]
+		if downed and healing and combatant.ap >= Items.AP_ITEM :
+			def use() :
+				engine._spend(combatant, Items.AP_ITEM)
+				engine.apply_item(combatant, healing[0], downed[0])
+			return self._try(use)
 		for ability in combatant.abilities :
 			if ability.get("effect") != AbilityRules.HEAL :
 				continue

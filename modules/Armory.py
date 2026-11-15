@@ -8,12 +8,13 @@ from discord.ext import commands
 from classes.characters.Access import Access
 from classes.characters.CharacterFlow import CharacterFlow
 from classes.characters.Special import STATS
-from classes.combat import Rules
+from classes.combat import Conditions, Items, Rules
 from classes.combat.DamageTypes import DamageTypes
-from classes.gear.Gear import ARMOR, Gear, WEAPON
+from classes.gear.Gear import ARMOR, CONSUMABLE, Gear, WEAPON
 from classes.gear.GearCard import GearCard
 from classes.gear.GearPost import GearPost
-from classes.gear.Packs import Packs
+from classes.gear.Legacy import Legacy
+from classes.gear.Packs import LEGACY_PACK, Packs
 from database.database import GearItems
 from database.transactions.GearItemTransactions import GearItemTransactions
 from views.buttons.Confirm import ask
@@ -26,7 +27,13 @@ MESSAGE_EMBED_LIMIT = 6000
 CLEAR = "-"
 TEXT_LIMIT = 1000
 
-KIND_CHOICES = [Choice(name="Weapon", value=WEAPON), Choice(name="Armor", value=ARMOR)]
+KIND_CHOICES = [Choice(name="Weapon", value=WEAPON), Choice(name="Armor", value=ARMOR),
+                Choice(name="Consumable", value=CONSUMABLE)]
+USE_CHOICES = [Choice(name="Heal (revives a downed ally)", value=Items.HEAL),
+               Choice(name="Cure a condition", value=Items.CURE), Choice(name="Boost an ally", value=Items.BOOST),
+               Choice(name="Nothing automatic (the GM settles it)", value=Items.NONE)]
+ITEM_CONDITION_CHOICES = [Choice(name="None", value="none")] + [Choice(name=Conditions.label(name), value=name)
+                                                                for name in Items.BOOSTS + Items.CURES]
 STAT_CHOICES = [Choice(name=stat.capitalize(), value=stat) for stat in STATS]
 DAMAGE_STAT_CHOICES = [Choice(name="None", value="none")] + STAT_CHOICES
 RANGE_CHOICES = [Choice(name=value.capitalize(), value=value) for value in Rules.RANGES]
@@ -45,6 +52,8 @@ OPTION_HELP = {
 	"ac"              : "Armor: added to the wearer's AC (0 to 10)",
 	"dt"              : "Armor: damage threshold, taken off every hit (0 to 10)",
 	"ability_hit_mod" : "Armor: added to attack rolls with abilities",
+	"use"             : "Consumable: what using it does in a fight (uses dice for healing and shields)",
+	"condition"       : "Consumable: the condition a cure removes or a boost gives",
 }
 
 
@@ -70,8 +79,11 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 
 	# ============================================================
 	async def _packs(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
-		return [Choice(name=title, value=name) for name, title in Packs.available()
-		        if current.lower() in title.lower() or current.lower() in name][:25]
+		choices = [Choice(name=title, value=name) for name, title in Packs.available()]
+		if Legacy.exists("armors") or Legacy.exists("weapons") :
+			choices.append(Choice(name="The old armors and weapons tables", value=LEGACY_PACK))
+		return [choice for choice in choices
+		        if current.lower() in choice.name.lower() or current.lower() in choice.value][:25]
 
 	# ============================================================
 	@staticmethod
@@ -86,11 +98,13 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	# ============================================================
 	@staticmethod
 	def combat_changes(dice=None, damage_type=None, attack_stat=None, damage_stat=None, hit_mod=None, range=None,
-	                   properties=None, ap_cost=None, armor_class=None, ac=None, dt=None, ability_hit_mod=None) -> dict :
+	                   properties=None, ap_cost=None, armor_class=None, ac=None, dt=None, ability_hit_mod=None,
+	                   use=None, condition=None) -> dict :
 		"""The combat options that were filled in, as combat values."""
 		values = {"dice" : dice, "type" : damage_type, "attack_stat" : attack_stat, "damage_stat" : damage_stat,
 		          "hit_mod" : hit_mod, "range" : range, "properties" : properties, "ap" : ap_cost,
-		          "armor_class" : armor_class, "ac" : ac, "dt" : dt, "ability_hit_mod" : ability_hit_mod}
+		          "armor_class" : armor_class, "ac" : ac, "dt" : dt, "ability_hit_mod" : ability_hit_mod,
+		          "use" : use, "condition" : condition}
 		values = {key : value.value if isinstance(value, Choice) else value for key, value in values.items()}
 		return {key : value for key, value in values.items() if value is not None}
 
@@ -157,6 +171,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	# ============================================================
 	@app_commands.command(name="add")
 	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.choices(use=USE_CHOICES, condition=ITEM_CONDITION_CHOICES)
 	@app_commands.choices(kind=KIND_CHOICES, attack_stat=STAT_CHOICES, damage_stat=DAMAGE_STAT_CHOICES,
 	                      range=RANGE_CHOICES, armor_class=ARMOR_CLASS_CHOICES)
 	@app_commands.autocomplete(damage_type=_types)
@@ -172,9 +187,10 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	              hit_mod: app_commands.Range[int, -10, 10] = None, range: Choice[str] = None,
 	              properties: app_commands.Range[str, 1, 200] = None, ap_cost: app_commands.Range[int, 1, 10] = None,
 	              armor_class: Choice[str] = None, ac: app_commands.Range[int, 0, 10] = None,
-	              dt: app_commands.Range[int, 0, 10] = None, ability_hit_mod: app_commands.Range[int, -10, 10] = None) :
+	              dt: app_commands.Range[int, 0, 10] = None, ability_hit_mod: app_commands.Range[int, -10, 10] = None,
+	              use: Choice[str] = None, condition: Choice[str] = None) :
 		"""
-		Adds a weapon or armor set to the catalog. `requirements` are SPECIAL minimums written like
+		Adds a weapon, armor set or consumable to the catalog. `requirements` are SPECIAL minimums written like
 		`strength 8, agility 4` (short names like `str 8` work too); they never stop a character from owning or using
 		the item, but each missing point is -1 to hit, and they decide whether `effect_met` (a bonus) or `effect_unmet`
 		(a penalty) applies. `effect` is something the item always does.
@@ -182,7 +198,9 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 		Combat values are optional. Weapons use `dice` (like 2d6), `damage_type`, `attack_stat` and `damage_stat`
 		(the stats added to attack and damage rolls), `hit_mod`, `range`, `properties` (like `light, thrown`; a
 		`shield` gives +2 AC while equipped) and `ap_cost`. Armor uses `armor_class`, `ac` (added to AC), `dt` (taken
-		off every hit), `hit_mod` and `ability_hit_mod`. When a gear forum is set, the item is posted there.
+		off every hit), `hit_mod` and `ability_hit_mod`. Consumables use `use` (heal, cure, boost or nothing
+		automatic), `dice` (healing or a shield) and `condition` (what a cure removes or a boost gives); they cost 2 AP
+		in a fight and are used up. When a gear forum is set, the item is posted there.
 
 		**Permissions:**
 		- `Manage Server`
@@ -191,7 +209,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 		try :
 			needs = Packs.parse_requirements(requirements)
 			changes = self.combat_changes(dice, damage_type, attack_stat, damage_stat, hit_mod, range, properties,
-			                              ap_cost, armor_class, ac, dt, ability_hit_mod)
+			                              ap_cost, armor_class, ac, dt, ability_hit_mod, use, condition)
 			self.check_type(interaction.guild_id, changes)
 			combat = Packs.combat_for(kind.value, None, changes)
 		except ValueError as e :
@@ -210,7 +228,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.autocomplete(name=_names)
 	@app_commands.choices(attack_stat=STAT_CHOICES, damage_stat=DAMAGE_STAT_CHOICES, range=RANGE_CHOICES,
-	                      armor_class=ARMOR_CLASS_CHOICES)
+	                      armor_class=ARMOR_CLASS_CHOICES, use=USE_CHOICES, condition=ITEM_CONDITION_CHOICES)
 	@app_commands.autocomplete(damage_type=_types)
 	@app_commands.describe(**OPTION_HELP)
 	async def edit(self, interaction: discord.Interaction, name: str, new_name: app_commands.Range[str, 1, 100] = None,
@@ -226,7 +244,8 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	               properties: app_commands.Range[str, 1, 200] = None, ap_cost: app_commands.Range[int, 1, 10] = None,
 	               armor_class: Choice[str] = None, ac: app_commands.Range[int, 0, 10] = None,
 	               dt: app_commands.Range[int, 0, 10] = None,
-	               ability_hit_mod: app_commands.Range[int, -10, 10] = None) :
+	               ability_hit_mod: app_commands.Range[int, -10, 10] = None, use: Choice[str] = None,
+	               condition: Choice[str] = None) :
 		"""
 		Changes a catalog item; options you leave out keep their value. `requirements` replaces all of the item's
 		requirements, and `clear_requirements` removes them. Type `-` in description or one of the effects to clear
@@ -264,7 +283,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 			elif requirements is not None :
 				updates["requirements"] = Packs.parse_requirements(requirements)
 			changes = self.combat_changes(dice, damage_type, attack_stat, damage_stat, hit_mod, range, properties,
-			                              ap_cost, armor_class, ac, dt, ability_hit_mod)
+			                              ap_cost, armor_class, ac, dt, ability_hit_mod, use, condition)
 			self.check_type(interaction.guild_id, changes)
 			if changes :
 				updates["combat"] = Packs.combat_for(item.kind, item.combat, changes)
@@ -307,16 +326,16 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	async def list_items(self, interaction: discord.Interaction, kind: Choice[str] = None) :
 		"""
 		Lists the catalog with prices and SPECIAL requirements, marking the items you cannot buy and why. Pick a
-		`kind` to see only weapons or only armor. Staff also see event items, which are hidden from members.
+		`kind` to see only weapons, armor or consumables. Staff also see event items, which are hidden from members.
 		"""
 		await interaction.response.defer(ephemeral=True)
 		kind = kind.value if isinstance(kind, Choice) else kind
 		entries = Gear.shop_items(interaction.guild_id, Access.of(interaction.user), kind)
 		if not entries :
 			return await interaction.followup.send("The catalog is empty." if kind is None else
-			                                       f"The catalog has no {'weapons' if kind == WEAPON else 'armor'}.")
+			                                       f"The catalog has no {Packs.KIND_WORDS[kind][0]}.")
 		embeds = []
-		for section, title in ((WEAPON, "Weapons"), (ARMOR, "Armor")) :
+		for section, title in ((WEAPON, "Weapons"), (ARMOR, "Armor"), (CONSUMABLE, "Consumables")) :
 			lines = []
 			for entry in entries :
 				if entry.item.kind != section :
@@ -363,9 +382,14 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 		With `refresh`, items that came from the pack instead get the pack's current combat values (for catalogs
 		imported before the combat rework); nothing else about them changes.
 
+		Pick `legacy` to copy the old global armors and weapons tables instead, with their values converted to the
+		new combat rules and a price of 0 (set prices with /armory edit). Do this before migration 0013 drops them.
+
 		**Permissions:**
 		- `Manage Server`
 		"""
+		if pack == LEGACY_PACK :
+			return await self._import_legacy(interaction)
 		try :
 			data = Packs.load(pack)
 		except ValueError as e :
@@ -407,6 +431,26 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 				text += f" {failed} could not be posted in the gear forum; check that I can create posts there, then " \
 				        f"use /armory post."
 		await interaction.followup.send(text, ephemeral=True)
+
+	# ============================================================
+	async def _import_legacy(self, interaction: discord.Interaction) -> None :
+		if not (Legacy.exists("armors") or Legacy.exists("weapons")) :
+			return await CharacterFlow.respond(interaction, "The old armors and weapons tables are gone (migration "
+			                                                "0013 dropped them).")
+		items, _ = Packs.legacy_items()
+		if not await ask(interaction, f"Copy {len(items)} item{'s' if len(items) != 1 else ''} from the old armors and "
+		                              f"weapons tables into the catalog? Names the catalog already has are skipped.",
+		                 "Import") :
+			return
+		added, skipped, problems = Packs.import_legacy(interaction.guild_id)
+		logging.info(f"{interaction.user.name} imported the legacy armors and weapons in {interaction.guild.name}: "
+		             f"{len(added)} added, {len(skipped)} skipped")
+		for item in added :
+			await self._post(item)
+		lines = [f"Imported {len(added)} item{'s' if len(added) != 1 else ''} at price 0; {len(skipped)} skipped."]
+		if problems :
+			lines.append("Could not convert: " + "; ".join(problems))
+		await interaction.followup.send("\n".join(lines)[:2000], ephemeral=True)
 
 	# ============================================================
 	@app_commands.command(name="post")

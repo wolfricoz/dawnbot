@@ -32,7 +32,7 @@ class TestImports(DatabaseTestCase) :
 		import discord
 
 		bot = commands.Bot(command_prefix="?", intents=discord.Intents.none())
-		for name in ("Combat", "Bestiary", "Ability", "DamageType", "GM", "Gear", "Character", "Armory") :
+		for name in ("Combat", "Bestiary", "Ability", "DamageType", "GM", "Gear", "Character", "Armory", "School", "Shop") :
 			module = importlib.import_module(f"modules.{name}")
 			cog_class = getattr(module, name)
 			cog = cog_class(bot)

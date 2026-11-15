@@ -9,7 +9,8 @@ from classes.characters.Access import Access
 from classes.characters.Special import STATS
 from classes.kernel.ConfigData import ConfigData
 from database.database import CharacterGear, Characters, GearItems
-from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST, OWNED, SOLD
+from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST, OWNED, SOLD, \
+	USED
 from database.transactions.CharacterTransactions import CharacterTransactions
 from database.transactions.CurrencyTransactions import BUY, CurrencyTransactions, GM_GIVE, GM_TAKE, SELL
 from database.transactions.GearItemTransactions import GearItemTransactions
@@ -17,7 +18,10 @@ from resources.configs.ConfigMapping import ConfigMapping
 
 WEAPON = "weapon"
 ARMOR = "armor"
-KINDS = [WEAPON, ARMOR]
+# Used up in a fight with the Use item action (see classes/combat/Items.py).
+CONSUMABLE = "consumable"
+KINDS = [WEAPON, ARMOR, CONSUMABLE]
+KIND_LABELS = {WEAPON : "Weapon", ARMOR : "Armor", CONSUMABLE : "Consumable"}
 
 # Where a character's gear came from.
 CREATION = "creation"
@@ -182,6 +186,24 @@ class Gear :
 
 	# ============================================================
 	@staticmethod
+	def use_up(entry_id: int) -> CharacterGear | None :
+		"""Marks a consumable as used (after a fight's Use item action)."""
+		entry = CharacterGearTransactions().get(entry_id)
+		if entry is None or entry.status != OWNED :
+			return None
+		return CharacterGearTransactions().update(entry.id, status=USED, equipped=False)
+
+	# ============================================================
+	@staticmethod
+	def restore(entry_id: int) -> CharacterGear | None :
+		"""Gives back a consumable whose use was undone."""
+		entry = CharacterGearTransactions().get(entry_id)
+		if entry is None or entry.status != USED :
+			return None
+		return CharacterGearTransactions().update(entry.id, status=OWNED)
+
+	# ============================================================
+	@staticmethod
 	def take(entry: CharacterGear) -> bool :
 		"""Removes an item from a character entirely, as if they never had it (for mistakes)."""
 		return CharacterGearTransactions().delete(entry.id)
@@ -194,6 +216,8 @@ class Gear :
 		"""Equips an owned item. A character wears one armor set at a time; weapons can all be equipped."""
 		if entry.status != OWNED :
 			return None, f"{entry.name} is {entry.status}."
+		if entry.kind == CONSUMABLE :
+			return None, f"{entry.name} is used up in a fight, not equipped."
 		return CharacterGearTransactions().equip(entry.id, only_one_of_kind=entry.kind == ARMOR), None
 
 	# ============================================================

@@ -1,7 +1,7 @@
 """How a catalog item is shown: one line in a list, or a full embed."""
 import discord
 
-from classes.gear.Gear import ARMOR, Gear
+from classes.gear.Gear import Gear, KIND_LABELS
 from classes.kernel.ConfigData import ConfigData
 from database.database import GearItems
 from resources.configs.ConfigMapping import ConfigMapping
@@ -40,7 +40,7 @@ class GearCard :
 	def embed(item: GearItems) -> discord.Embed :
 		embed = discord.Embed(title=item.name[:256], description=(item.description or "")[:4000],
 		                      color=discord.Color.dark_gold())
-		embed.add_field(name="Kind", value="Armor" if item.kind == ARMOR else "Weapon")
+		embed.add_field(name="Kind", value=KIND_LABELS.get(item.kind, item.kind.capitalize()))
 		embed.add_field(name="Price", value=GearCard.price_text(item.guild_id, Gear.price(item)))
 		requirements = GearCard.requirements_text(item)
 		if requirements :

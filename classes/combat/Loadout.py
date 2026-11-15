@@ -4,7 +4,7 @@ uses, and the derived numbers (HP, AP, AC, DT, Sequence).
 The snapshot is taken when the combatant joins, so changing gear mid-fight does not change the fight.
 """
 from classes.combat import Abilities as AbilityRules
-from classes.combat import Rules
+from classes.combat import Items, Rules
 from classes.combat.State import AUTO, CHARACTER, Combatant, NPC, PLAYER
 from classes.kernel.ConfigData import ConfigData
 from database.database import Bestiary, Characters
@@ -70,12 +70,12 @@ class Loadout :
 	def character_stats(character: Characters) -> dict :
 		"""The snapshot of a character: SPECIAL, level, weapons (with proficiency), armor, shield and abilities."""
 		from classes.characters.Special import Special
-		from classes.gear.Gear import ARMOR, Gear, WEAPON
+		from classes.gear.Gear import ARMOR, CONSUMABLE, Gear, WEAPON
 
 		base = Special.rules(character.guild_id).base
 		special = {stat : int(getattr(character, stat) or 0) for stat in Rules.STATS}
 		crippled_strength = special["strength"] <= 0
-		weapons, shield, armor = [], False, None
+		weapons, shield, armor, items = [], False, None, []
 		for entry, item in Gear.inventory(character.id) :
 			combat = item.combat if item is not None else {}
 			requirements = item.requirements if item is not None else {}
@@ -90,6 +90,8 @@ class Loadout :
 				if "shield" in weapon["properties"] and entry.equipped :
 					shield = True
 				weapons.append(weapon)
+			elif entry.kind == CONSUMABLE :
+				items.append(Items.snapshot(entry.id, entry.name, combat))
 			elif entry.kind == ARMOR and entry.equipped :
 				candidate = Rules.normalise_armor(combat) | {"name" : entry.name}
 				if crippled_strength and candidate["armor_class"] == Rules.HEAVY :
@@ -104,7 +106,7 @@ class Loadout :
 		        "legendary" : bool(getattr(character, "legendary", False)), "weapons" : weapons, "armor" : armor,
 		        "shield" : shield, "armor_penalty" : Rules.armor_penalty(armor["armor_class"],
 		                                                                  Loadout.armor_proficiency(character)),
-		        "level_bonus" : level_bonus, "abilities" : Loadout.abilities(character.id),
+		        "level_bonus" : level_bonus, "abilities" : Loadout.abilities(character.id), "items" : items,
 		        "crit_min" : Rules.crit_min(luck), "fumble_max" : Rules.fumble_max(luck), "confirm_crits" : luck <= 0,
 		        "crippled" : Rules.crippled(special)}
 
@@ -150,6 +152,8 @@ class Loadout :
 
 		abilities = [Loadout.ability_data(ability) for ability in
 		             (AbilityTransactions().get(ability_id) for ability_id in entry.ability_ids or []) if ability]
+		if entry.special :
+			return Loadout.for_special_entry(entry, side_id, name or entry.name, position, controller, abilities)
 		stats = Loadout.npc_stats(entry.hp, entry.ac, entry.dt, entry.to_hit, entry.damage, entry.damage_type,
 		                          entry.attack_name, entry.ap, abilities,
 		                          {"xp" : entry.reward_xp, "currency" : entry.reward_currency}, entry.preset)
@@ -158,6 +162,61 @@ class Loadout :
 		                 controller=controller, behavior=entry.behavior or "aggressive", hp=entry.hp,
 		                 hp_max=entry.hp, ap=entry.ap, ap_max=entry.ap, ac=entry.ac, dt=entry.dt,
 		                 sequence=entry.sequence, weapon_key=NATURAL_KEY, position=position)
+
+	# ============================================================
+	@staticmethod
+	def special_stats(guild_id: int, special: dict, level: int, weapon_items: list, armor_item,
+	                  abilities: list[dict], rewards: dict | None = None) -> dict :
+		"""The snapshot of a bestiary entry built from SPECIAL: derived like a character's, with catalog weapons
+		(Average proficiency) and armor it is trained for."""
+		base = 5
+		special = {stat : int(special.get(stat, base)) for stat in Rules.STATS}
+		crippled_strength = special["strength"] <= 0
+		weapons, shield = [], False
+		for item in weapon_items :
+			weapon = Rules.normalise_weapon(item.combat)
+			if crippled_strength and "two_handed" in weapon["properties"] :
+				continue
+			weapon.update({"key" : f"catalog:{item.id}", "name" : item.name, "proficiency" : Rules.AVERAGE,
+			               "requirement_penalty" : Rules.unmet_penalty(special, item.requirements),
+			               "equipped" : True})
+			shield = shield or "shield" in weapon["properties"]
+			weapons.append(weapon)
+		weapons.append(dict(Rules.UNARMED))
+		armor = dict(Rules.ARMOR_DEFAULTS) | {"name" : "No armor"}
+		if armor_item is not None :
+			candidate = Rules.normalise_armor(armor_item.combat) | {"name" : armor_item.name}
+			if not (crippled_strength and candidate["armor_class"] == Rules.HEAVY) :
+				armor = candidate
+		level_bonus = Rules.level_bonus(level) if ConfigData().get_toggle(guild_id,
+		                                                                  ConfigMapping.COMBAT_LEVEL_BONUS) else 0
+		luck = special["luck"]
+		return {"base" : base, "special" : special, "level" : int(level or 1), "legendary" : False,
+		        "weapons" : weapons, "armor" : armor, "shield" : shield, "armor_penalty" : 0,
+		        "level_bonus" : level_bonus, "abilities" : abilities, "items" : [],
+		        "crit_min" : Rules.crit_min(luck), "fumble_max" : Rules.fumble_max(luck), "confirm_crits" : luck <= 0,
+		        "crippled" : Rules.crippled(special), "rewards" : rewards or {}, "preset" : "special"}
+
+	# ============================================================
+	@staticmethod
+	def for_special_entry(entry: Bestiary, side_id: int, name: str, position: int, controller: str,
+	                      abilities: list[dict]) -> Combatant :
+		from database.transactions.GearItemTransactions import GearItemTransactions
+
+		items = GearItemTransactions()
+		weapons = [item for item in (items.get(item_id) for item_id in entry.weapon_ids or []) if item is not None]
+		armor = items.get(entry.armor_id) if entry.armor_id else None
+		stats = Loadout.special_stats(entry.guild_id, entry.special or {}, entry.level or 1, weapons, armor, abilities,
+		                              {"xp" : entry.reward_xp, "currency" : entry.reward_currency})
+		stats["avatar_url"] = entry.avatar_url
+		special, base = stats["special"], stats["base"]
+		hp = Rules.hp_max(special, stats["level"], base)
+		ap = Rules.ap_max(special)
+		return Combatant(id=0, side_id=side_id, kind=NPC, name=name, stats=stats, bestiary_id=entry.id,
+		                 controller=controller, behavior=entry.behavior or "aggressive", hp=hp, hp_max=hp, ap=ap,
+		                 ap_max=ap, ac=Rules.armor_class(special, stats["armor"], stats["shield"], base),
+		                 dt=int(stats["armor"].get("dt") or 0), sequence=Rules.sequence(special),
+		                 weapon_key=Loadout.default_weapon(stats["weapons"]), position=position)
 
 	# ============================================================
 	@staticmethod

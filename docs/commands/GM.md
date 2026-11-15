@@ -95,6 +95,18 @@ Game master tools: giving and taking characters' gear, currency, abilities and l
 
 ---
 
+### `resurrect`
+
+**Usage:** `/gm resurrect <member> <character>`
+
+> Brings back a character that died in a lethal fight. It is approved again straight away, can post again, and
+> its forum post is reopened. It needs a free place under the character cap.
+>
+> **Permissions:**
+> - `Manage Messages`
+
+---
+
 ### `ability grant`
 
 **Usage:** `/gm ability grant <member> <character> <ability>`

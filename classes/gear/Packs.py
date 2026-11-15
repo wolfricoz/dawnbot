@@ -9,8 +9,8 @@ import os
 import re
 
 from classes.characters.Special import STATS
-from classes.combat import Rules
-from classes.gear.Gear import ARMOR, KINDS, WEAPON
+from classes.combat import Conditions, Items, Rules
+from classes.gear.Gear import ARMOR, CONSUMABLE, KINDS, WEAPON
 from database.database import GearItems
 from database.transactions.GearItemTransactions import GearItemTransactions
 
@@ -28,15 +28,20 @@ TEXT_FIELDS = ["description", "effect", "effect_met", "effect_unmet"]
 WEAPON_COMBAT = {"type" : None, "dice" : "1d6", "attack_stat" : "strength", "damage_stat" : "strength", "hit_mod" : 0,
                  "range" : Rules.MELEE, "properties" : []}
 ARMOR_COMBAT = dict(Rules.ARMOR_DEFAULTS)
-COMBAT_DEFAULTS = {WEAPON : WEAPON_COMBAT, ARMOR : ARMOR_COMBAT}
+CONSUMABLE_COMBAT = dict(Items.DEFAULTS)
+COMBAT_DEFAULTS = {WEAPON : WEAPON_COMBAT, ARMOR : ARMOR_COMBAT, CONSUMABLE : CONSUMABLE_COMBAT}
+KIND_WORDS = {WEAPON : ("weapons", "a weapon"), ARMOR : ("armor", "armor"),
+              CONSUMABLE : ("consumables", "a consumable")}
 # Weapons may also set their own AP cost.
-OPTIONAL_KEYS = {WEAPON : {"ap"}, ARMOR : set()}
+OPTIONAL_KEYS = {WEAPON : {"ap"}, ARMOR : set(), CONSUMABLE : set()}
 # Keys of the old shape (before the combat round); values in it are converted.
-LEGACY_KEYS = {WEAPON : {"modifier", "hitmodifier"}, ARMOR : {"hp", "ap", "hitchance"}}
+LEGACY_KEYS = {WEAPON : {"modifier", "hitmodifier"}, ARMOR : {"hp", "ap", "hitchance"}, CONSUMABLE : set()}
 DICE = Rules.DICE
 HIT_LIMIT = 10
 AC_LIMIT = 10
 AP_LIMIT = 10
+# The pack name recorded on items imported from the old global armors and weapons tables.
+LEGACY_PACK = "legacy"
 
 
 class Packs :
@@ -133,6 +138,9 @@ class Packs :
 		combat = item.get("combat") or {}
 		if not isinstance(combat, dict) :
 			raise ValueError("combat must be a JSON object.")
+		if kind == WEAPON and "damage_stat" in combat and combat["damage_stat"] is None :
+			# In a pack, null means no damage stat (bows, crossbows); combat_for would read it as "not given".
+			combat = combat | {"damage_stat" : "none"}
 		checked["combat"] = Packs.combat_for(kind, None, combat)
 		return checked
 
@@ -154,6 +162,42 @@ class Packs :
 			else :
 				added.append(created)
 		return added, skipped
+
+	# ============================================================
+	@staticmethod
+	def legacy_items() -> tuple[list[dict], list[str]] :
+		"""The old global armors and weapons as checked catalog items (combat values converted, price 0), and the
+		rows that could not be converted."""
+		from classes.gear.Legacy import Legacy
+
+		items, problems = [], []
+		for table, kind, keys in (("weapons", WEAPON, ("dice", "modifier", "hitmodifier")),
+		                          ("armors", ARMOR, ("hp", "ap", "ac", "hitchance"))) :
+			for row in Legacy.rows(table) :
+				name = str(row.get("name") or "").strip()[:NAME_LIMIT]
+				combat = {key : row[key] for key in keys if row.get(key) is not None}
+				try :
+					items.append(Packs.validate_item({"kind" : kind, "name" : name, "price" : 0, "combat" : combat,
+					                                  "description" : f"Imported from the old {table} table."}))
+				except ValueError as e :
+					problems.append(f"{name or '(no name)'}: {e}")
+		return items, problems
+
+	# ============================================================
+	@staticmethod
+	def import_legacy(guild_id: int) -> tuple[list[GearItems], list[str], list[str]] :
+		"""Copies the old armors and weapons into a server's catalog, leaving out names it already has.
+
+		@return: the items added, the names skipped, and the rows that could not be converted.
+		"""
+		items, problems = Packs.legacy_items()
+		added, skipped = [], []
+		transactions = GearItemTransactions()
+		for item in items :
+			fields = {key : value for key, value in item.items() if key not in ("kind", "name")}
+			created = transactions.add(guild_id, item["kind"], item["name"], pack=LEGACY_PACK, **fields)
+			(added if created is not None else skipped).append(created if created is not None else item["name"])
+		return added, skipped, problems
 
 	# == requirements ==
 
@@ -225,6 +269,8 @@ class Packs :
 			if weapon.get("ap") :
 				values["ap"] = weapon["ap"]
 			return values
+		if kind == CONSUMABLE :
+			return Items.normalise(combat)
 		return {key : value for key, value in Rules.normalise_armor(combat).items() if key in ARMOR_COMBAT}
 
 	# ============================================================
@@ -236,6 +282,7 @@ class Packs :
 
 		Weapons: type (a damage type's name), dice like `1d8`, attack_stat, damage_stat (a stat or none), hit_mod,
 		range (melee or ranged), properties and optionally ap. Armor: armor_class, ac, dt, hit_mod, ability_hit_mod.
+		Consumables: use (heal, cure, boost or none), dice, condition and turns.
 		"""
 		defaults = COMBAT_DEFAULTS[kind]
 		combat = Packs.normalise(kind, current) if current else dict(defaults)
@@ -252,14 +299,19 @@ class Packs :
 			if value is None :
 				continue
 			if key not in allowed :
-				other = WEAPON if kind == ARMOR else ARMOR
-				if key in COMBAT_DEFAULTS[other] or key in OPTIONAL_KEYS[other] or key in LEGACY_KEYS[other] :
-					raise ValueError(f"{key} is only for {'weapons' if other == WEAPON else 'armor'}, and this item "
-					                 f"is {'a weapon' if kind == WEAPON else 'armor'}.")
+				for other in KINDS :
+					if other != kind and (key in COMBAT_DEFAULTS[other] or key in OPTIONAL_KEYS[other]
+					                      or key in LEGACY_KEYS[other]) :
+						raise ValueError(f"{key} is only for {KIND_WORDS[other][0]}, and this item is "
+						                 f"{KIND_WORDS[kind][1]}.")
 				raise ValueError(f"{key} is not a combat value.")
 			combat[key] = Packs._combat_value(key, value)
 		if kind == WEAPON and combat.get("ap") is None :
 			combat.pop("ap", None)
+		if kind == CONSUMABLE :
+			problem = Items.check(combat)
+			if problem :
+				raise ValueError(problem)
 		return combat
 
 	# ============================================================
@@ -327,6 +379,17 @@ class Packs :
 			return value
 		if key == "properties" :
 			return Packs.parse_properties(value)
+		if key == "use" :
+			if value not in Items.USES :
+				raise ValueError(f"use must be one of {', '.join(Items.USES)}, not {value!r}.")
+			return value
+		if key == "condition" :
+			if value is None or (isinstance(value, str) and value.strip().lower() in ("", "none", "-")) :
+				return None
+			text = value.strip().lower() if isinstance(value, str) else ""
+			if text not in Conditions.DEFINITIONS :
+				raise ValueError(f"condition must be one of {', '.join(Conditions.DEFINITIONS)}, not {value!r}.")
+			return text
 		if key == "armor_class" :
 			if value not in Rules.ARMOR_CLASSES :
 				raise ValueError(f"armor_class must be one of {', '.join(Rules.ARMOR_CLASSES)}, not {value!r}.")

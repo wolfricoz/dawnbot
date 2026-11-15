@@ -2,7 +2,7 @@
 then press Do it. It shows the AP left and refreshes after every action."""
 import discord
 
-from classes.combat import Abilities as AbilityRules
+from classes.combat import Abilities as AbilityRules, Items
 from classes.combat.CombatFlow import CombatFlow
 from classes.combat.Engine import AP_HELP, AP_REVIVE, Engine
 from classes.combat.Loadout import Loadout
@@ -15,11 +15,13 @@ AIMED = "aimed"
 ABILITY = "ability"
 HELP = "help"
 REVIVE = "revive"
+ITEM = "item"
 FLEE = "flee"
 OTHER = "other"
 ACTION_LABELS = {ATTACK : "Attack", AIMED : "Aimed attack (-4 to hit, +1 die, ignores DT)", ABILITY : "Use an ability",
                  HELP : f"Help an ally (+2 on their next roll, {AP_HELP} AP)",
-                 REVIVE : f"Revive a downed ally ({AP_REVIVE} AP)", FLEE : "Flee (uses all AP)",
+                 REVIVE : f"Revive a downed ally ({AP_REVIVE} AP)", ITEM : f"Use an item ({Items.AP_ITEM} AP)",
+                 FLEE : "Flee (uses all AP)",
                  OTHER : "Something else (the GM settles it; uses all AP)"}
 
 
@@ -59,6 +61,7 @@ class ActionPanel(discord.ui.View) :
 		self.targets: list[int] = []
 		self.weapon_key: str | None = None
 		self.ability_id: str | None = None
+		self.item_key: str | None = None
 
 	# ============================================================
 	async def interaction_check(self, interaction: discord.Interaction) -> bool :
@@ -89,6 +92,8 @@ class ActionPanel(discord.ui.View) :
 		actions += [HELP]
 		if any(ally.down for ally in fight.allies(combatant, include_self=False)) :
 			actions.append(REVIVE)
+		if combatant.items :
+			actions.append(ITEM)
 		actions += [FLEE, OTHER]
 		if self.action not in actions :
 			self.action = ATTACK
@@ -159,6 +164,20 @@ class ActionPanel(discord.ui.View) :
 			self.targets = [target for target in self.targets if target in valid][:1] or valid[:1]
 			self.add_item(PanelSelect("targets", self._target_options(allies, engine), "Ally", row=1))
 			return ""
+		if self.action == ITEM :
+			items = combatant.items
+			if self.item_key not in [item["key"] for item in items] :
+				self.item_key = items[0]["key"]
+			self.add_item(PanelSelect("item", [discord.SelectOption(label=f"{item['name']} · {Items.describe(item)}"[:100],
+			                                                        value=item["key"], default=item["key"] == self.item_key)
+			                                   for item in items], "Item", row=2))
+			item = combatant.item(self.item_key)
+			heals = item is not None and item["use"] == Items.HEAL
+			allies = [ally for ally in fight.allies(combatant) if ally.standing or (heals and ally.down)]
+			valid = [ally.id for ally in allies]
+			self.targets = [target for target in self.targets if target in valid][:1] or [combatant.id]
+			self.add_item(PanelSelect("targets", self._target_options(allies, engine), "Use it on", row=1))
+			return f"{item['name']}: {Items.describe(item)}. It's used up." if item else ""
 		if self.action == FLEE :
 			return f"Roll d20 + AGI against {10 + len(fight.enemies(combatant))} to get away."
 		return "Press Do it to describe what you do; the GM settles it."
@@ -176,6 +195,9 @@ class ActionPanel(discord.ui.View) :
 			self.weapon_key = values[0]
 		elif key == "ability" :
 			self.ability_id = values[0]
+			self.targets = []
+		elif key == "item" :
+			self.item_key = values[0]
 			self.targets = []
 		await interaction.response.edit_message(content=self.render(), view=self)
 
@@ -200,7 +222,7 @@ class ActionPanel(discord.ui.View) :
 	def _action(self, combatant_id: int) :
 		targets = list(self.targets)
 		first = targets[0] if targets else None
-		weapon_key, ability_id = self.weapon_key, self.ability_id
+		weapon_key, ability_id, item_key = self.weapon_key, self.ability_id, self.item_key
 		if self.action in (ATTACK, AIMED) :
 			aimed = self.action == AIMED
 			return (lambda engine : engine.attack(engine.fight.combatant(combatant_id), first, weapon_key, aimed)), \
@@ -212,6 +234,8 @@ class ActionPanel(discord.ui.View) :
 			return (lambda engine : engine.help(engine.fight.combatant(combatant_id), first)), HELP
 		if self.action == REVIVE :
 			return (lambda engine : engine.revive(engine.fight.combatant(combatant_id), first)), REVIVE
+		if self.action == ITEM :
+			return (lambda engine : engine.use_item(engine.fight.combatant(combatant_id), item_key, first)), ITEM
 		return (lambda engine : engine.flee(engine.fight.combatant(combatant_id))), FLEE
 
 	# ============================================================

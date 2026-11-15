@@ -4,7 +4,8 @@ from database.database import Bestiary
 from database.transactions.DatabaseTransactions import DatabaseTransactions
 
 FIELDS = ["name", "description", "avatar_url", "preset", "hp", "ac", "dt", "to_hit", "damage", "damage_type",
-          "attack_name", "ap", "sequence", "behavior", "ability_ids", "reward_xp", "reward_currency", "creator_uid"]
+          "attack_name", "ap", "sequence", "behavior", "ability_ids", "reward_xp", "reward_currency", "creator_uid",
+          "special", "level", "weapon_ids", "armor_id"]
 
 
 class BestiaryTransactions(DatabaseTransactions) :

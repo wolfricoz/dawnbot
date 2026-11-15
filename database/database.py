@@ -581,6 +581,13 @@ class Bestiary(Base) :
 	ability_ids: Mapped[list] = mapped_column(JSON, default=list)
 	reward_xp: Mapped[int] = mapped_column(Integer, default=0)
 	reward_currency: Mapped[int] = mapped_column(Integer, default=0)
+	# When special is set ({stat: value}), HP, AC, AP and Sequence are derived like a character's, at this level,
+	# and it fights with the catalog weapons and armor below instead of its own attack.
+	special: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	level: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+	weapon_ids: Mapped[list] = mapped_column(JSON, default=list)
+	armor_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("gear_items.id", ondelete="SET NULL"),
+	                                             nullable=True)
 	creator_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

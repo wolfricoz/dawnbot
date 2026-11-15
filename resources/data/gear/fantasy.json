@@ -621,6 +621,219 @@
 				"hit_mod": 0,
 				"ability_hit_mod": 0
 			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Linen Bandages",
+			"description": "A roll of clean linen for binding cuts in a hurry.",
+			"price": 15,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "bleeding",
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Healing Draught",
+			"description": "A small vial of bitter red tonic that knits flesh in moments.",
+			"price": 40,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "2d4",
+				"condition": null,
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Burn Salve",
+			"description": "A tin of cooling herbal paste for scorched skin.",
+			"price": 40,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "burning",
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Smelling Salts",
+			"description": "A sharp-smelling pouch that snaps a dazed fighter back to their senses.",
+			"price": 50,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "stunned",
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Courage Tonic",
+			"description": "A fiery cordial that steadies the hand and lifts the heart.",
+			"price": 120,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "inspired",
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Greater Healing Draught",
+			"description": "A thick golden draught brewed by temple healers.",
+			"price": 150,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "4d4",
+				"condition": null,
+				"turns": 2
+			}
+		},
+		{
+			"kind": "consumable",
+			"name": "Troll-Blood Elixir",
+			"description": "A murky green elixir; wounds close on their own for a while after drinking it.",
+			"price": 250,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "regenerating",
+				"turns": 3
+			}
+		}
+	],
+	"bestiary": [
+		{
+			"name": "Giant Rat",
+			"preset": "minion",
+			"description": "A dog-sized rat from the sewers and cellars.",
+			"attack_name": "Bite",
+			"damage_type": "Piercing",
+			"behavior": "random",
+			"reward_xp": 5,
+			"reward_currency": 0
+		},
+		{
+			"name": "Grey Wolf",
+			"preset": "standard",
+			"description": "A lean forest wolf; they hunt in packs.",
+			"attack_name": "Bite",
+			"damage_type": "Piercing",
+			"behavior": "aggressive",
+			"sequence": 14,
+			"reward_xp": 15,
+			"reward_currency": 0
+		},
+		{
+			"name": "Road Bandit",
+			"preset": "standard",
+			"description": "A cutthroat who works the trade roads.",
+			"special": {
+				"strength": 6,
+				"perception": 5,
+				"endurance": 5,
+				"charisma": 4,
+				"intelligence": 4,
+				"agility": 6,
+				"luck": 4
+			},
+			"level": 1,
+			"weapons": [
+				"Woodsman's Hatchet"
+			],
+			"armor": "Padded Jack",
+			"behavior": "vengeful",
+			"reward_xp": 20,
+			"reward_currency": 25
+		},
+		{
+			"name": "Bandit Archer",
+			"preset": "standard",
+			"description": "Shoots from the treeline and runs when it goes badly.",
+			"special": {
+				"strength": 4,
+				"perception": 7,
+				"endurance": 4,
+				"charisma": 4,
+				"intelligence": 5,
+				"agility": 6,
+				"luck": 5
+			},
+			"level": 1,
+			"weapons": [
+				"Hunting Bow",
+				"Hedge Knife"
+			],
+			"armor": "Hardened Leather",
+			"behavior": "cautious",
+			"reward_xp": 20,
+			"reward_currency": 25
+		},
+		{
+			"name": "Bandit Captain",
+			"preset": "elite",
+			"description": "Scarred, loud and better armed than the rest.",
+			"special": {
+				"strength": 8,
+				"perception": 6,
+				"endurance": 7,
+				"charisma": 6,
+				"intelligence": 5,
+				"agility": 5,
+				"luck": 5
+			},
+			"level": 4,
+			"weapons": [
+				"Arming Sword",
+				"Oak Round Shield"
+			],
+			"armor": "Chain Hauberk",
+			"behavior": "aggressive",
+			"reward_xp": 60,
+			"reward_currency": 120
+		},
+		{
+			"name": "Cave Troll",
+			"preset": "boss",
+			"description": "A hulking grey brute that smells the living from far away.",
+			"attack_name": "Club",
+			"damage_type": "Blunt",
+			"behavior": "vengeful",
+			"reward_xp": 200,
+			"reward_currency": 150
 		}
 	]
 }

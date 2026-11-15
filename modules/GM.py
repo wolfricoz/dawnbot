@@ -7,15 +7,18 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.characters.Death import Death
 from classes.combat.Legendary import Legendary
+from classes.kernel.ConfigData import ConfigData
 from classes.combat.Proficiency import Proficiency
 from classes.gear.Gear import Gear
 from database.database import CharacterGear, Characters, GearItems
 from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST
 from database.transactions.AbilityTransactions import AbilityTransactions
-from database.transactions.CharacterTransactions import CharacterTransactions
+from database.transactions.CharacterTransactions import CharacterTransactions, DEAD
 from database.transactions.GearItemTransactions import GearItemTransactions
 from modules.Currency import balance_text
+from resources.configs.ConfigMapping import ConfigMapping
 from modules.Gear import PROFICIENCY_CHOICES, entry_choices, find_entry, refresh_post, unmet_warning
 from views.buttons.Confirm import ask
 
@@ -256,6 +259,35 @@ class GM(commands.GroupCog, name="GM", group_name="gm") :
 		                                f"{balance_text(guild_id, updated.currency)}.", ephemeral=True)
 		await refresh_post(self.bot, record.id)
 
+
+	# == deaths ==
+
+	# ============================================================
+	@app_commands.command(name="resurrect")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(character=_characters)
+	async def resurrect(self, interaction: discord.Interaction, member: discord.Member, character: str) :
+		"""
+		Brings back a character that died in a lethal fight. It is approved again straight away, can post again, and
+		its forum post is reopened. It needs a free place under the character cap.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		record = await self._character(interaction, member, character)
+		if record is None :
+			return
+		cap = ConfigData().get_int(interaction.guild_id, ConfigMapping.CHARACTER_CAP)
+		if record.state == DEAD and CharacterTransactions().count_active(record.uid, record.guild_id) >= cap :
+			return await interaction.followup.send(f"{member.display_name} already has {cap} characters here, which "
+			                                       f"is this server's limit.", ephemeral=True)
+		updated, problem = Death.resurrect(record)
+		if updated is None :
+			return await interaction.followup.send(problem, ephemeral=True)
+		logging.info(f"GM {interaction.user.name} resurrected character {record.id} in {interaction.guild.name}")
+		await interaction.followup.send(f"{updated.name} is back.", ephemeral=True)
+		await refresh_post(self.bot, updated.id)
 
 	# == abilities ==
 

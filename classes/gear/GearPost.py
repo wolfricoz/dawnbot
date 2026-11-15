@@ -7,8 +7,8 @@ import logging
 
 import discord
 
-from classes.combat import Rules
-from classes.gear.Gear import WEAPON
+from classes.combat import Items, Rules
+from classes.gear.Gear import CONSUMABLE, WEAPON
 from classes.gear.GearCard import GearCard
 from classes.kernel.ConfigData import ConfigData
 from database.database import GearItems
@@ -51,6 +51,8 @@ class GearPost :
 			if weapon.get("properties") :
 				parts.append(", ".join(prop.replace("_", " ") for prop in weapon["properties"]))
 			return " · ".join(parts)
+		if item.kind == CONSUMABLE :
+			return f"{Items.describe(combat)} · {Items.AP_ITEM} AP · used up"
 		armor = Rules.normalise_armor(combat)
 		parts = [f"{armor['armor_class'].capitalize()} armor", f"AC {armor['ac']:+d}", f"DT {armor['dt']}"]
 		if armor.get("hit_mod") :

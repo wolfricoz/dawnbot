@@ -23,7 +23,7 @@ from classes.proxy.Matcher import PROXY_CHANNEL_TYPES
 from database.database import Characters
 from database.transactions.AutoproxyTransactions import AutoproxyTransactions
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
-from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions, PENDING, RETIRED
+from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions, DEAD, PENDING, RETIRED
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 from views.buttons.Confirm import ask
@@ -95,8 +95,8 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		await interaction.response.defer(ephemeral=True)
 		if (character := await self._own_character(interaction, name)) is None :
 			return
-		if character.state == RETIRED :
-			return await interaction.followup.send(f"{character.name} is retired and cannot be edited.")
+		if character.state in (RETIRED, DEAD) :
+			return await interaction.followup.send(f"{character.name} is {character.state} and cannot be edited.")
 		await CharacterFlow.begin(interaction, EDIT, character)
 
 	# ============================================================
@@ -110,8 +110,8 @@ class Character(commands.GroupCog, name="Character", group_name="character") :
 		await interaction.response.defer(ephemeral=True)
 		if (character := await self._own_character(interaction, name)) is None :
 			return
-		if character.state == RETIRED :
-			return await interaction.followup.send(f"{character.name} is retired and cannot be changed.")
+		if character.state in (RETIRED, DEAD) :
+			return await interaction.followup.send(f"{character.name} is {character.state} and cannot be changed.")
 		await CharacterFlow.begin(interaction, RESPEC, character)
 
 	# ============================================================

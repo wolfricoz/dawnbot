@@ -12,6 +12,8 @@ PENDING = "pending"
 APPROVED = "approved"
 DENIED = "denied"
 RETIRED = "retired"
+# Died in a lethal fight (see classes/characters/Death.py).
+DEAD = "dead"
 
 # Columns add() and update() accept as keyword arguments.
 FIELDS = ["name", "state", "prefix", "suffix", "avatar_id", "species_id", "occupation_id", "strength", "perception",
@@ -84,11 +86,11 @@ class CharacterTransactions(DatabaseTransactions) :
 
 	# ============================================================
 	def count_active(self, user_id: int, guild_id: int) -> int :
-		"""How many of the user's characters count toward the server's cap: every one that is not retired."""
+		"""How many of the user's characters count toward the server's cap: every one that is not retired or dead."""
 		with self.createsession() as session :
 			return session.scalar(
 				Select(func.count(Characters.id)).where(Characters.uid == user_id, Characters.guild_id == guild_id,
-				                                        Characters.state != RETIRED)) or 0
+				                                        Characters.state.notin_([RETIRED, DEAD]))) or 0
 
 	# ============================================================
 	def trigger_taken(self, user_id: int, guild_id: int, prefix: str | None, suffix: str | None,

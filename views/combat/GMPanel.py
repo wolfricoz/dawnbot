@@ -66,6 +66,7 @@ class GMPanel(discord.ui.View) :
 		self.add_item(GMButton("roles", "GM roles", 3))
 		self.add_item(GMButton("death", "Death / spare", 4, disabled=not running or not fight.lethal))
 		self.add_item(GMButton("rewards", "Rewards", 4, discord.ButtonStyle.success, disabled=not ended))
+		self.add_item(GMButton("aftermath", "Injuries / broken gear", 4, disabled=state == SETUP))
 
 	# ============================================================
 	async def interaction_check(self, interaction: discord.Interaction) -> bool :
@@ -426,8 +427,8 @@ class GMPanel(discord.ui.View) :
 			combatant = fight.combatant(combatant_id)
 			options = [Option("Spare them (stable)", "spare")]
 			if combatant.state == DYING :
-				options.insert(0, Option("Confirm the death", "death",
-				                         "The character dies and is retired" if combatant.character_id else None))
+				note = "The character dies: it stops posting and its post is locked" if combatant.character_id else None
+				options.insert(0, Option("Confirm the death", "death", note))
 
 			async def decided(last: discord.Interaction, values: list[str]) :
 				if values[0] == "death" :
@@ -446,11 +447,51 @@ class GMPanel(discord.ui.View) :
 		async def typed(form_interaction: discord.Interaction, fields: list[str]) :
 			await form_interaction.response.defer(ephemeral=True)
 			await CombatFlow.give_rewards(form_interaction.client, form_interaction, self.fight_id,
-			                              max(0, number(fields[0]) or 0), max(0, number(fields[1]) or 0))
+			                              max(0, number(fields[0]) or 0), max(0, number(fields[1]) or 0), fields[2])
 
 		await interaction.response.send_modal(Form("Rewards for each winner", [
-			Field("XP", str(xp), str(xp), max_length=7), Field("Currency", str(currency), str(currency), max_length=9)],
-			typed))
+			Field("XP", str(xp), str(xp), max_length=7), Field("Currency", str(currency), str(currency), max_length=9),
+			Field("Gear (catalog items, separated by commas)", "Healing Draught, Hedge Knife", required=False,
+			      max_length=300)], typed))
+
+	# ============================================================
+	async def do_aftermath(self, interaction: discord.Interaction, fight: Fight) -> None :
+		"""Picks a character in the fight, then adds an injury to its sheet or marks one of its items broken."""
+		from classes.gear.Gear import Gear
+
+		characters = [combatant for combatant in fight.combatants if combatant.character_id]
+		if not characters :
+			return await reply(interaction, "There are no characters in this fight.")
+
+		async def chosen(next_interaction: discord.Interaction, combatant_id: int) :
+			character_id = fight.combatant(combatant_id).character_id
+			entries = [entry for entry, _ in Gear.inventory(character_id)]
+
+			async def decided(choice_interaction: discord.Interaction, values: list[str]) :
+				if values[0] == "injury" :
+					async def written(form_interaction: discord.Interaction, fields: list[str]) :
+						await form_interaction.response.defer(ephemeral=True)
+						await CombatFlow.add_injury(form_interaction.client, form_interaction, self.fight_id,
+						                            character_id, fields[0])
+
+					return await choice_interaction.response.send_modal(Form("Injury", [
+						Field("What happened to them?", "A deep cut across the left arm", long=True,
+						      max_length=300)], written))
+
+				async def broken(item_interaction: discord.Interaction, picked: list[str]) :
+					await item_interaction.response.defer(ephemeral=True)
+					await CombatFlow.break_gear(item_interaction.client, item_interaction, self.fight_id,
+					                            int(picked[0]))
+
+				await pick(choice_interaction, "Which item broke?",
+				           [Option(entry.name, entry.id, entry.kind) for entry in entries], "Item", broken)
+
+			options = [Option("Add an injury to the sheet", "injury")]
+			if entries :
+				options.append(Option("Mark an item broken", "broken"))
+			await pick(next_interaction, "What happened?", options, "Choose", decided)
+
+		await self._pick_combatant(interaction, fight, characters, "Whose?", chosen)
 
 
 class RolesView(discord.ui.View) :

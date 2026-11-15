@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from classes.combat import Abilities as AbilityRules
 from classes.combat import Conditions as C
-from classes.combat import Rules
+from classes.combat import Items, Rules
 from classes.combat.DamageTypes import ALWAYS, ARC, CLEANSE, CONDITION, IGNORE_DT, RESTORATION, STRONG_HIT
 from classes.combat.State import ACTIVE, ASYNC, AUTO, Combatant, DEAD, DOWNED, DYING, ENDED, FLED, Fight, GM, LIVE, \
 	PAUSED, PLAYER, REMOVED, SETUP, STABLE, STANDING
@@ -70,6 +70,8 @@ class Outcome :
 	ended: bool = False
 	# Characters whose death the GM confirmed: {combatant id: character id}.
 	deaths: dict = field(default_factory=dict)
+	# Consumables (character_gear ids) used up by this action.
+	used_items: list = field(default_factory=list)
 
 	# ============================================================
 	def add(self, text: str) -> None :
@@ -706,7 +708,8 @@ class Engine :
 	def revive(self, actor: Combatant, target_id) -> Outcome :
 		self.require_turn(actor)
 		if self.crippled(actor, "intelligence") :
-			raise CombatError(f"{actor.name}'s Intelligence is too low to revive anyone.")
+			raise CombatError(f"{actor.name}'s Intelligence is too low to revive anyone without a healing item "
+			                  f"(use one with Use item).")
 		target = self._target(actor, target_id, enemy=False, standing=False)
 		self.revive_now(actor, target)
 		return self.finish_action(actor)
@@ -729,6 +732,55 @@ class Engine :
 			self.say(f"🩹 **{actor.name}** revives **{target.name}** ({roll.text('DC')}). They're back with 1 HP.")
 		else :
 			self.say(f"🩹 **{actor.name}** tries to revive **{target.name}** but fails ({roll.text('DC')}).")
+
+	# ============================================================
+	def use_item(self, actor: Combatant, item_key: str | None, target_id) -> Outcome :
+		"""Uses a consumable on the actor or an ally (2 AP). A healing item on a downed ally revives them."""
+		self.require_turn(actor)
+		item = actor.item(item_key)
+		if item is None :
+			raise CombatError(f"{actor.name} doesn't carry that item (or already used it).")
+		target = self._target(actor, target_id if target_id is not None else actor.id, enemy=False, standing=False)
+		if target.state == DEAD :
+			raise CombatError(f"{target.name} is dead.")
+		if target.down and item["use"] != Items.HEAL :
+			raise CombatError(f"Only a healing item helps {target.name} while they're down.")
+		self._spend(actor, Items.AP_ITEM)
+		self.apply_item(actor, item, target)
+		return self.finish_action(actor)
+
+	# ============================================================
+	def apply_item(self, actor: Combatant, item: dict, target: Combatant) -> None :
+		"""Uses up the item and applies it, without the turn checks (automatic moves use it too)."""
+		actor.stats.setdefault("used_items", []).append(item["entry_id"])
+		self.outcome.used_items.append(item["entry_id"])
+		on = "" if target.id == actor.id else f" on **{target.name}**"
+		use, condition = item["use"], item.get("condition")
+		if use == Items.HEAL :
+			was_down = target.down
+			amount, rolls = Rules.roll_dice(item["dice"], 0, rng=self.rng)
+			healed = self.heal(target, max(1, amount))
+			note = " (an automatic revive)" if was_down else ""
+			self.say(f"🧪 **{actor.name}** uses {item['name']}{on}: +{healed} HP ({item['dice']} {rolls}){note}.")
+		elif use == Items.CURE :
+			present = [entry["name"] for entry in target.conditions if entry.get("name") in C.HARMFUL]
+			name = condition if condition in present else (present[0] if present and condition is None else None)
+			if name :
+				C.remove(target.conditions, name)
+				self.say(f"🧪 **{actor.name}** uses {item['name']}{on}: no longer {C.label(name).lower()}.")
+			else :
+				self.say(f"🧪 **{actor.name}** uses {item['name']}{on}, but there's nothing for it to cure.")
+		elif use == Items.BOOST :
+			value = None
+			if condition == C.SHIELDED :
+				value, _ = Rules.roll_dice(item["dice"], 0, rng=self.rng)
+				value = max(1, value)
+			C.add(target.conditions, condition, turns=int(item.get("turns") or 2), value=value)
+			extra = f" for {value}" if value else ""
+			self.say(f"🧪 **{actor.name}** uses {item['name']}{on}: {C.label(condition).lower()}{extra}.")
+		else :
+			self.say(f"🧪 **{actor.name}** uses {item['name']}{on}.\n-# The GM settles what it does.")
+			self.outcome.gm_pings.append(f"{actor.name} used {item['name']}; settle what it does.")
 
 	# ============================================================
 	def flee(self, actor: Combatant) -> Outcome :

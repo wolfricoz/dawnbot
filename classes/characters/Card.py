@@ -6,7 +6,7 @@ from classes.gear.Gear import ARMOR, Gear
 from classes.kernel.ConfigData import ConfigData
 from database.database import CharacterInfo, Characters, SheetFields
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
-from database.transactions.CharacterTransactions import APPROVED, DENIED, PENDING, RETIRED
+from database.transactions.CharacterTransactions import APPROVED, DEAD, DENIED, PENDING, RETIRED
 from database.transactions.OccupationTransactions import OccupationTransactions
 from database.transactions.SheetFieldTransactions import SheetFieldTransactions
 from database.transactions.SpeciesTransactions import SpeciesTransactions
@@ -19,9 +19,10 @@ FIELD_LIMIT = 1024
 # Answers longer than this get their own lines instead of sharing a line with their label.
 INLINE_ANSWER = 80
 
-STATE_LABELS = {PENDING : "Waiting for review", APPROVED : "Approved", DENIED : "Denied", RETIRED : "Retired"}
+STATE_LABELS = {PENDING : "Waiting for review", APPROVED : "Approved", DENIED : "Denied", RETIRED : "Retired",
+                DEAD : "Dead"}
 STATE_COLORS = {PENDING : discord.Color.gold(), APPROVED : discord.Color.green(), DENIED : discord.Color.red(),
-                RETIRED : discord.Color.light_grey()}
+                RETIRED : discord.Color.light_grey(), DEAD : discord.Color.darker_grey()}
 
 
 # ============================================================
