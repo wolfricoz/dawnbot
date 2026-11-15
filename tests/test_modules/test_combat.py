@@ -211,7 +211,7 @@ class TestAbilityRules(unittest.TestCase) :
 		abilities = [("ability", "strong", False), ("ability", "weak", False)]
 		self.assertIn("Strong", Abilities.check_learn(abilities, "ability", "strong", legendary=False))
 		self.assertIsNone(Abilities.check_learn(abilities, "ability", "normal", legendary=False))
-		self.assertIn("3 abilities", Abilities.check_learn(abilities + [("ability", "weak", False)], "ability", "weak",
+		self.assertIn("3 ability slots", Abilities.check_learn(abilities + [("ability", "weak", False)], "ability", "weak",
 		                                                   legendary=False))
 
 

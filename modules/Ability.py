@@ -1,5 +1,6 @@
 """Abilities and spells players build: creating and editing them (staff review them), browsing, learning and
-forgetting. The rules live in classes/combat/Abilities.py."""
+forgetting. Active abilities are used on a turn; passive abilities are always on and take two ability slots. The rules
+live in classes/combat/Abilities.py and classes/combat/Passives.py."""
 import logging
 
 import discord
@@ -10,13 +11,13 @@ from discord.ext import commands
 from classes.characters.Access import Access
 from classes.characters.ForumPost import ForumPost
 from classes.combat import Abilities as AbilityRules
-from classes.combat import Conditions
+from classes.combat import Conditions, Passives
 from classes.combat.AbilityFlow import AbilityFlow
 from classes.combat.AutoComplete import AutoComplete
 from classes.combat.DamageTypes import DamageTypes
 from classes.combat.Rules import STATS
 from database.database import Abilities
-from database.transactions.AbilityTransactions import APPROVED, AbilityTransactions, PENDING
+from database.transactions.AbilityTransactions import APPROVED, AbilityTransactions, PASSIVE, PENDING
 from database.transactions.CharacterTransactions import APPROVED as CHARACTER_APPROVED, CharacterTransactions
 from views.combat.Pickers import Field, Form, reply
 
@@ -35,6 +36,29 @@ CONDITION_CHOICES = [Choice(name=f"{Conditions.label(name)}: {Conditions.DEFINIT
                      for name in Conditions.HARMFUL + AbilityRules.BOOSTS]
 SECONDARY_CHOICES = [Choice(name=f"{Conditions.label(name)}: {Conditions.DEFINITIONS[name][2]}"[:100], value=name)
                      for name in Conditions.HARMFUL]
+PASSIVE_TIER_CHOICES = [Choice(name=f"{tier.capitalize()} ({index} of to hit, AC, damage...)", value=tier)
+                        for tier, index in ((Passives.WEAK, "+1"), (Passives.NORMAL, "+2"), (Passives.STRONG, "+3"))]
+PASSIVE_TYPE_CHOICES = [
+	Choice(name="Bonus: always +to hit, damage, AC, DT, HP, AP or Sequence", value=Passives.BONUS),
+	Choice(name="Resistance: less damage from a damage type, magic or physical", value=Passives.RESIST),
+	Choice(name="Immunity: a condition never takes hold (Normal)", value=Passives.IMMUNE),
+	Choice(name="Trigger: regenerate, last stand, strong hits add a condition, counter", value=Passives.TRIGGER),
+	Choice(name="Aura: standing allies get a bonus", value=Passives.AURA),
+	Choice(name="Stacks: each hit taken (e.g. by magic) adds a growing bonus", value=Passives.STACKS)]
+FIELD_CHOICES = [Choice(name=Passives.FIELD_LABELS[field], value=field) for field in Passives.FIELDS]
+TRIGGER_CHOICES = [Choice(name="Regenerate: heals at the start of each turn", value=Passives.REGENERATE),
+                   Choice(name="Last stand: stays at 1 HP instead of going down", value=Passives.LAST_STAND),
+                   Choice(name="On a strong hit: adds the condition", value=Passives.ON_STRONG_HIT),
+                   Choice(name="Counter: hits back at melee attackers that miss", value=Passives.COUNTER)]
+HARMFUL_CHOICES = SECONDARY_CHOICES
+PASSIVE_HELP = {
+	"tier"      : "Weak, Normal or Strong; sets the size (at most one Strong ability or passive)",
+	"type"      : "What kind of passive it is",
+	"field"     : "Bonus, aura or stacks: what it adds to",
+	"target"    : "Bonus: melee, ranged, magic or a damage type. Resistance/stacks: magic, physical, any or a type",
+	"trigger"   : "Trigger: when it fires",
+	"condition" : "Immunity: the condition it blocks. On a strong hit: the condition it adds",
+}
 TEXT_LIMIT = 1000
 
 
@@ -79,6 +103,13 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 		return [Choice(name=ability.name[:100], value=ability.name[:100])
 		        for _, ability in AbilityTransactions().known(character.id)
 		        if current.lower() in ability.name.lower()][:25]
+
+	# ============================================================
+	async def _targets(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		"""Scopes and sources for passives: melee, ranged, magic, physical, any and the server's damage types."""
+		names = [Passives.MELEE, Passives.RANGED, Passives.MAGIC, Passives.PHYSICAL, Passives.ANY]
+		names += DamageTypes.names(interaction.guild_id)
+		return [Choice(name=name, value=name) for name in names if current.lower() in name.lower()][:25]
 
 	# == creating ==
 
@@ -161,6 +192,8 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 		staff = interaction.user.guild_permissions.manage_messages
 		if ability.creator_uid != interaction.user.id and not staff :
 			return await reply(interaction, "Only its creator or staff can change an ability.")
+		if ability.activation == PASSIVE :
+			return await reply(interaction, f"{ability.name} is a passive; change it with /ability passive_edit.")
 		if new_name and new_name.strip().lower() != ability.name.lower() and \
 				AbilityTransactions().find(interaction.guild_id, new_name.strip()) is not None :
 			return await reply(interaction, f"There already is an ability called {new_name}.")
@@ -187,6 +220,109 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 			Field("Description", default=ability.description, long=True, max_length=TEXT_LIMIT),
 			Field("Flavor the GM handles (optional)", default=ability.flavor, long=True, required=False,
 			      max_length=TEXT_LIMIT)], described))
+
+	# == passives ==
+
+	# ============================================================
+	def _passive_form(self, title: str, ability: Abilities | None, save) -> Form :
+		return Form(title[:45], [
+			Field("Description", "What it looks like in the story", default=ability.description if ability else None,
+			      long=True, max_length=TEXT_LIMIT),
+			Field("Flavor the GM handles (optional)", "Extra effects outside the rules",
+			      default=ability.flavor if ability else None, long=True, required=False, max_length=TEXT_LIMIT)],
+			save)
+
+	# ============================================================
+	@app_commands.command(name="passive", description="Builds a passive ability (always on, 2 slots); staff review it")
+	@app_commands.choices(tier=PASSIVE_TIER_CHOICES, type=PASSIVE_TYPE_CHOICES, field=FIELD_CHOICES,
+	                      trigger=TRIGGER_CHOICES, condition=HARMFUL_CHOICES)
+	@app_commands.autocomplete(target=_targets)
+	@app_commands.describe(**PASSIVE_HELP)
+	async def passive(self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100], tier: Choice[str],
+	                  type: Choice[str], field: Choice[str] = None, target: str = None, trigger: Choice[str] = None,
+	                  condition: Choice[str] = None) :
+		"""
+		Builds a passive ability: always on, never used on a turn. It takes 2 of a character's 3 ability slots (an
+		active ability takes 1), and spellcasters can't learn passives unless an event grants one. The tier sets its
+		size: Weak +1, Normal +2, Strong +3.
+
+		- `bonus`: +to hit, damage, AC (within the cap of 18), DT, max HP (+5/10/15), AP (+1/1/2) or Sequence
+		  (+2/4/6). To hit and damage can be limited with `target` (melee, ranged, magic or a damage type).
+		- `resistance`: hits from `target` (a damage type, magic or physical) do 2/4/6 less damage, at least 1.
+		- `immunity` (Normal): the `condition` never takes hold.
+		- `trigger`: regenerate (1d4/1d6/1d8 each turn), last stand (Normal once, Strong twice per fight), on a strong
+		  hit (adds `condition` for 1/2/3 turns) or counter (1d4/1d6/1d8 to a melee attacker that misses, once a round).
+		- `aura`: standing allies get +1/+1/+2 to hit, damage or AC.
+		- `stacks`: each hit it takes from `target` (any, magic, physical or a damage type) adds +1 to hit, damage or
+		  AC, up to 2/3/5 stacks, for the rest of the fight.
+		"""
+		problem = AbilityFlow.creation_problem(interaction.guild_id, interaction.user.guild_permissions.manage_messages)
+		if problem :
+			return await reply(interaction, problem)
+		if AbilityTransactions().find(interaction.guild_id, name.strip()) is not None :
+			return await reply(interaction, f"There already is an ability called {name}.")
+		values, problem = AbilityFlow.check_passive(interaction.guild_id, tier.value, {
+			"type" : type.value, "field" : value_of(field), "scope" : target, "trigger" : value_of(trigger),
+			"condition" : value_of(condition)})
+		if problem :
+			return await reply(interaction, problem)
+
+		async def described(form_interaction: discord.Interaction, fields: list[str]) :
+			await form_interaction.response.defer(ephemeral=True)
+			ability = AbilityTransactions().add(interaction.guild_id, name.strip(), creator_uid=interaction.user.id,
+			                                    description=fields[0].strip() or None,
+			                                    flavor=fields[1].strip() or None, state=PENDING, **values)
+			if ability is None :
+				return await reply(form_interaction, f"There already is an ability called {name}.")
+			logging.info(f"{interaction.user.name} created passive ability {ability.id} in {interaction.guild.name}")
+			await self._submit(form_interaction, ability, created=True)
+
+		await interaction.response.send_modal(self._passive_form(name, None, described))
+
+	# ============================================================
+	@app_commands.command(name="passive_edit", description="Changes one of your passive abilities; it goes back to "
+	                                                       "review")
+	@app_commands.choices(tier=PASSIVE_TIER_CHOICES, type=PASSIVE_TYPE_CHOICES, field=FIELD_CHOICES,
+	                      trigger=TRIGGER_CHOICES, condition=HARMFUL_CHOICES)
+	@app_commands.autocomplete(name=_abilities, target=_targets)
+	@app_commands.describe(**PASSIVE_HELP)
+	async def passive_edit(self, interaction: discord.Interaction, name: str,
+	                       new_name: app_commands.Range[str, 1, 100] = None, tier: Choice[str] = None,
+	                       type: Choice[str] = None, field: Choice[str] = None, target: str = None,
+	                       trigger: Choice[str] = None, condition: Choice[str] = None) :
+		"""
+		Changes a passive ability you created (staff can change any). Options you leave out stay as they are; a form
+		lets you change the description and flavor. It goes back to staff for review and doesn't work in fights
+		until it is approved again. Type `none` as `target` to remove its limit.
+		"""
+		ability = AbilityTransactions().find(interaction.guild_id, name)
+		if ability is None :
+			return await reply(interaction, f"There is no ability called {name}.")
+		if ability.creator_uid != interaction.user.id and not interaction.user.guild_permissions.manage_messages :
+			return await reply(interaction, "Only its creator or staff can change an ability.")
+		if ability.activation != PASSIVE :
+			return await reply(interaction, f"{ability.name} is an active ability; change it with /ability edit.")
+		if new_name and new_name.strip().lower() != ability.name.lower() and \
+				AbilityTransactions().find(interaction.guild_id, new_name.strip()) is not None :
+			return await reply(interaction, f"There already is an ability called {new_name}.")
+		current = Passives.normalise(ability.passive)
+		scope = current["scope"] if target is None else (None if target.strip().lower() in ("none", "-") else target)
+		values, problem = AbilityFlow.check_passive(interaction.guild_id, value_of(tier) or ability.tier, {
+			"type" : value_of(type) or current["type"], "field" : value_of(field) or current["field"], "scope" : scope,
+			"trigger" : value_of(trigger) or current["trigger"],
+			"condition" : value_of(condition) or current["condition"]})
+		if problem :
+			return await reply(interaction, problem)
+
+		async def described(form_interaction: discord.Interaction, fields: list[str]) :
+			await form_interaction.response.defer(ephemeral=True)
+			updated = AbilityTransactions().update(ability.id, name=(new_name or ability.name).strip(),
+			                                       description=fields[0].strip() or None,
+			                                       flavor=fields[1].strip() or None, state=PENDING, **values)
+			logging.info(f"{interaction.user.name} edited passive ability {ability.id} in {interaction.guild.name}")
+			await self._submit(form_interaction, updated, created=False)
+
+		await interaction.response.send_modal(self._passive_form(new_name or ability.name, ability, described))
 
 	# == browsing ==
 
@@ -229,8 +365,9 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 	async def learn(self, interaction: discord.Interaction, character: str, ability: str) :
 		"""
 		Teaches your character an approved ability. Spellcasters know at most 6 spells (1 Cantrip, 2 Weak, 2 Normal,
-		1 Strong); other characters at most 3 abilities (1 Strong). A character can't have both spells and abilities,
-		unless an event granted them. Legendary characters get one extra slot.
+		1 Strong); other characters have 3 ability slots, where an active ability takes 1 and a passive 2 (at most 1
+		Strong). A character can't have both spells and abilities, unless an event granted them. Legendary characters
+		get one extra slot.
 		"""
 		record = CharacterTransactions().get(interaction.user.id, interaction.guild_id, character)
 		if record is None or record.state != CHARACTER_APPROVED :

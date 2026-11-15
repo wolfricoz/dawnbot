@@ -9,7 +9,9 @@ DENIED = "denied"
 
 ABILITY_FIELDS = ["name", "description", "flavor", "kind", "school_id", "stat", "tier", "effect", "damage_type",
                   "condition", "area", "secondary", "state", "review_message_id", "forum_thread_id",
-                  "forum_message_id", "tag_ids", "creator_uid"]
+                  "forum_message_id", "tag_ids", "creator_uid", "activation", "passive"]
+ACTIVE = "active"
+PASSIVE = "passive"
 SCHOOL_FIELDS = ["name", "description", "casting_stat", "state", "standard", "review_message_id", "creator_uid"]
 
 

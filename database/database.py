@@ -653,6 +653,9 @@ class Abilities(Base) :
 	condition: Mapped[str | None] = mapped_column(String(16), nullable=True)
 	area: Mapped[bool] = mapped_column(Boolean, default=False)
 	secondary: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# active (used on a turn) or passive (always on; its parts are in passive, see classes/combat/Passives.py).
+	activation: Mapped[str] = mapped_column(String(16), default="active", server_default="active")
+	passive: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 	state: Mapped[str] = mapped_column(String(16), default="pending")
 	review_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	forum_thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

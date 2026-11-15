@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from classes.combat import Abilities as AbilityRules
 from classes.combat import Conditions as C
-from classes.combat import Items, Rules
+from classes.combat import Items, Passives as P, Rules
 from classes.combat.DamageTypes import ALWAYS, ARC, CLEANSE, CONDITION, IGNORE_DT, RESTORATION, STRONG_HIT
 from classes.combat.State import ACTIVE, ASYNC, AUTO, Combatant, DEAD, DOWNED, DYING, ENDED, FLED, Fight, GM, LIVE, \
 	PAUSED, PLAYER, REMOVED, SETUP, STABLE, STANDING
@@ -115,6 +115,7 @@ class Engine :
 	def effective_ac(self, combatant: Combatant) -> int :
 		"""AC with unspent AP and conditions; this may go above the cap of 18."""
 		value = combatant.ac + C.amount(combatant.conditions, C.GUARD)
+		value += self.stacks(combatant, P.AC) + self.aura(combatant, P.AC)
 		if C.has(combatant.conditions, C.SLOWED) :
 			value += SLOWED_AC
 		if C.has(combatant.conditions, C.EXPOSED) :
@@ -139,13 +140,121 @@ class Engine :
 			bonuses.append(Rules.Bonus("marked", MARKED_BONUS))
 		return bonuses
 
+	# == passives ==
+
 	# ============================================================
-	def damage(self, target: Combatant, amount: int, source: Combatant | None = None) -> int :
-		"""Deals damage through the target's shield; a target at 0 HP is downed.
+	@staticmethod
+	def passive_state(combatant: Combatant, passive: dict) -> dict :
+		"""What a passive keeps track of during the fight (stacks, uses, the round it countered)."""
+		return combatant.stats.setdefault("passive_state", {}).setdefault(str(passive["id"]), {})
+
+	# ============================================================
+	def stacks(self, combatant: Combatant, field: str) -> int :
+		return sum(int(self.passive_state(combatant, passive).get("stacks") or 0)
+		           for passive in P.of_type(combatant.passives, P.STACKS) if passive.get("field") == field)
+
+	# ============================================================
+	def aura(self, combatant: Combatant, field: str) -> int :
+		"""The best aura bonus to a field from the combatant's standing allies (its own auras don't count)."""
+		best = 0
+		for ally in self.fight.allies(combatant, include_self=False) :
+			if not ally.standing :
+				continue
+			for passive in P.of_type(ally.passives, P.AURA) :
+				if passive.get("field") == field :
+					best = max(best, P.AURA_AMOUNTS[P.index(passive["tier"])])
+		return best
+
+	# ============================================================
+	def passive_roll(self, actor: Combatant, type_name: str | None, magic: bool, ranged: bool) -> tuple[int, int] :
+		"""The to hit and damage the actor's passives, stacks and allies' auras add to this attack."""
+		passives = actor.passives
+		to_hit = P.roll_bonus(passives, P.TO_HIT, type_name, magic, ranged) + self.stacks(actor, P.TO_HIT) \
+		         + self.aura(actor, P.TO_HIT)
+		damage = P.roll_bonus(passives, P.DAMAGE, type_name, magic, ranged) + self.stacks(actor, P.DAMAGE) \
+		         + self.aura(actor, P.DAMAGE)
+		return to_hit, damage
+
+	# ============================================================
+	def inflict(self, target: Combatant, name: str, turns: int) -> bool :
+		"""Gives the target a harmful condition, unless a passive makes it immune. False when it didn't take hold."""
+		if any(passive.get("condition") == name for passive in P.of_type(target.passives, P.IMMUNE)) :
+			self.say(f"-# {target.name} is immune to being {C.label(name).lower()}.")
+			return False
+		return C.add(target.conditions, name, turns=turns)
+
+	# ============================================================
+	def strong_hit_triggers(self, actor: Combatant, target: Combatant) -> None :
+		for passive in P.triggers(actor.passives, P.ON_STRONG_HIT) :
+			name = passive.get("condition")
+			if target.standing and name and self.inflict(target, name, P.TRIGGER_TURNS[P.index(passive["tier"])]) :
+				self.say(f"-# {passive['name']}: {target.name} is {C.label(name).lower()}.")
+
+	# ============================================================
+	def counter(self, defender: Combatant, attacker: Combatant, weapon: dict) -> None :
+		"""A defender with a counter passive hits back at a melee attacker that missed it, once per round."""
+		if weapon.get("range") == Rules.RANGED or not defender.standing or not attacker.standing :
+			return
+		for passive in P.triggers(defender.passives, P.COUNTER) :
+			state = self.passive_state(defender, passive)
+			if state.get("round") == self.fight.round :
+				continue
+			state["round"] = self.fight.round
+			dice = P.TRIGGER_DICE[P.index(passive["tier"])]
+			amount, rolls = Rules.roll_dice(dice, rng=self.rng)
+			self.say(f"-# {passive['name']}: {defender.name} counters {attacker.name} for {amount} ({dice} {rolls}).")
+			self.damage(attacker, amount, defender)
+			return
+
+	# ============================================================
+	def resist(self, target: Combatant, amount: int, type_name: str | None, magic: bool, ranged: bool) -> int :
+		"""Damage after the target's resistances (at least 1 when there was any)."""
+		reduction = sum(P.RESIST_AMOUNTS[P.index(passive["tier"])] for passive in P.of_type(target.passives, P.RESIST)
+		                if P.matches(passive.get("scope"), type_name, magic, ranged))
+		if not reduction or amount <= 0 :
+			return amount
+		reduced = max(1, amount - reduction)
+		if reduced < amount :
+			self.say(f"-# {target.name} resists {amount - reduced}.")
+		return reduced
+
+	# ============================================================
+	def last_stand(self, target: Combatant) -> bool :
+		"""Uses a last stand passive to keep the target at 1 HP; False when it has none left."""
+		for passive in P.triggers(target.passives, P.LAST_STAND) :
+			state = self.passive_state(target, passive)
+			used = int(state.get("uses") or 0)
+			if used < P.LAST_STAND_USES[P.index(passive["tier"])] :
+				state["uses"] = used + 1
+				target.hp = 1
+				self.say(f"🛡️ {passive['name']}: **{target.name}** refuses to fall and stays at 1 HP.")
+				return True
+		return False
+
+	# ============================================================
+	def gain_stacks(self, target: Combatant, type_name: str | None, magic: bool, ranged: bool) -> None :
+		for passive in P.of_type(target.passives, P.STACKS) :
+			if not P.matches(passive.get("scope"), type_name, magic, ranged) :
+				continue
+			state = self.passive_state(target, passive)
+			limit = P.MAX_STACKS[P.index(passive["tier"])]
+			stacks = int(state.get("stacks") or 0)
+			if stacks < limit :
+				state["stacks"] = stacks + 1
+				self.say(f"-# {passive['name']}: {target.name} gains a stack ({stacks + 1}/{limit}, +{stacks + 1} "
+				         f"{P.FIELD_LABELS[passive['field']]}).")
+
+	# ============================================================
+	def damage(self, target: Combatant, amount: int, source: Combatant | None = None, type_name: str | None = None,
+	           magic: bool = False, ranged: bool = False) -> int :
+		"""Deals damage through the target's resistances (hits from a source only) and shield; a target at 0 HP is
+		downed, unless a last stand passive keeps it up. A hit can give the target stacks.
 
 		@return: the damage that reached its HP.
 		"""
 		amount = max(0, int(amount))
+		if source is not None :
+			amount = self.resist(target, amount, type_name, magic, ranged)
 		shield = C.get(target.conditions, C.SHIELDED)
 		if shield and amount :
 			absorbed = min(int(shield.get("amount") or 0), amount)
@@ -158,13 +267,17 @@ class Engine :
 		target.hp -= amount
 		if source is not None :
 			target.last_attacker_id = source.id
-		if target.hp <= 0 and target.standing :
+		if target.hp <= 0 and target.standing and amount > 0 and self.last_stand(target) :
+			pass
+		elif target.hp <= 0 and target.standing :
 			target.hp = 0
 			target.state = DOWNED
 			target.death_successes = target.death_failures = 0
 			C.remove(target.conditions, C.GUARD)
 			self.say(f"💀 **{target.name}** is downed!")
 		target.hp = max(0, target.hp)
+		if source is not None and amount > 0 and target.standing :
+			self.gain_stacks(target, type_name, magic, ranged)
 		return amount
 
 	# ============================================================
@@ -309,6 +422,13 @@ class Engine :
 			healed = self.heal(combatant, amount)
 			if healed :
 				self.say(f"💚 {combatant.name} regenerates {healed} HP.")
+		for passive in P.triggers(combatant.passives, P.REGENERATE) :
+			if not combatant.standing :
+				break
+			amount, _ = Rules.roll_dice(P.TRIGGER_DICE[P.index(passive["tier"])], rng=self.rng)
+			healed = self.heal(combatant, amount)
+			if healed :
+				self.say(f"💚 {passive['name']}: {combatant.name} heals {healed} HP.")
 		if not combatant.standing :
 			combatant.acted = True
 			C.count_down(combatant.conditions)
@@ -508,7 +628,7 @@ class Engine :
 		kind = effect.get("kind")
 		if kind == CONDITION and target.standing :
 			name = effect.get("condition")
-			if C.add(target.conditions, name, turns=int(effect.get("turns") or 1)) :
+			if self.inflict(target, name, int(effect.get("turns") or 1)) :
 				self.say(f"-# {type_name}: {target.name} is {C.label(name).lower()}.")
 		elif kind == ARC :
 			others = [enemy for enemy in self.fight.enemies(source) if enemy.id != target.id]
@@ -516,7 +636,7 @@ class Engine :
 				other = self.rng.choice(others)
 				arc = max(1, damage_done // 2)
 				self.say(f"-# {type_name}: it arcs to {other.name} for {arc}.")
-				self.damage(other, arc, source)
+				self.damage(other, arc, source, type_name=type_name)
 
 	# ============================================================
 	def attack(self, actor: Combatant, target_id, weapon_key: str | None = None, aimed: bool = False) -> Outcome :
@@ -537,7 +657,11 @@ class Engine :
 		if aimed :
 			bonuses.append(Rules.Bonus("aimed", Rules.AIMED_PENALTY))
 		bonuses += self.situational(actor, target)
-		disadvantage = weapon.get("range") == Rules.RANGED and self.crippled(actor, "perception")
+		ranged = weapon.get("range") == Rules.RANGED
+		passive_hit, passive_damage = self.passive_roll(actor, weapon.get("type"), False, ranged)
+		if passive_hit :
+			bonuses.append(Rules.Bonus("passives", passive_hit))
+		disadvantage = ranged and self.crippled(actor, "perception")
 		crit_from = int(actor.stats.get("crit_min", 20)) - Rules.weapon_crit_widen(weapon)
 		roll = Rules.roll_attack(bonuses, self.effective_ac(target), crit_from, int(actor.stats.get("fumble_max", 1)),
 		                         disadvantage=disadvantage, confirm_crits=bool(actor.stats.get("confirm_crits")),
@@ -547,24 +671,28 @@ class Engine :
 		if roll.fumble :
 			C.add(actor.conditions, C.EXPOSED, turns=1)
 			self.say(f"{head} → **fumble!** {actor.name} is left open (-2 AC).")
+			self.counter(target, actor, weapon)
 			return
 		if not roll.hit :
 			self.say(f"{head} → miss.")
+			self.counter(target, actor, weapon)
 			return
 		type_name = weapon.get("type")
 		effect, trigger = self.effect_of(type_name)
 		triggered = effect is not None and (trigger == ALWAYS or (trigger == STRONG_HIT and roll.strong))
 		ignore_dt = aimed or (triggered and effect.get("kind") == IGNORE_DT)
-		bonus = Rules.damage_bonus(actor.stats, weapon, actor.base)
+		bonus = Rules.damage_bonus(actor.stats, weapon, actor.base) + passive_damage
 		if C.has(actor.conditions, C.WEAKENED) :
 			bonus += WEAKENED_PENALTY
 		damage = Rules.roll_damage(weapon.get("dice", "1d4"), bonus, target.dt, crit=roll.crit,
 		                           extra_dice=1 if aimed else 0, ignore_dt=ignore_dt, rng=self.rng)
 		label = "**crit!**" if roll.crit else ("strong hit" if roll.strong else "hit")
 		self.say(f"{head} → {label} for **{damage.total}** ({damage.text()}).")
-		done = self.damage(target, damage.total, actor)
+		done = self.damage(target, damage.total, actor, type_name=type_name, ranged=ranged)
 		if triggered :
 			self.apply_type_effect(effect, target, done, actor, type_name)
+		if roll.strong :
+			self.strong_hit_triggers(actor, target)
 
 	# ============================================================
 	def ability_uses_left(self, actor: Combatant, ability: dict) -> int | None :
@@ -630,6 +758,9 @@ class Engine :
 			bonuses = [Rules.Bonus(Rules.STAT_SHORT.get(stat, stat), mod),
 			           Rules.Bonus("armor", int((actor.stats.get("armor") or {}).get("ability_hit_mod") or 0))]
 			bonuses += self.situational(actor, target)
+			passive_hit, passive_damage = self.passive_roll(actor, type_name, True, False)
+			if passive_hit :
+				bonuses.append(Rules.Bonus("passives", passive_hit))
 			roll = Rules.roll_attack(bonuses, self.effective_ac(target), int(actor.stats.get("crit_min", 20)),
 			                         int(actor.stats.get("fumble_max", 1)), disadvantage=disadvantage,
 			                         confirm_crits=bool(actor.stats.get("confirm_crits")), rng=self.rng)
@@ -643,16 +774,18 @@ class Engine :
 				return
 			triggered = type_effect is not None and (trigger == ALWAYS or (trigger == STRONG_HIT and roll.strong))
 			ignore_dt = triggered and type_effect.get("kind") == IGNORE_DT
-			bonus = mod + (WEAKENED_PENALTY if C.has(actor.conditions, C.WEAKENED) else 0)
+			bonus = mod + passive_damage + (WEAKENED_PENALTY if C.has(actor.conditions, C.WEAKENED) else 0)
 			damage = Rules.roll_damage(dice, bonus, target.dt, crit=roll.crit, ignore_dt=ignore_dt, rng=self.rng)
 			label = "**crit!**" if roll.crit else ("strong hit" if roll.strong else "hit")
 			self.say(f"{head} → {label} for **{damage.total}** ({damage.text()}).")
-			done = self.damage(target, damage.total, actor)
+			done = self.damage(target, damage.total, actor, type_name=type_name, magic=True)
 			secondary = ability.get("secondary")
-			if secondary and target.standing and C.add(target.conditions, secondary, turns=AbilityRules.turns(tier)) :
+			if secondary and target.standing and self.inflict(target, secondary, AbilityRules.turns(tier)) :
 				self.say(f"-# {target.name} is {C.label(secondary).lower()}.")
 			if triggered :
 				self.apply_type_effect(type_effect, target, done, actor, type_name)
+			if roll.strong :
+				self.strong_hit_triggers(actor, target)
 			return
 		if effect == AbilityRules.CONDITION :
 			name = ability.get("condition")
@@ -664,7 +797,7 @@ class Engine :
 				self.say(f"→ {target.name} resists ({save} vs DC {dc}).")
 				return
 			strong = save <= dc - Rules.STRONG_MARGIN
-			if C.add(target.conditions, name, turns=AbilityRules.turns(tier)) :
+			if self.inflict(target, name, AbilityRules.turns(tier)) :
 				self.say(f"→ {target.name} fails ({save} vs DC {dc}) and is {C.label(name).lower()}.")
 			else :
 				self.say(f"→ {target.name} fails ({save} vs DC {dc}) but shakes it off.")

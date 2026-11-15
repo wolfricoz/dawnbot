@@ -383,7 +383,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 		imported before the combat rework); nothing else about them changes.
 
 		Pick `legacy` to copy the old global armors and weapons tables instead, with their values converted to the
-		new combat rules and a price of 0 (set prices with /armory edit). Do this before migration 0013 drops them.
+		new combat rules and a price of 0 (set prices with /armory edit). Do this before migration 0014 drops them.
 
 		**Permissions:**
 		- `Manage Server`
@@ -436,7 +436,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	async def _import_legacy(self, interaction: discord.Interaction) -> None :
 		if not (Legacy.exists("armors") or Legacy.exists("weapons")) :
 			return await CharacterFlow.respond(interaction, "The old armors and weapons tables are gone (migration "
-			                                                "0013 dropped them).")
+			                                                "0014 dropped them).")
 		items, _ = Packs.legacy_items()
 		if not await ask(interaction, f"Copy {len(items)} item{'s' if len(items) != 1 else ''} from the old armors and "
 		                              f"weapons tables into the catalog? Names the catalog already has are skipped.",

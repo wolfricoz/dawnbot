@@ -83,6 +83,8 @@ class ActionPanel(discord.ui.View) :
 		weapon = combatant.weapon(combatant.weapon_key)
 		header = (f"**{combatant.name}** · ❤️ {combatant.hp}/{combatant.hp_max} · AP {combatant.ap}/{combatant.ap_max}"
 		          f" · AC {engine.effective_ac(combatant)} · holding {weapon['name'] if weapon else 'nothing'}")
+		if combatant.passives :
+			header += f"\n-# Passives (always on): {', '.join(passive['name'] for passive in combatant.passives)}"
 		my_turn = combatant in engine.actors()
 		if not my_turn :
 			header += "\n-# It isn't your turn right now; the panel works once it is (press Refresh)."

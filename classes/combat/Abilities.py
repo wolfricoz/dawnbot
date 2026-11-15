@@ -39,6 +39,8 @@ BOOSTS = [Conditions.INSPIRED, Conditions.REGENERATING]
 SPELL_SLOTS = {CANTRIP : 1, WEAK : 2, NORMAL : 2, STRONG : 1}
 ABILITY_SLOTS = 3
 ABILITY_STRONG_SLOTS = 1
+# A passive ability takes this many of the ability slots.
+PASSIVE_SLOTS = 2
 LEGENDARY_EXTRA_SLOTS = 1
 
 CASTING_STATS = ["intelligence", "charisma"]
@@ -136,32 +138,42 @@ def check_definition(kind: str, tier: str, effect: str, stat: str, damage_type: 
 
 
 # ============================================================
-def overflow(kinds_and_tiers: list[tuple[str, str]]) -> int :
-	"""How many slots over the normal limits a set of (kind, tier) is."""
-	spells = [tier for kind, tier in kinds_and_tiers if kind == SPELL]
-	abilities = [tier for kind, tier in kinds_and_tiers if kind == ABILITY]
+def slots(passive: bool) -> int :
+	"""How many ability slots an ability takes: an active one 1, a passive one 2."""
+	return PASSIVE_SLOTS if passive else 1
+
+
+# ============================================================
+def overflow(known: list[tuple]) -> int :
+	"""How many slots over the normal limits a set of (kind, tier) or (kind, tier, passive) is."""
+	spells = [entry[1] for entry in known if entry[0] == SPELL]
+	abilities = [entry for entry in known if entry[0] == ABILITY]
 	extra = sum(max(0, spells.count(tier) - limit) for tier, limit in SPELL_SLOTS.items())
-	extra += max(0, len(abilities) - ABILITY_SLOTS) + max(0, abilities.count(STRONG) - ABILITY_STRONG_SLOTS)
+	used = sum(slots(len(entry) > 2 and bool(entry[2])) for entry in abilities)
+	strong = len([entry for entry in abilities if entry[1] == STRONG])
+	extra += max(0, used - ABILITY_SLOTS) + max(0, strong - ABILITY_STRONG_SLOTS)
 	return extra
 
 
 # ============================================================
-def check_learn(known: list[tuple[str, str, bool]], kind: str, tier: str, legendary: bool) -> str | None :
-	"""Why a character can't learn another ability, or None. known holds (kind, tier, event) for what it knows; event
-	abilities don't count. Spellcasters and ability users can't mix, and legendary characters get one extra slot."""
-	counted = [(known_kind, known_tier) for known_kind, known_tier, event in known if not event]
-	if kind == SPELL and any(known_kind == ABILITY for known_kind, _ in counted) :
+def check_learn(known: list[tuple], kind: str, tier: str, legendary: bool, passive: bool = False) -> str | None :
+	"""Why a character can't learn another ability, or None. known holds (kind, tier, event) or (kind, tier, event,
+	passive) for what it knows; event abilities don't count. Spellcasters and ability users can't mix, a passive takes
+	two of the three ability slots, and legendary characters get one extra slot."""
+	counted = [(entry[0], entry[1], len(entry) > 3 and bool(entry[3])) for entry in known if not entry[2]]
+	if kind == SPELL and any(known_kind == ABILITY for known_kind, _, _ in counted) :
 		return "A character with abilities can't learn spells (unless an event grants them)."
-	if kind == ABILITY and any(known_kind == SPELL for known_kind, _ in counted) :
+	if kind == ABILITY and any(known_kind == SPELL for known_kind, _, _ in counted) :
 		return "A spellcaster can't learn abilities (unless an event grants them)."
 	allowed = LEGENDARY_EXTRA_SLOTS if legendary else 0
-	if overflow(counted + [(kind, tier)]) > allowed :
+	if overflow(counted + [(kind, tier, passive)]) > allowed :
 		if kind == SPELL :
 			return (f"Spellcasters know at most {SPELL_SLOTS[CANTRIP]} Cantrip, {SPELL_SLOTS[WEAK]} Weak, "
 			        f"{SPELL_SLOTS[NORMAL]} Normal and {SPELL_SLOTS[STRONG]} Strong spell"
 			        f"{' (plus one of any tier for legendary characters)' if legendary else ''}.")
-		return (f"A character knows at most {ABILITY_SLOTS} abilities, with at most {ABILITY_STRONG_SLOTS} Strong"
-		        f"{' (plus one of any tier for legendary characters)' if legendary else ''}.")
+		return (f"A character has {ABILITY_SLOTS} ability slots (an active ability takes 1, a passive "
+		        f"{PASSIVE_SLOTS}) and at most {ABILITY_STRONG_SLOTS} Strong"
+		        f"{' (plus one slot for legendary characters)' if legendary else ''}.")
 	return None
 
 

@@ -6,11 +6,11 @@ import discord
 
 from classes.characters.Access import Access, Requirement
 from classes.characters.CharacterFlow import CharacterFlow
-from classes.combat import Abilities as AbilityRules
+from classes.combat import Abilities as AbilityRules, Passives
 from classes.combat.DamageTypes import DamageTypes, RESTORATION
 from classes.kernel.ConfigData import ConfigData
 from database.database import Abilities, Characters, MagicSchools
-from database.transactions.AbilityTransactions import APPROVED, AbilityTransactions, DENIED, PENDING
+from database.transactions.AbilityTransactions import APPROVED, AbilityTransactions, DENIED, PASSIVE, PENDING
 from database.transactions.TagRuleTransactions import TagRuleTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 
@@ -80,7 +80,23 @@ class AbilityFlow :
 
 	# ============================================================
 	@staticmethod
+	def check_passive(guild_id: int, tier: str, parts: dict) -> tuple[dict | None, str | None] :
+		"""Checks a passive's parts. @return: the values to store, or the problem."""
+		passive, problem = Passives.check(tier, parts, DamageTypes.names(guild_id))
+		if problem :
+			return None, problem
+		names = {name.lower() for name in DamageTypes.names(guild_id)}
+		scope = passive.get("scope")
+		return {"kind" : AbilityRules.ABILITY, "tier" : tier, "effect" : passive["type"], "stat" : "endurance",
+		        "damage_type" : scope if scope and scope.lower() in names else None,
+		        "condition" : passive.get("condition"), "secondary" : None, "area" : False, "school_id" : None,
+		        "activation" : PASSIVE, "passive" : passive}, None
+
+	# ============================================================
+	@staticmethod
 	def summary(ability: Abilities) -> str :
+		if ability.activation == PASSIVE :
+			return Passives.describe(ability.tier, ability.passive)
 		return AbilityRules.summary(ability.kind, ability.tier, ability.effect, ability.stat, ability.damage_type,
 		                            ability.condition, ability.secondary, bool(ability.area))
 
@@ -134,8 +150,9 @@ class AbilityFlow :
 		known = AbilityTransactions().known(character.id)
 		if any(other.id == ability.id for _, other in known) :
 			return f"{character.name} already knows {ability.name}."
-		return AbilityRules.check_learn([(other.kind, other.tier, link.event) for link, other in known], ability.kind,
-		                                ability.tier, bool(character.legendary))
+		return AbilityRules.check_learn([(other.kind, other.tier, link.event, other.activation == PASSIVE)
+		                                 for link, other in known], ability.kind, ability.tier,
+		                                bool(character.legendary), ability.activation == PASSIVE)
 
 	# == review ==
 

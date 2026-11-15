@@ -41,6 +41,36 @@ Build spells and abilities, and teach them to your characters.
 
 ---
 
+### `passive`
+
+**Usage:** `/ability passive <name> <tier> <type> <field> <target> <trigger> <condition>`
+
+> Builds a passive ability: always on, never used on a turn. It takes 2 of a character's 3 ability slots (an
+> active ability takes 1), and spellcasters can't learn passives unless an event grants one. The tier sets its
+> size: Weak +1, Normal +2, Strong +3.
+>
+> - `bonus`: +to hit, damage, AC (within the cap of 18), DT, max HP (+5/10/15), AP (+1/1/2) or Sequence
+>   (+2/4/6). To hit and damage can be limited with `target` (melee, ranged, magic or a damage type).
+> - `resistance`: hits from `target` (a damage type, magic or physical) do 2/4/6 less damage, at least 1.
+> - `immunity` (Normal): the `condition` never takes hold.
+> - `trigger`: regenerate (1d4/1d6/1d8 each turn), last stand (Normal once, Strong twice per fight), on a strong
+>   hit (adds `condition` for 1/2/3 turns) or counter (1d4/1d6/1d8 to a melee attacker that misses, once a round).
+> - `aura`: standing allies get +1/+1/+2 to hit, damage or AC.
+> - `stacks`: each hit it takes from `target` (any, magic, physical or a damage type) adds +1 to hit, damage or
+>   AC, up to 2/3/5 stacks, for the rest of the fight.
+
+---
+
+### `passive_edit`
+
+**Usage:** `/ability passive_edit <name> <new_name> <tier> <type> <field> <target> <trigger> <condition>`
+
+> Changes a passive ability you created (staff can change any). Options you leave out stay as they are; a form
+> lets you change the description and flavor. It goes back to staff for review and doesn't work in fights
+> until it is approved again. Type `none` as `target` to remove its limit.
+
+---
+
 ### `list`
 
 **Usage:** `/ability list <mine>`
@@ -63,8 +93,9 @@ Build spells and abilities, and teach them to your characters.
 **Usage:** `/ability learn <character> <ability>`
 
 > Teaches your character an approved ability. Spellcasters know at most 6 spells (1 Cantrip, 2 Weak, 2 Normal,
-> 1 Strong); other characters at most 3 abilities (1 Strong). A character can't have both spells and abilities,
-> unless an event granted them. Legendary characters get one extra slot.
+> 1 Strong); other characters have 3 ability slots, where an active ability takes 1 and a passive 2 (at most 1
+> Strong). A character can't have both spells and abilities, unless an event granted them. Legendary characters
+> get one extra slot.
 
 ---
 

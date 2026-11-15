@@ -4,7 +4,7 @@ uses, and the derived numbers (HP, AP, AC, DT, Sequence).
 The snapshot is taken when the combatant joins, so changing gear mid-fight does not change the fight.
 """
 from classes.combat import Abilities as AbilityRules
-from classes.combat import Items, Rules
+from classes.combat import Items, Passives, Rules
 from classes.combat.State import AUTO, CHARACTER, Combatant, NPC, PLAYER
 from classes.kernel.ConfigData import ConfigData
 from database.database import Bestiary, Characters
@@ -63,7 +63,40 @@ class Loadout :
 	def ability_data(ability) -> dict :
 		return {"id" : ability.id, "name" : ability.name, "kind" : ability.kind, "tier" : ability.tier,
 		        "stat" : ability.stat, "effect" : ability.effect, "damage_type" : ability.damage_type,
-		        "condition" : ability.condition, "area" : bool(ability.area), "secondary" : ability.secondary}
+		        "condition" : ability.condition, "area" : bool(ability.area), "secondary" : ability.secondary,
+		        "activation" : getattr(ability, "activation", None) or "active",
+		        "passive" : getattr(ability, "passive", None)}
+
+	# ============================================================
+	@staticmethod
+	def split(abilities: list[dict]) -> tuple[list[dict], list[dict]] :
+		"""Abilities as the fight uses them: the active ones, and the passive ones as {id, name, tier, type, ...}."""
+		actives, passives = [], []
+		for ability in abilities :
+			if ability.get("activation") == "passive" :
+				passives.append({"id" : ability["id"], "name" : ability["name"], "tier" : ability["tier"]}
+				                | Passives.normalise(ability.get("passive")))
+			else :
+				actives.append(ability)
+		return actives, passives
+
+	# ============================================================
+	@staticmethod
+	def apply_passives(combatant: Combatant) -> Combatant :
+		"""Adds the passives' join bonuses (max HP, AP, AC within the cap, DT, Sequence) to a new combatant."""
+		passives = combatant.stats.get("passives") or []
+		hp = Passives.join_bonus(passives, Passives.HP)
+		ap = Passives.join_bonus(passives, Passives.AP)
+		ac = Passives.join_bonus(passives, Passives.AC)
+		combatant.hp += hp
+		combatant.hp_max += hp
+		combatant.ap += ap
+		combatant.ap_max += ap
+		if ac :
+			combatant.ac = max(combatant.ac, min(Rules.AC_CAP, combatant.ac + ac))
+		combatant.dt += Passives.join_bonus(passives, Passives.DT)
+		combatant.sequence += Passives.join_bonus(passives, Passives.SEQUENCE)
+		return combatant
 
 	# ============================================================
 	@staticmethod
@@ -99,6 +132,7 @@ class Loadout :
 				armor = candidate
 		weapons.append(dict(Rules.UNARMED))
 		armor = armor or (dict(Rules.ARMOR_DEFAULTS) | {"name" : "No armor"})
+		actives, passives = Loadout.split(Loadout.abilities(character.id))
 		level_bonus = Rules.level_bonus(character.level) if ConfigData().get_toggle(
 			character.guild_id, ConfigMapping.COMBAT_LEVEL_BONUS) else 0
 		luck = special["luck"]
@@ -106,7 +140,7 @@ class Loadout :
 		        "legendary" : bool(getattr(character, "legendary", False)), "weapons" : weapons, "armor" : armor,
 		        "shield" : shield, "armor_penalty" : Rules.armor_penalty(armor["armor_class"],
 		                                                                  Loadout.armor_proficiency(character)),
-		        "level_bonus" : level_bonus, "abilities" : Loadout.abilities(character.id), "items" : items,
+		        "level_bonus" : level_bonus, "abilities" : actives, "passives" : passives, "items" : items,
 		        "crit_min" : Rules.crit_min(luck), "fumble_max" : Rules.fumble_max(luck), "confirm_crits" : luck <= 0,
 		        "crippled" : Rules.crippled(special)}
 
@@ -126,11 +160,11 @@ class Loadout :
 		special, base = stats["special"], stats["base"]
 		hp = Rules.hp_max(special, stats["level"], base)
 		ap = Rules.ap_max(special)
-		return Combatant(id=0, side_id=side_id, kind=CHARACTER, name=character.name, stats=stats,
-		                 character_id=character.id, uid=character.uid, controller=PLAYER, behavior="weakest", hp=hp,
-		                 hp_max=hp, ap=ap, ap_max=ap, ac=Rules.armor_class(special, stats["armor"], stats["shield"], base),
-		                 dt=int(stats["armor"].get("dt") or 0), sequence=Rules.sequence(special),
-		                 weapon_key=Loadout.default_weapon(stats["weapons"]), position=position)
+		return Loadout.apply_passives(Combatant(
+			id=0, side_id=side_id, kind=CHARACTER, name=character.name, stats=stats, character_id=character.id,
+			uid=character.uid, controller=PLAYER, behavior="weakest", hp=hp, hp_max=hp, ap=ap, ap_max=ap,
+			ac=Rules.armor_class(special, stats["armor"], stats["shield"], base), dt=int(stats["armor"].get("dt") or 0),
+			sequence=Rules.sequence(special), weapon_key=Loadout.default_weapon(stats["weapons"]), position=position))
 
 	# ============================================================
 	@staticmethod
@@ -139,9 +173,10 @@ class Loadout :
 	              preset: str = CUSTOM) -> dict :
 		weapon = {"key" : NATURAL_KEY, "name" : attack_name or "Attack", "type" : damage_type, "dice" : damage,
 		          "to_hit" : int(to_hit), "range" : Rules.MELEE, "properties" : [], "ap" : 3}
+		actives, passives = Loadout.split(abilities or [])
 		return {"npc" : True, "base" : 5, "special" : {}, "level" : 1, "weapons" : [weapon],
 		        "armor" : {"name" : "Natural", "armor_class" : Rules.CLOTHING, "ac" : 0, "dt" : int(dt)},
-		        "abilities" : abilities or [], "ability_mod" : int(to_hit), "crit_min" : 20, "fumble_max" : 1,
+		        "abilities" : actives, "passives" : passives, "ability_mod" : int(to_hit), "crit_min" : 20, "fumble_max" : 1,
 		        "rewards" : rewards or {}, "preset" : preset}
 
 	# ============================================================
@@ -158,10 +193,11 @@ class Loadout :
 		                          entry.attack_name, entry.ap, abilities,
 		                          {"xp" : entry.reward_xp, "currency" : entry.reward_currency}, entry.preset)
 		stats["avatar_url"] = entry.avatar_url
-		return Combatant(id=0, side_id=side_id, kind=NPC, name=name or entry.name, stats=stats, bestiary_id=entry.id,
-		                 controller=controller, behavior=entry.behavior or "aggressive", hp=entry.hp,
-		                 hp_max=entry.hp, ap=entry.ap, ap_max=entry.ap, ac=entry.ac, dt=entry.dt,
-		                 sequence=entry.sequence, weapon_key=NATURAL_KEY, position=position)
+		return Loadout.apply_passives(Combatant(
+			id=0, side_id=side_id, kind=NPC, name=name or entry.name, stats=stats, bestiary_id=entry.id,
+			controller=controller, behavior=entry.behavior or "aggressive", hp=entry.hp, hp_max=entry.hp, ap=entry.ap,
+			ap_max=entry.ap, ac=entry.ac, dt=entry.dt, sequence=entry.sequence, weapon_key=NATURAL_KEY,
+			position=position))
 
 	# ============================================================
 	@staticmethod
@@ -191,9 +227,10 @@ class Loadout :
 		level_bonus = Rules.level_bonus(level) if ConfigData().get_toggle(guild_id,
 		                                                                  ConfigMapping.COMBAT_LEVEL_BONUS) else 0
 		luck = special["luck"]
+		actives, passives = Loadout.split(abilities)
 		return {"base" : base, "special" : special, "level" : int(level or 1), "legendary" : False,
 		        "weapons" : weapons, "armor" : armor, "shield" : shield, "armor_penalty" : 0,
-		        "level_bonus" : level_bonus, "abilities" : abilities, "items" : [],
+		        "level_bonus" : level_bonus, "abilities" : actives, "passives" : passives, "items" : [],
 		        "crit_min" : Rules.crit_min(luck), "fumble_max" : Rules.fumble_max(luck), "confirm_crits" : luck <= 0,
 		        "crippled" : Rules.crippled(special), "rewards" : rewards or {}, "preset" : "special"}
 
@@ -212,11 +249,11 @@ class Loadout :
 		special, base = stats["special"], stats["base"]
 		hp = Rules.hp_max(special, stats["level"], base)
 		ap = Rules.ap_max(special)
-		return Combatant(id=0, side_id=side_id, kind=NPC, name=name, stats=stats, bestiary_id=entry.id,
-		                 controller=controller, behavior=entry.behavior or "aggressive", hp=hp, hp_max=hp, ap=ap,
-		                 ap_max=ap, ac=Rules.armor_class(special, stats["armor"], stats["shield"], base),
-		                 dt=int(stats["armor"].get("dt") or 0), sequence=Rules.sequence(special),
-		                 weapon_key=Loadout.default_weapon(stats["weapons"]), position=position)
+		return Loadout.apply_passives(Combatant(
+			id=0, side_id=side_id, kind=NPC, name=name, stats=stats, bestiary_id=entry.id, controller=controller,
+			behavior=entry.behavior or "aggressive", hp=hp, hp_max=hp, ap=ap, ap_max=ap,
+			ac=Rules.armor_class(special, stats["armor"], stats["shield"], base), dt=int(stats["armor"].get("dt") or 0),
+			sequence=Rules.sequence(special), weapon_key=Loadout.default_weapon(stats["weapons"]), position=position))
 
 	# ============================================================
 	@staticmethod

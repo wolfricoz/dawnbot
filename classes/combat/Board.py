@@ -2,7 +2,7 @@
 and the timer."""
 import discord
 
-from classes.combat import Conditions as C
+from classes.combat import Conditions as C, Passives
 from classes.combat.Engine import Engine
 from classes.combat.State import ACTIVE, ASYNC, Combatant, DEAD, DOWNED, DYING, ENDED, FLED, Fight, PAUSED, PENDING, \
 	REMOVED, SETUP, STABLE
@@ -42,10 +42,27 @@ def combatant_line(combatant: Combatant, fight: Fight, engine: Engine) -> str :
 		line += f" · AC {engine.effective_ac(combatant)}"
 		if fight.state == ACTIVE and combatant in engine.actors() :
 			line += f" · AP {combatant.ap}/{combatant.ap_max}"
-	conditions = C.text(combatant.conditions)
-	if conditions :
-		line += f"\n-# {conditions}"
+	notes = [C.text(combatant.conditions)] + passive_notes(combatant)
+	notes = [note for note in notes if note]
+	if notes :
+		line += f"\n-# {' · '.join(notes)}"
 	return line
+
+
+# ============================================================
+def passive_notes(combatant: Combatant) -> list[str] :
+	"""Stacks gained and last stands used, like `⚡ Spellfed 3/5`."""
+	notes = []
+	state = combatant.stats.get("passive_state") or {}
+	for passive in combatant.passives :
+		kept = state.get(str(passive["id"])) or {}
+		tier = Passives.index(passive["tier"])
+		if passive.get("type") == Passives.STACKS and kept.get("stacks") :
+			notes.append(f"⚡ {passive['name']} {kept['stacks']}/{Passives.MAX_STACKS[tier]}")
+		elif passive.get("trigger") == Passives.LAST_STAND and kept.get("uses") :
+			left = Passives.LAST_STAND_USES[tier] - int(kept["uses"])
+			notes.append(f"🛡️ {passive['name']}: {left} left")
+	return notes
 
 
 # ============================================================

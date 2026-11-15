@@ -125,6 +125,11 @@ class Combatant :
 
 	# ============================================================
 	@property
+	def passives(self) -> list[dict] :
+		return self.stats.get("passives") or []
+
+	# ============================================================
+	@property
 	def items(self) -> list[dict] :
 		"""The consumables it carries and hasn't used in this fight."""
 		used = set(self.stats.get("used_items") or [])

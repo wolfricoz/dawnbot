@@ -115,13 +115,15 @@ class Card :
 	# ============================================================
 	@staticmethod
 	def abilities_text(character: Characters) -> str :
-		"""The abilities the character knows, one per line, like `Firebolt (Weak spell)`."""
+		"""The abilities the character knows, one per line, like `Firebolt (Weak spell)` or `Iron Skin (Normal
+		passive)`."""
 		from database.transactions.AbilityTransactions import AbilityTransactions
 
 		lines = []
 		for link, ability in AbilityTransactions().known(character.id) :
 			note = " · event" if link.event else ("" if ability.state == "approved" else f" · {ability.state}")
-			lines.append(f"{ability.name} ({ability.tier.capitalize()} {ability.kind}{note})")
+			kind = "passive" if ability.activation == "passive" else ability.kind
+			lines.append(f"{ability.name} ({ability.tier.capitalize()} {kind}{note})")
 		return "\n".join(lines)[:1024]
 
 	# ============================================================
