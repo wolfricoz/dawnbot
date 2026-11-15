@@ -62,7 +62,8 @@ MODIFIER_CAT = "Modifiers"
 DRAWBACK_CAT = "Drawbacks"
 CATEGORIES = [GENERAL, FIRE_CAT, WATER_CAT, STORM_CAT, EARTH_CAT, AIR_CAT, LIGHT_CAT, SHADOW_CAT, DEATH_CAT,
               NATURE_CAT, MIND_CAT, FORCE_CAT, SPACE_CAT, LIFE_CAT, WARD_CAT, CURSE_CAT, SUMMON_CAT, BODY_CAT,
-              MARTIAL_CAT, ARCHERY_CAT, TACTICS_CAT, STEALTH_CAT, GRIT_CAT, GADGET_CAT] + GeneratedEffects.NEW_CATEGORIES              + [MODIFIER_CAT, DRAWBACK_CAT]
+              MARTIAL_CAT, ARCHERY_CAT, TACTICS_CAT, STEALTH_CAT, GRIT_CAT, GADGET_CAT] \
+             + GeneratedEffects.NEW_CATEGORIES + [MODIFIER_CAT, DRAWBACK_CAT]
 
 
 # ============================================================
@@ -233,7 +234,7 @@ ACTIVE_EFFECTS = [
 	make("raise_dead", "Raise Dead", M, DEATH_CAT, COMPANION, 3, "raises a corpse to fight for you", WEAK,
 	     type=SLASHING),
 	attack("vampiric_bite", "Vampiric Bite", P, DEATH_CAT, 3, "a bite that drinks the target's blood", PIERCING,
-	       drain=True),
+	       drain=True, requires="fang"),
 
 	# == Nature, beasts & poison ==
 	attack("thorn_whip", "Thorn Whip", M, NATURE_CAT, 3, "a vine covered in thorns", SLASHING, on_hit=C.BLEEDING),
@@ -251,7 +252,7 @@ ACTIVE_EFFECTS = [
 	       steps=1),
 	attack("venom_sting", "Venom Sting", P, NATURE_CAT, 3, "a poisoned stinger, fang or blade", PIERCING,
 	       on_hit=C.POISONED),
-	attack("claws", "Claws", P, NATURE_CAT, 3, "tears with claws or talons", SLASHING, on_hit=C.BLEEDING),
+	attack("claws", "Claws", P, NATURE_CAT, 3, "tears with claws or talons", SLASHING, on_hit=C.BLEEDING, requires="claw"),
 	attack("pounce", "Pounce", P, NATURE_CAT, 3, "leaps on the target and pins it down", BLUNT, on_hit=C.PRONE),
 	make("animal_companion", "Animal Companion", P, NATURE_CAT, COMPANION, 3, "a trained beast fights alongside you",
 	     WEAK, type=SLASHING),
@@ -318,8 +319,8 @@ ACTIVE_EFFECTS = [
 	boost("sanctuary", "Sanctuary", M, WARD_CAT, 3, "enemies' blows slide off the target", C.EVASIVE),
 	boost("protection", "Protection", M, WARD_CAT, 2, "a protective aura", C.FORTIFIED),
 	make("counterspell", "Counterspell", M, WARD_CAT, DISPEL, 2, "unravels the target's magic", count=1),
-	make("bulwark", "Bulwark", P, WARD_CAT, SHIELD, 3, "braces a wall of shields", WEAK, steps=1),
-	boost("shield_wall", "Shield Wall", P, WARD_CAT, 2, "locks shields with the target", C.FORTIFIED),
+	make("bulwark", "Bulwark", P, WARD_CAT, SHIELD, 3, "braces a wall of shields", WEAK, steps=1, requires="shield"),
+	boost("shield_wall", "Shield Wall", P, WARD_CAT, 2, "locks shields with the target", C.FORTIFIED, requires="shield"),
 	boost("cover", "Take Cover", P, WARD_CAT, 3, "drags the target behind cover", C.HIDDEN),
 
 	# == Curses & hexes ==
@@ -357,24 +358,24 @@ ACTIVE_EFFECTS = [
 	      turns=1),
 	attack("mighty_blow", "Mighty Blow", P, BODY_CAT, 3, "puts everything into one blow", BLUNT, steps=1),
 	boost("super_speed", "Super Speed", P, BODY_CAT, 2, "moves faster than the eye", C.HASTED, aim=SELF),
-	boost("iron_skin", "Iron Skin", P, BODY_CAT, 1, "skin hard as iron", C.FORTIFIED, aim=SELF),
+	boost("iron_skin", "Iron Skin", P, BODY_CAT, 1, "skin hard as iron", C.FORTIFIED, aim=SELF, turns=2),
 	boost("healing_factor", "Healing Factor", P, BODY_CAT, 1, "wounds close by themselves", C.REGENERATING,
 	      aim=SELF, turns=1),
-	attack("tail_sweep", "Tail Sweep", P, BODY_CAT, 3, "a sweep of a heavy tail", BLUNT, on_hit=C.PRONE),
-	attack("horns", "Gore", P, BODY_CAT, 3, "charges with horns or tusks", PIERCING, on_hit=C.BLEEDING),
-	attack("bite", "Bite", P, BODY_CAT, 2, "sinks teeth in", PIERCING),
+	attack("tail_sweep", "Tail Sweep", P, BODY_CAT, 3, "a sweep of a heavy tail", BLUNT, on_hit=C.PRONE, requires="tail"),
+	attack("horns", "Gore", P, BODY_CAT, 3, "charges with horns or tusks", PIERCING, on_hit=C.BLEEDING, requires="horn"),
+	attack("bite", "Bite", P, BODY_CAT, 2, "sinks teeth in", PIERCING, requires="fang"),
 	boost("shapeshift", "Beast Form", M, BODY_CAT, 2, "takes on a beast's might", C.EMPOWERED, aim=SELF),
 	boost("enlarge", "Enlarge", M, BODY_CAT, 2, "the target grows to giant size", C.EMPOWERED),
 	afflict("reduce", "Shrink", M, BODY_CAT, 3, "shrinks the target to half its size", C.WEAKENED, turns=1),
 	boost("vampire_form", "Vampire Form", M, BODY_CAT, 3, "every wound you deal feeds you", C.VAMPIRIC, aim=SELF),
 	boost("spikes", "Spiked Hide", P, BODY_CAT, 2, "spines that hurt anyone who hits you", C.THORNS, aim=SELF),
-	attack("drain_bite", "Leech", P, BODY_CAT, 3, "latches on and drinks", PIERCING, drain=True),
+	attack("drain_bite", "Leech", P, BODY_CAT, 3, "latches on and drinks", PIERCING, drain=True, requires="fang"),
 
 	# == Martial arts & weapons ==
 	attack("power_attack", "Power Attack", P, MARTIAL_CAT, 3, "a heavy, committed swing", steps=1),
 	attack("flurry", "Flurry of Blows", P, MARTIAL_CAT, 3, "a rapid series of strikes", hits=2),
 	attack("whirlwind", "Whirlwind", P, MARTIAL_CAT, 4, "a spinning series of cuts", SLASHING, hits=3),
-	attack("precise_strike", "Precise Strike", P, MARTIAL_CAT, 2, "a careful, accurate strike", accuracy=3),
+	attack("precise_strike", "Precise Strike", P, MARTIAL_CAT, 3, "a careful, accurate strike", accuracy=2),
 	attack("vital_strike", "Vital Strike", P, MARTIAL_CAT, 3, "aims for a weak point", crit=2),
 	attack("armor_breaker", "Armor Breaker", P, MARTIAL_CAT, 3, "a blow through the gaps in armor", ignore_dt=True),
 	attack("sunder", "Sunder", P, MARTIAL_CAT, 3, "smashes the target's armor apart", BLUNT, on_hit=C.CORRODED),
@@ -392,7 +393,7 @@ ACTIVE_EFFECTS = [
 	attack("execute", "Execute", P, MARTIAL_CAT, 3, "finishes off the wounded", execute=True),
 	attack("cleave", "Cleave", P, MARTIAL_CAT, 2, "cuts through one foe into the next", SLASHING),
 	attack("shield_bash", "Shield Bash", P, MARTIAL_CAT, 4, "slams a shield into the target", BLUNT, tier=WEAK,
-	       on_hit=C.STUNNED, steps=-1),
+	       on_hit=C.STUNNED, steps=-1, requires="shield"),
 	attack("charge", "Charge", P, MARTIAL_CAT, 3, "runs the target down", BLUNT, steps=1),
 	attack("headbutt", "Headbutt", P, MARTIAL_CAT, 3, "a brutal headbutt", BLUNT, on_hit=C.DRAINED),
 	boost("riposte_stance", "Riposte", P, MARTIAL_CAT, 2, "parries and answers every missed blow", C.RIPOSTE,
@@ -404,21 +405,22 @@ ACTIVE_EFFECTS = [
 	      aim=SELF),
 
 	# == Ranged & thrown ==
-	attack("aimed_shot", "Aimed Shot", P, ARCHERY_CAT, 2, "takes careful aim", PIERCING, accuracy=3),
-	attack("double_shot", "Double Shot", P, ARCHERY_CAT, 3, "two arrows at once", PIERCING, hits=2),
+	attack("aimed_shot", "Aimed Shot", P, ARCHERY_CAT, 2, "takes careful aim", PIERCING, accuracy=2,
+	       requires="ranged"),
+	attack("double_shot", "Double Shot", P, ARCHERY_CAT, 3, "two arrows at once", PIERCING, hits=2, requires="ranged"),
 	attack("piercing_shot", "Piercing Shot", P, ARCHERY_CAT, 3, "a shot that punches through armor", PIERCING,
-	       ignore_dt=True),
-	blast("volley", "Volley", P, ARCHERY_CAT, 3, "a rain of arrows", PIERCING, tier=WEAK),
+	       ignore_dt=True, requires="ranged"),
+	blast("volley", "Volley", P, ARCHERY_CAT, 3, "a rain of arrows", PIERCING, tier=WEAK, requires="ranged"),
 	attack("crippling_shot", "Crippling Shot", P, ARCHERY_CAT, 3, "a shot to the leg", PIERCING,
-	       on_hit=C.SLOWED),
+	       on_hit=C.SLOWED, requires="ranged"),
 	attack("pinning_shot", "Pinning Shot", P, ARCHERY_CAT, 3, "pins the target to the ground", PIERCING,
-	       on_hit=C.RESTRAINED),
-	attack("headshot", "Headshot", P, ARCHERY_CAT, 4, "goes for the head", PIERCING, tier=WEAK, crit=3),
-	attack("knife_throw", "Knife Throw", P, ARCHERY_CAT, 2, "a thrown blade", PIERCING, accuracy=1),
+	       on_hit=C.RESTRAINED, requires="ranged"),
+	attack("headshot", "Headshot", P, ARCHERY_CAT, 4, "goes for the head", PIERCING, tier=WEAK, crit=3, requires="ranged"),
+	attack("knife_throw", "Knife Throw", P, ARCHERY_CAT, 2, "a thrown blade", PIERCING, accuracy=1, requires="thrown"),
 	attack("hunters_mark", "Hunter's Mark", P, ARCHERY_CAT, 3, "marks the prey for the whole party", PIERCING,
-	       on_hit=C.MARKED),
+	       on_hit=C.MARKED, requires="ranged"),
 	attack("ricochet", "Ricochet", P, ARCHERY_CAT, 3, "a trick shot off the walls", BLUNT, accuracy=4, steps=-1,
-	       hits=2),
+	       hits=2, requires="ranged"),
 
 	# == Tactics & leadership ==
 	boost("rally", "Rally", P, TACTICS_CAT, 2, "a shout that steadies an ally", C.INSPIRED),
@@ -455,7 +457,7 @@ ACTIVE_EFFECTS = [
 
 	# == Grit & endurance ==
 	boost("last_stand", "Last Stand", P, GRIT_CAT, 3, "refuses to fall", C.UNDYING, aim=SELF, tier=WEAK),
-	boost("thick_skin", "Grit Teeth", P, GRIT_CAT, 1, "ignores the pain", C.FORTIFIED, aim=SELF, turns=1),
+	boost("thick_skin", "Grit Teeth", P, GRIT_CAT, 1, "ignores the pain", C.FORTIFIED, aim=SELF, turns=3),
 	make("shake_it_off", "Shake It Off", P, GRIT_CAT, CLEANSE, 1, "shrugs off whatever ails you", aim=SELF, count=1),
 	make("adrenaline", "Adrenaline Rush", P, GRIT_CAT, HEAL, 2, "a rush that numbs pain", aim=SELF, steps=1),
 	boost("iron_will", "Iron Will", P, GRIT_CAT, 1, "nothing breaks your will", C.BLESSED, aim=SELF),

@@ -228,6 +228,10 @@ class Engine(Resolver) :
 		if any(passive.get("condition") == name for passive in P.of_type(target.passives, P.IMMUNE)) :
 			self.say(f"-# {target.name} is immune to being {C.label(name).lower()}.")
 			return False
+		if C.immune(target.conditions, name) :
+			self.say(f"-# {target.name} has only just shaken off being {C.label(name).lower()} and can't be again "
+			         f"this soon.")
+			return False
 		if value is None and name in (C.VULNERABLE, C.DRAINED, C.DOOMED) :
 			value = C.AMOUNTS.get(name)
 		return C.add(target.conditions, name, turns=turns, value=value,
@@ -327,6 +331,7 @@ class Engine(Resolver) :
 		if source is not None :
 			target.last_attacker_id = source.id
 		if amount > 0 and C.remove(target.conditions, C.ASLEEP) :
+			C.grant_immunity(target.conditions, C.ASLEEP)
 			self.say(f"-# {target.name} wakes up.")
 		if target.hp <= 0 and target.standing and amount > 0 and C.remove(target.conditions, C.UNDYING) :
 			target.hp = 1
@@ -344,6 +349,8 @@ class Engine(Resolver) :
 			self.gain_stacks(target, type_name, magic, ranged)
 		if amount > 0 and target.standing and target.hp_max and target.hp * 2 <= target.hp_max :
 			self.second_wind(target)
+		if amount > 0 :
+			self.concentration_check(target, amount)
 		return amount
 
 	# ============================================================
@@ -447,6 +454,7 @@ class Engine(Resolver) :
 		fight.state = ACTIVE
 		fight.round = 0
 		self.say(f"⚔️ **{fight.title}** begins!")
+		self.scale_bosses(announce=True)
 		self.new_round()
 		self.settle()
 		return self.outcome
@@ -605,7 +613,7 @@ class Engine(Resolver) :
 		for ability in combatant.abilities :
 			left = self.ability_uses_left(combatant, ability)
 			if (left is None or left > 0) and self.ability_ap(ability) <= ap \
-					and not C.has(combatant.conditions, C.SILENCED) :
+					and not C.has(combatant.conditions, C.SILENCED) and not self.weapon_problem(combatant, ability) :
 				return True
 		return False
 
@@ -975,8 +983,13 @@ class Engine(Resolver) :
 
 	# ============================================================
 	def joined(self, combatant: Combatant) -> None :
-		"""A combatant that joins a running fight waits for its next turn."""
+		"""A combatant that joins a running fight waits for its next turn. Before the fight starts, every miniboss and
+		boss is sized again for the players present; one that joins a running fight is sized when it joins."""
 		fight = self.fight
+		if fight.state in (ACTIVE, PAUSED) :
+			self.scale_boss(combatant)
+		else :
+			self.scale_bosses()
 		if fight.state in (ACTIVE, PAUSED) :
 			combatant.acted = True
 			if fight.pacing == LIVE :
@@ -984,6 +997,33 @@ class Engine(Resolver) :
 			elif combatant.side_id not in fight.order :
 				fight.order.append(combatant.side_id)
 		self.say(f"➕ **{combatant.name}** joins {fight.side(combatant.side_id).name}.")
+
+	# == minibosses and bosses ==
+
+	# ============================================================
+	def players_against(self, combatant: Combatant) -> int :
+		"""How many player characters still in the fight are on other sides than the combatant."""
+		return len([other for other in self.fight.combatants if other.character_id and other.in_fight
+		            and other.side_id != combatant.side_id])
+
+	# ============================================================
+	def scale_boss(self, combatant: Combatant, announce: bool = False) -> None :
+		"""Sets a miniboss's or boss's HP for the players it faces (full HP, plus any HP passives)."""
+		rank = combatant.stats.get("rank")
+		if rank not in Rules.RANKS or not combatant.in_fight :
+			return
+		players = self.players_against(combatant)
+		hp = Rules.boss_hp(rank, players) + P.join_bonus(combatant.passives, P.HP)
+		combatant.hp = combatant.hp_max = hp
+		if announce :
+			label = "Boss" if rank == Rules.BOSS else "Miniboss"
+			self.say(f"👑 {label} **{combatant.name}** has {hp} HP against {max(1, players)} "
+			         f"player{'s' if max(1, players) != 1 else ''}.")
+
+	# ============================================================
+	def scale_bosses(self, announce: bool = False) -> None :
+		for combatant in self.fight.combatants :
+			self.scale_boss(combatant, announce)
 
 	# == GM tools ==
 
@@ -1052,7 +1092,8 @@ class Engine(Resolver) :
 			return self.outcome
 		value = turns if name == C.SHIELDED else C.AMOUNTS.get(name)
 		extra = {"dice" : "1d6"} if name in (C.COMPANION, C.RIPOSTE) else {}
-		C.add(combatant.conditions, name, turns=turns if name != C.SHIELDED else 3, value=value, **extra)
+		C.add(combatant.conditions, name, turns=turns if name != C.SHIELDED else 3, value=value, force=True,
+		      **extra)
 		self.say(f"🛠️ {combatant.name} is {C.label(name).lower()}.")
 		return self.outcome
 

@@ -33,7 +33,8 @@ COMBAT_DEFAULTS = {WEAPON : WEAPON_COMBAT, ARMOR : ARMOR_COMBAT, CONSUMABLE : CO
 KIND_WORDS = {WEAPON : ("weapons", "a weapon"), ARMOR : ("armor", "armor"),
               CONSUMABLE : ("consumables", "a consumable")}
 # Weapons may also set their own AP cost.
-OPTIONAL_KEYS = {WEAPON : {"ap"}, ARMOR : set(), CONSUMABLE : set()}
+# Weapons may also set their own AP cost and their kind (which weapon techniques they allow).
+OPTIONAL_KEYS = {WEAPON : {"ap", "kind"}, ARMOR : set(), CONSUMABLE : set()}
 # Keys of the old shape (before the combat round); values in it are converted.
 LEGACY_KEYS = {WEAPON : {"modifier", "hitmodifier"}, ARMOR : {"hp", "ap", "hitchance"}, CONSUMABLE : set()}
 DICE = Rules.DICE
@@ -268,6 +269,8 @@ class Packs :
 			values = {key : weapon[key] for key in WEAPON_COMBAT}
 			if weapon.get("ap") :
 				values["ap"] = weapon["ap"]
+			if weapon.get("kind") :
+				values["kind"] = weapon["kind"]
 			return values
 		if kind == CONSUMABLE :
 			return Items.normalise(combat)
@@ -308,6 +311,8 @@ class Packs :
 			combat[key] = Packs._combat_value(key, value)
 		if kind == WEAPON and combat.get("ap") is None :
 			combat.pop("ap", None)
+		if kind == WEAPON and not combat.get("kind") :
+			combat.pop("kind", None)
 		if kind == CONSUMABLE :
 			problem = Items.check(combat)
 			if problem :
@@ -373,6 +378,13 @@ class Packs :
 			if stat is None :
 				raise ValueError(f"{key} must be a SPECIAL stat, not {value!r}.")
 			return stat
+		if key == "kind" :
+			text = value.strip().lower() if isinstance(value, str) else None
+			if text in (None, "", "none", "-") :
+				return None
+			if text not in Rules.WEAPON_KINDS :
+				raise ValueError(f"kind must be one of {', '.join(Rules.WEAPON_KINDS)}, not {value!r}.")
+			return text
 		if key == "range" :
 			if value not in Rules.RANGES :
 				raise ValueError(f"range must be {' or '.join(Rules.RANGES)}, not {value!r}.")

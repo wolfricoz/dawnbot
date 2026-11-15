@@ -140,6 +140,14 @@ async def on_ready() :
 	ConfigData().migrate()
 	ConfigData().load(bot.guilds)
 	AccessControl().reload()
+	# New default damage types (like Acid, Necrotic and Sonic) reach servers that already had a table.
+	from classes.combat.DamageTypes import DamageTypes
+
+	for guild in bot.guilds :
+		try :
+			DamageTypes.top_up(guild.id)
+		except Exception as e :
+			logging.error(f"Failed to add the new damage types to {guild.name}: {e}", exc_info=True)
 
 	await send_dev_message(f"{BOT_NAME} version {VERSION} is in {len(bot.guilds)} servers and has started up successfully!")
 	# Synchronises the slash commands with discord.

@@ -141,7 +141,8 @@ class Autopilot :
 			if self.engine.ability_aim(ability) != FX.ENEMY or not mechanics & {FX.ATTACK, FX.BLAST} :
 				continue
 			left = self.engine.ability_uses_left(combatant, ability)
-			if (left is None or left > 0) and self.engine.ability_ap(ability) <= combatant.ap :
+			if (left is None or left > 0) and self.engine.ability_ap(ability) <= combatant.ap \
+					and not self.engine.weapon_problem(combatant, ability) :
 				return ability
 		return None
 
@@ -165,7 +166,8 @@ class Autopilot :
 					or C.has(combatant.conditions, C.SILENCED) :
 				continue
 			left = engine.ability_uses_left(combatant, ability)
-			if (left is not None and left <= 0) or engine.ability_ap(ability) > combatant.ap :
+			if (left is not None and left <= 0) or engine.ability_ap(ability) > combatant.ap \
+					or engine.weapon_problem(combatant, ability) :
 				continue
 			hurt = [ally for ally in self.fight.allies(combatant)
 			        if ally.standing and ally.hp_max and ally.hp / ally.hp_max < SUPPORT_HEAL_BELOW]

@@ -39,7 +39,7 @@ including the choices made while building that the doc left open.
 | Downed | At 0 HP a combatant is downed and cannot act until revived. A side with no one standing loses. Automatic moves and NPCs never target downed combatants. |
 | Lethal | `COMBAT_LETHAL`: `off`, `gm` (default; staff can start a fight as lethal) or `agreed` (each player confirms when joining). In a lethal fight a downed combatant rolls `d20 + END modifier` against 10 (12 when END is 0 or below) at the start of each of its turns: 3 successes is stable, 3 failures is dying, and the GM confirms the death. A dead character gets the `dead` status (doc section 11): it stops proxying, frees its place under the cap and in its occupation, and its forum post is locked and archived. Staff bring it back with `/gm resurrect`. |
 | After the fight | HP is not carried over. The GM gives the winning characters (not the ones that fled) XP, currency and catalog items, with XP and currency suggested from the defeated bestiary entries; PvP fights suggest nothing. From the GM panel ("Injuries / broken gear") the GM adds an injury to a character's sheet (an `Injuries` field, one line per injury with the fight's title) or marks one of its items broken. |
-| Legendary | `characters.legendary`, set with `/gm legendary grant` and `/gm legendary take`: stat limits double (10 → 20, species 13 → 26), `LEGENDARY_POINTS` extra points (default 5) and one extra ability slot. Removing the status lowers stats above the normal limit, returns those points, then takes the legendary points back (from unspent points first, then from the highest stats). |
+| Legendary | `characters.legendary`, set with `/gm legendary grant` and `/gm legendary take`: stat limits double (10 → 20, species 13 → 26), `LEGENDARY_POINTS` extra points (default 5) and one extra ability slot. Removing the status lowers stats above the normal limit, returns those points, then takes the legendary points back (from unspent points first, then from the highest stats). There is no cap on how many: servers keep only a few legendary characters for now (Rico, 2026-11-15), so staff judgement is the limit. |
 | Only through the bot | Weapons, abilities and magic can only come from the bot's own systems: weapons, armor and shields from the gear catalog (shop, GM grants), abilities and spells from the effect catalog with `/ability`. Players can't write rules of their own. The default sheet no longer asks Magics, Abilities, Weapon proficiencies, Shield or Magic school; `/sheet add`, `/sheet edit` and `/character add_info` refuse those labels, a pasted sheet leaves them out (the interview says why and lists what was written), and old answers under them are hidden on cards and posts. The "Flavor the GM handles" box on abilities stays (Rico's call). |
 | Old sheet answers | `/ability import_sheets` (Manage Server) removes the old questions from a server's sheet and turns each name written under Magics or Abilities into a **blank ability** (state `draft`, no effects, the line as its description) linked to the character. Its owner builds it with `/ability edit` or `/ability passive_edit`, which sends it to review; until then it does nothing in fights. Weapon lists can't become gear, so the owner's DM lists them and points to the shop and `/gear proficiency`. The answers are kept, renamed `<label> (old)`, so a second run skips them. Rico chose blank abilities or a warning over deleting them. |
 | Abilities | Built from catalog effects (section 4): a kind, a tier, a stat (a spell's comes from its school) and 1 to 5 effects, plus a damage type for effects that take the ability's own. Every effect is **magic or physical**: spells only take magic effects, abilities only physical ones. Reviewed by staff in `CHARACTER_REVIEW`, posted to `ABILITY_FORUM` when set. Created with `/ability create` (effect options with autocomplete filtered by kind and tier, then a modal). Every ability is active (used on a turn) or passive (always on, `/ability passive`). |
@@ -47,7 +47,7 @@ including the choices made while building that the doc left open.
 | Passive AP | A passive permanently lowers the character's AP each turn by the cost of its effects (one more per effect at Strong). It still takes 2 ability slots (Rico's call: slots **and** AP). A character can't learn a passive that would leave it under 3 AP; in a fight AP never drops below the usual minimum of 2. Event-granted passives cost AP too. |
 | Magic schools | A standard set per server plus player-made schools reviewed by staff. A school sets the casting stat (Intelligence or Charisma). |
 | Ability slots | Spellcasters: 6 spells (1 Cantrip, 2 Weak, 2 Normal, 1 Strong). Others: 3 ability slots, where an active ability takes 1 and a passive 2, with at most 1 Strong (active or passive). Spellcasters can take passive spells built from magic effects; each takes one spell slot of its tier (Rico's call). Not both spells and abilities, unless event-granted. Legendary characters get one extra slot of any tier. Event-granted abilities (`/gm ability grant`) do not count. |
-| Damage types | One table per server (`damage_types`), filled with the defaults the first time it is used; staff edit it with `/damagetype`. Weapons name their type in `combat.type`; abilities pick one. |
+| Damage types | One table per server (`damage_types`), filled with the defaults the first time it is used; staff edit it with `/damagetype`. Weapons name their type in `combat.type`; abilities pick one. Defaults added later (Acid, Necrotic, Sonic) reach every server automatically: at start-up for servers that already have a table, otherwise when it is first used. Each default is offered once (`DAMAGE_TYPE_DEFAULTS` config row), so a type staff delete stays deleted. |
 | Bad-roll protection | `characters.bad_streak` counts a character's failed rolls in a row: fight rolls (attacks, ability attacks, saves, revive, flee, death rolls), `/combat attack`, and `/dice` rolls made as the character (Poor or Critical failure counts as failed). After 3, its next failed roll is made again once and the better result counts; any success resets the count. It carries across fights, undo puts it back, and the board shows when it is ready. NPCs don't have it. |
 | Quick roll | `/combat attack` stays for rolls outside a fight: one of the character's weapons against an AC you type. In a fight thread it points to the board. |
 | Use item | Consumables are a third catalog kind (doc open question 11). Use item costs 2 AP and uses the item up (`character_gear.status = used`; undo gives it back). Heal items revive a downed ally automatically, so a character crippled in Intelligence can still bring someone back. The fantasy pack has seven. |
@@ -167,11 +167,32 @@ the start of each of its turns), Thorns (melee attackers that hit take damage), 
 Durations count the affected combatant's own turns. The GM panel picks harmful or helpful first, since Discord menus
 hold 25 options; the armory's item options only offer the conditions from before the effect catalog.
 
+**Control immunity** (Rico's call): when a control condition ends (Stunned, Asleep, Charmed, Restrained, Cursed,
+Confused, Silenced, Disarmed, Taunted, Banished), whether it runs out, is cleansed, ends with a caster's concentration
+or a sleeper is woken by damage, the combatant can't get that same condition again until the end of its next turn, so
+a fight can't be locked down by re-applying it. Stunned already worked this way. GM tools ignore the immunity.
+
+**Concentration** (Rico's call, as in D&D): a spell that keeps something going on someone (a boost on another, a
+summon, a condition from a save, a doom) needs concentration, and a caster holds one at a time. Casting another such
+spell ends the first, and so does going down; taking damage calls for an END save against the higher of 10 and half
+the damage. When it ends, what that spell keeps going stops (and control conditions it held give the usual immunity).
+Physical abilities and boosts only on the caster never need it. The board shows "🧠 concentrating on …".
+
+**Weapon techniques**: 657 physical effects need a weapon (`requires` on the effect): a weapon kind (sword, spear,
+crossbow, claw...), or a ranged weapon, a thrown weapon or a shield for the generic archery and shield tricks; fists,
+kicks and elbows need nothing. In a fight the ability only works while the character can use a matching weapon (being
+disarmed counts), and the weapon's proficiency, hit modifier and unmet requirements are added to the roll. A catalog
+weapon names its kind in `combat.kind` (`/armory add|edit weapon_kind`, set on the fantasy pack); without one it is read
+from the name (Hedge Knife is a dagger, Riverglass Sabre a scimitar). A greatsword or sabre also does sword techniques,
+a hatchet axe ones. Natural weapons (claws, fangs, horns, tail, wings, tentacles) are catalog items staff grant, for
+example to a clawed species; an NPC's own natural attack counts as any of them. `/ability learn` warns when the
+character owns no matching weapon.
+
 ### Abilities and the effect catalog
 
 | Tier | Uses | Dice | Condition turns | Save DC bonus | Base AP | Effects |
 |---|---|---|---|---|---|---|
-| Cantrip | unlimited | 1d6 | 1 | +0 | 1 | up to 2 |
+| Cantrip | unlimited | 1d8 | 1 | +0 | 1 | up to 2 |
 | Weak | 3 | 2d6 | 1 | +1 | 1 | up to 3 |
 | Normal | 2 | 3d6 | 2 | +2 | 2 | up to 4 |
 | Strong | 1 | 4d8 | 3 | +3 | 3 | up to 5 |
@@ -190,10 +211,16 @@ tricks of a seasoned fighter, ranger or rogue. Nothing stops time, banishes, dis
 mind, makes the user intangible or summons golems and demons; summons are small helpers (sprites, hounds, wisps). The
 banished and intangible conditions stay for GMs to apply by hand.
 
+**Balance pass 1** (2026-11-15, from the simulator's first report, see `classes/combat/Balance.py`): blasts roll one die
+step below the tier's; Cantrip dice went from 1d6 to 1d8, so a 3 AP Cantrip attack matches a 3 AP weapon swing (a base
+AP of 0 was tried and overshot: three Cantrips a turn won 64% to 88%); Precise and Dart effects give +2 to hit and cost
+3 (at cost 2 the accuracy came free); self Armor, Guard, Iron Skin and Grit Teeth last two turns longer, since unspent AP
+already becomes AC. The latest report is `design/balance-report.md`.
+
 | Mechanic | What it does |
 |---|---|
 | attack | `d20 + stat modifier` against AC; a hit deals dice + modifier − DT. Options: fixed damage type, extra hits (one dice step lower each), ignores DT, drain (heals the user half), a condition on a hit, execute (+1 die at half HP or less), accuracy, wider crits. |
-| blast | The target saves (`d20 + stat`) against `10 + modifier + DC bonus`; a failed save takes the dice, a passed one half. Can add a condition on a failed save. |
+| blast | The target saves (`d20 + stat`) against `10 + modifier + DC bonus`; a failed save takes the dice (one step below the tier's, since a blast always does something), a passed one half. Can add a condition on a failed save. |
 | afflict | Save or the condition for the tier's turns. A save failed by 5 or more also triggers the ability's damage type. |
 | doom | Save or doomed: takes the dice when it runs out. |
 | dispel / cleanse | Removes helpful conditions from an enemy / harmful ones from an ally. |
@@ -265,7 +292,15 @@ to give AP made no sense). Bestiary entries can have passives too (their `abilit
 | Minion | 8 | 10 | 0 | +1 | 1d6 | 7 |
 | Standard | 20 | 12 | 1 | +2 | 2d6 | 7 |
 | Elite | 40 | 14 | 2 | +4 | 2d8 | 7 |
-| Boss | 80 | 15 | 3 | +5 | 3d8 | 14 (acts twice) |
+| Miniboss | 75 + 75 × 0.25 per player | 14 | 2 | +4 | 2d8 | 10 |
+| Boss | 75 + 75 × 0.5 per player | 15 | 3 | +5 | 3d8 | 14 (acts twice) |
+
+**Minibosses and bosses** (Rico's formula): HP = 75 + 75 × 0.25 (miniboss) or 0.5 (boss) × the number of player
+characters on the other sides, so 150 and 225 against 4 players (at least one player counts). It is set when the fight
+starts (the log says "👑 Boss … has 225 HP against 4 players"), again whenever someone joins during setup, and when a
+boss joins a running fight; HP passives add on top. Quick NPCs offer both presets, a bestiary entry with either preset
+is one, and the GM can make any bestiary NPC a miniboss or boss when adding it (the "Miniboss or boss?" field). Roll
+tables that start fights keep the entry's own rank.
 
 NPC behaviors: aggressive (lowest HP), vengeful (whoever hit it last), random, cautious (defends below 30% HP, flees
 below 15%), support (revives and heals allies first). Player autopilot: weakest, revenge, defend, support.
@@ -289,6 +324,9 @@ below 15%), support (revives and heals allies first). Player autopilot: weakest,
 - `classes/combat/Effects.py`, `EffectCatalog.py`, `PassiveCatalog.py`, `GeneratedEffects.py`: effect mechanics,
   checks and AP costs, the hand-written catalogs and the themed bulk of them. `classes/combat/Resolver.py`: resolving abilities and their effects in a fight (a mixin of the engine).
 - `classes/combat/SheetAbilities.py`: reserved sheet labels and turning old free-text answers into blank abilities.
+- `classes/combat/Balance.py`: the balance simulator. `python -m classes.combat.Balance [fights] [path]` plays each
+  effect in simulated duels (a hero with it against one that only attacks) and writes `design/balance-report.md` with
+  the outliers per tier (too strong, too weak, worse than attacking). It needs no database or Discord.
 - `classes/combat/Loadout.py`: a character or bestiary entry as a combatant.
 - `classes/combat/Passives.py`: passive abilities. `classes/combat/Fortune.py`: bad-roll protection. `classes/combat/Items.py`: consumables. `classes/combat/BestiaryFlow.py`: bestiary values and imports.
 - `classes/gear/Legacy.py`: reads the old global tables. `classes/characters/Death.py`: the dead status.

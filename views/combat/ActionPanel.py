@@ -144,6 +144,8 @@ class ActionPanel(discord.ui.View) :
 			for ability in abilities :
 				left = engine.ability_uses_left(combatant, ability)
 				uses = "∞" if left is None else f"{left} left"
+				if engine.weapon_problem(combatant, ability) :
+					uses += " · no weapon for it"
 				options.append(discord.SelectOption(label=f"{ability['name']} · {engine.ability_ap(ability)} AP "
 				                                          f"· {uses}"[:100], value=str(ability["id"]),
 				                                    default=str(ability["id"]) == self.ability_id))

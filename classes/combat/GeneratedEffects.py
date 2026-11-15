@@ -31,6 +31,9 @@ HEAVY = {C.STUNNED, C.SILENCED, C.ASLEEP, C.RESTRAINED, C.DISARMED, C.CHARMED, C
 MINOR_BOOSTS = {C.INSPIRED, C.REGENERATING, C.EMPOWERED, C.FORTIFIED, C.BLESSED, C.FOCUSED}
 MEDIUM_BOOSTS = {C.HASTED, C.EVASIVE, C.HIDDEN, C.WARDED, C.VAMPIRIC}
 
+# Fighting styles that need no weapon (fists, kicks, elbows); every other weapon theme needs a weapon of its kind.
+UNARMED = {"fist", "martial", "elbow"}
+
 # Category names added by this module (the hand-written ones live in EffectCatalog.py).
 OBJECTS_CAT = "Objects & craft"
 COSMIC_CAT = "Sun, moon & stars"
@@ -221,7 +224,7 @@ def magic_effects(theme: Theme) -> list[Effect] :
 		add("bolt", f"{A} Bolt", ATTACK, 2, f"a bolt of {n}", type=t)
 		add("lance", f"{A} Lance", ATTACK, 3, f"a lance of {n} that pierces armor", type=t, ignore_dt=True)
 		add("barrage", f"{A} Barrage", ATTACK, 3, f"a barrage of {n}", type=t, hits=2)
-		add("dart", f"{A} Dart", ATTACK, 2, f"a quick, sure dart of {n}", type=t, accuracy=3)
+		add("dart", f"{A} Dart", ATTACK, 3, f"a quick, sure dart of {n}", type=t, accuracy=2)
 		add("rend", f"{A} Rend", ATTACK, 3, f"a tearing blast of {n}", type=t, steps=1)
 		add("judgement", f"{A} Judgement", ATTACK, 3, f"{n} that finishes the wounded", type=t, execute=True)
 		if theme.light :
@@ -254,7 +257,8 @@ def magic_effects(theme: Theme) -> list[Effect] :
 	if "W" in theme.groups :
 		add("ward", f"{A} Ward", SHIELD, 2, f"a shield of {n}")
 		add("aegis", f"{A} Aegis", SHIELD, 3, f"a great shield of {n}", WEAK, steps=1)
-		add("armor", f"{A} Armor", BOOST, 1, f"armor of {n} on yourself", aim=SELF, condition=C.FORTIFIED)
+		add("armor", f"{A} Armor", BOOST, 1, f"armor of {n} on yourself", aim=SELF, condition=C.FORTIFIED,
+		    turns=2)
 		add("mantle", f"{A} Mantle", BOOST, 2, f"{n} that hurts anyone who strikes you", aim=SELF, condition=C.THORNS)
 		if theme.boost in MINOR_BOOSTS | MEDIUM_BOOSTS :
 			add("veil", f"{A} Veil", BOOST, 3 if theme.boost in MEDIUM_BOOSTS else 2,
@@ -276,6 +280,8 @@ def physical_effects(weapon: Weapon) -> list[Effect] :
 
 	def add(template: str, name: str, mechanic: str, cost: int, text: str, tier: str = CANTRIP, aim: str = "",
 	        **params) :
+		if weapon.key not in UNARMED :
+			params["requires"] = weapon.key
 		found.append(make(f"{weapon.key}_{template}", name, PHYSICAL, weapon.category, mechanic, cost, text, tier,
 		                  aim, **params))
 
@@ -292,7 +298,7 @@ def physical_effects(weapon: Weapon) -> list[Effect] :
 	    on_hit=C.DISARMED)
 	add("stunning", f"Stunning {base}", ATTACK, 4, f"a {V.lower()} that leaves the target reeling", WEAK, type=t,
 	    on_hit=C.STUNNED)
-	add("precise", f"Precise {base}", ATTACK, 2, f"a careful {V.lower()} that rarely misses", type=t, accuracy=3)
+	add("precise", f"Precise {base}", ATTACK, 3, f"a careful {V.lower()} that rarely misses", type=t, accuracy=2)
 	add("vital", f"Vital {base}", ATTACK, 3, f"a {V.lower()} at a vital point", type=t, crit=2)
 	add("finishing", f"Finishing {base}", ATTACK, 3, f"a {V.lower()} that finishes off the wounded", type=t,
 	    execute=True)
@@ -315,7 +321,8 @@ def physical_effects(weapon: Weapon) -> list[Effect] :
 		add("whirlwind", f"{W} Whirlwind", BLAST, 3, f"a spinning sweep of the {n}, dodged for half", WEAK, type=t)
 		add("parry", f"{W} Parry", BOOST, 2, f"turns the next blow aside with the {n}", aim=SELF,
 		    condition=C.EVASIVE)
-		add("guard", f"{W} Guard", BOOST, 1, f"a defensive stance with the {n}", aim=SELF, condition=C.FORTIFIED)
+		add("guard", f"{W} Guard", BOOST, 1, f"a defensive stance with the {n}", aim=SELF, condition=C.FORTIFIED,
+		    turns=2)
 		add("riposte", f"{W} Riposte", BOOST, 2, f"answers every missed blow with the {n}", aim=SELF,
 		    condition=C.RIPOSTE)
 		add("feint", f"{W} Feint", AFFLICT, 2, f"a feint with the {n} that leaves the target open",

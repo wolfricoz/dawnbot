@@ -49,13 +49,78 @@ UNARMED = {"key" : UNARMED_KEY, "name" : "Unarmed", "type" : "blunt", "dice" : "
            "damage_stat" : "strength", "hit_mod" : 0, "range" : MELEE, "properties" : ["light"], "ap" : None,
            "proficiency" : AVERAGE, "requirement_penalty" : 0}
 WEAPON_DEFAULTS = {"type" : None, "dice" : "1d6", "attack_stat" : "strength", "damage_stat" : "strength",
-                   "hit_mod" : 0, "range" : MELEE, "properties" : [], "ap" : None}
+                   "hit_mod" : 0, "range" : MELEE, "properties" : [], "ap" : None, "kind" : None}
 ARMOR_DEFAULTS = {"armor_class" : CLOTHING, "ac" : 0, "dt" : 0, "hit_mod" : 0, "ability_hit_mod" : 0}
-NEW_WEAPON_KEYS = {"type", "attack_stat", "damage_stat", "hit_mod", "range", "properties", "ap"}
+NEW_WEAPON_KEYS = {"type", "attack_stat", "damage_stat", "hit_mod", "range", "properties", "ap", "kind"}
+
+# What kind of weapon an item is, so weapon techniques (a Crippling Spear Thrust, a Crossbow Volley) can ask for one.
+# A catalog item sets it in combat.kind; without one it is read from the item's name (see KIND_WORDS).
+WEAPON_KINDS = ["sword", "greatsword", "axe", "dagger", "rapier", "scimitar", "scythe", "whip", "mace", "hammer",
+                "flail", "staff", "club", "shield", "chain", "spear", "halberd", "lance", "trident", "glaive", "bow",
+                "crossbow", "sling", "javelin", "hatchet", "shuriken", "pistol", "rifle", "scattergun", "claw", "fang",
+                "horn", "tail", "wing", "tentacle"]
+# Natural weapons: a character needs a catalog item of that kind (staff can make "Claws" for a clawed species); an
+# NPC's own natural attack counts as any of them.
+NATURAL_KINDS = ["claw", "fang", "horn", "tail", "wing", "tentacle"]
+# Requirements besides a kind: any ranged weapon (not a spell focus), a thrown weapon, or a shield.
+NEEDS_RANGED = "ranged"
+NEEDS_THROWN = "thrown"
+NEEDS_SHIELD = "shield"
+# Kinds that also count as another: a greatsword or sabre does sword techniques, a hatchet axe techniques.
+KIND_ALIASES = {"sword" : {"greatsword", "scimitar"}, "axe" : {"hatchet"}, "spear" : {"trident"},
+                "javelin" : {"spear"}, NEEDS_THROWN : {"javelin", "hatchet", "shuriken"}}
+# Words in a weapon's name that give away its kind, checked in this order. A word matches exactly, or as the end of
+# a longer word for keys of 5 letters or more (longsword, greatblade).
+KIND_WORDS = [
+	("greatsword", ("greatsword", "greatblade", "claymore", "zweihander", "flamberge")),
+	("crossbow", ("crossbow", "arbalest")),
+	("scattergun", ("scattergun", "shotgun", "blunderbuss")),
+	("hatchet", ("hatchet", "handaxe", "tomahawk")),
+	("shuriken", ("shuriken", "throwing star")),
+	("rapier", ("rapier", "estoc", "smallsword")),
+	("scimitar", ("scimitar", "sabre", "saber", "cutlass", "falchion", "tulwar")),
+	("dagger", ("dagger", "knife", "stiletto", "dirk", "kris", "kunai", "sai")),
+	("sword", ("sword", "blade", "katana", "gladius")),
+	("axe", ("axe", "greataxe", "battleaxe")),
+	("scythe", ("scythe", "sickle")),
+	("whip", ("whip",)),
+	("hammer", ("hammer", "maul")),
+	("flail", ("flail",)),
+	("mace", ("mace", "morningstar", "cudgel")),
+	("staff", ("staff", "quarterstaff")),
+	("club", ("club", "truncheon")),
+	("shield", ("shield", "buckler")),
+	("chain", ("chain",)),
+	("halberd", ("halberd", "poleaxe", "bardiche")),
+	("glaive", ("glaive", "naginata", "guisarme")),
+	("lance", ("lance",)),
+	("trident", ("trident", "pitchfork")),
+	("spear", ("spear", "pike", "partisan", "pilum")),
+	("javelin", ("javelin",)),
+	("bow", ("bow", "longbow", "shortbow")),
+	("sling", ("sling", "slingshot")),
+	("pistol", ("pistol", "revolver", "handgun")),
+	("rifle", ("rifle", "musket", "carbine")),
+	("claw", ("claw", "claws", "talon", "talons")),
+	("fang", ("fang", "fangs", "bite", "teeth", "jaws")),
+	("horn", ("horn", "horns", "gore", "antler", "antlers", "tusk", "tusks")),
+	("tail", ("tail",)),
+	("wing", ("wing", "wings")),
+	("tentacle", ("tentacle", "tentacles")),
+]
+NEEDS_LABELS = {NEEDS_RANGED : "a ranged weapon", NEEDS_THROWN : "a thrown weapon", NEEDS_SHIELD : "a shield",
+                "claw" : "claws", "fang" : "fangs", "horn" : "horns", "wing" : "wings", "tentacle" : "tentacles",
+                "axe" : "an axe"}
 NEW_ARMOR_KEYS = {"armor_class", "dt", "ability_hit_mod", "hit_mod"}
 UNMET_PENALTY_CAP = -5
 
 # == hp, ap ==
+# Minibosses and bosses: HP = 75 + 75 × share × the number of player characters they face (150 and 225 for 4).
+MINIBOSS = "miniboss"
+BOSS = "boss"
+RANKS = [MINIBOSS, BOSS]
+BOSS_BASE_HP = 75
+RANK_SHARE = {MINIBOSS : 0.25, BOSS : 0.5}
 HP_BASE = 15
 HP_MINIMUM = 5
 AP_BASE = 5
@@ -85,6 +150,19 @@ def hp_max(stats: dict, level: int = 1, base: int = 5) -> int :
 	per_level = 0 if endurance <= 0 else max(1, 2 + modifier(endurance, base))
 	value = HP_BASE + stat(stats, "strength") + 2 * endurance + max(0, int(level) - 1) * per_level
 	return max(HP_MINIMUM, value)
+
+
+# ============================================================
+def boss_hp(rank: str, players: int) -> int :
+	"""A miniboss's or boss's HP against this many player characters (at least one)."""
+	return int(round(BOSS_BASE_HP + BOSS_BASE_HP * RANK_SHARE[rank] * max(1, int(players))))
+
+
+# ============================================================
+def rank_text(rank: str) -> str :
+	"""`75 + 37.5 per player`"""
+	per = BOSS_BASE_HP * RANK_SHARE[rank]
+	return f"{BOSS_BASE_HP} + {per:g} per player"
 
 
 # ============================================================
@@ -407,6 +485,52 @@ def damage_bonus(stats: dict, weapon: dict, base: int = 5) -> int :
 		return 0
 	return modifier(stat(stats.get("special") or {}, damage_stat), base)
 
+
+# ============================================================
+def weapon_kind(weapon: dict) -> str | None :
+	"""What kind of weapon this is: its own kind, a shield, or read from its name. None for spell focuses and weapons
+	nothing gives away (unarmed included)."""
+	kind = weapon.get("kind")
+	if kind in WEAPON_KINDS :
+		return kind
+	properties = weapon.get("properties") or []
+	if "focus" in properties :
+		return None
+	if "shield" in properties :
+		return "shield"
+	name = str(weapon.get("name") or "").lower()
+	words = re.findall(r"[a-z]+", name)
+	for found, keys in KIND_WORDS :
+		for key in keys :
+			if (" " in key and key in name) or any(word == key or (len(key) >= 5 and word.endswith(key))
+			                                       for word in words) :
+				return found
+	return None
+
+
+# ============================================================
+def meets(weapon: dict, needs: str | None) -> bool :
+	"""Whether a weapon satisfies a weapon technique's requirement (a kind, ranged, thrown or shield)."""
+	if not needs :
+		return True
+	properties = weapon.get("properties") or []
+	if needs == NEEDS_RANGED :
+		return weapon.get("range") == RANGED and "focus" not in properties
+	if needs == NEEDS_SHIELD :
+		return "shield" in properties or weapon_kind(weapon) == "shield"
+	kind = weapon_kind(weapon)
+	if needs == NEEDS_THROWN :
+		return "thrown" in properties or kind in KIND_ALIASES[NEEDS_THROWN]
+	if kind == needs or kind in KIND_ALIASES.get(needs, ()) :
+		return True
+	# An NPC's natural attack (claws, a bite) stands in for any natural weapon it doesn't name.
+	return weapon.get("key") == "natural" and needs in NATURAL_KINDS and kind is None
+
+
+# ============================================================
+def needs_label(needs: str) -> str :
+	"""`a spear`, `claws`, `a ranged weapon`"""
+	return NEEDS_LABELS.get(needs, f"a {needs}")
 
 # ============================================================
 def weapon_crit_widen(weapon: dict) -> int :

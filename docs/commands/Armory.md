@@ -14,7 +14,7 @@ nav_order: 3
 
 ### `add`
 
-**Usage:** `/armory add <kind> <name> <price> <description> <requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition>`
+**Usage:** `/armory add <kind> <name> <price> <description> <requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind>`
 
 > Adds a weapon, armor set or consumable to the catalog. `requirements` are SPECIAL minimums written like
 > `strength 8, agility 4` (short names like `str 8` work too); they never stop a character from owning or using
@@ -23,7 +23,8 @@ nav_order: 3
 >
 > Combat values are optional. Weapons use `dice` (like 2d6), `damage_type`, `attack_stat` and `damage_stat`
 > (the stats added to attack and damage rolls), `hit_mod`, `range`, `properties` (like `light, thrown`; a
-> `shield` gives +2 AC while equipped) and `ap_cost`. Armor uses `armor_class`, `ac` (added to AC), `dt` (taken
+> `shield` gives +2 AC while equipped), `ap_cost` and `weapon_kind` (sword, spear, bow, claw...: which weapon
+> techniques it allows; without it the kind is read from the name). Armor uses `armor_class`, `ac` (added to AC), `dt` (taken
 > off every hit), `hit_mod` and `ability_hit_mod`. Consumables use `use` (heal, cure, boost or nothing
 > automatic), `dice` (healing or a shield) and `condition` (what a cure removes or a boost gives); they cost 2 AP
 > in a fight and are used up. When a gear forum is set, the item is posted there.
@@ -35,7 +36,7 @@ nav_order: 3
 
 ### `edit`
 
-**Usage:** `/armory edit <name> <new_name> <price> <description> <requirements> <clear_requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition>`
+**Usage:** `/armory edit <name> <new_name> <price> <description> <requirements> <clear_requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind>`
 
 > Changes a catalog item; options you leave out keep their value. `requirements` replaces all of the item's
 > requirements, and `clear_requirements` removes them. Type `-` in description or one of the effects to clear

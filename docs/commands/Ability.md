@@ -21,7 +21,7 @@ Build spells and abilities from the effect catalog, and teach them to your chara
 >
 > - `kind`: a spell takes magic effects and needs a magic `school` (which sets its stat); an ability takes
 >   physical effects and uses the `stat` you pick.
-> - `tier`: Cantrip (1d6, unlimited, up to 2 effects), Weak (2d6, 3 uses, 3 effects), Normal (3d6, 2 uses, 4
+> - `tier`: Cantrip (1d8, unlimited, up to 2 effects), Weak (2d6, 3 uses, 3 effects), Normal (3d6, 2 uses, 4
 >   effects) or Strong (4d8, 1 use, 5 effects). Some effects need a higher tier.
 > - `effect1` to `effect5`: what it does. Its AP cost is the tier's base (1, 1, 2, 3) plus every effect's cost;
 >   modifiers (area, empowered...) add to it, drawbacks (blood price, reckless...) take 1 off.
@@ -106,7 +106,8 @@ Build spells and abilities from the effect catalog, and teach them to your chara
 > 1 Strong; a passive spell takes a slot of its tier); other characters have 3 ability slots, where an active
 > ability takes 1 and a passive 2 (at most 1 Strong). A character can't have both spells and abilities, unless
 > an event granted them. Legendary characters get one extra slot. An active ability can't cost more AP than the
-> character has, and passives can't leave it with fewer than 3 AP.
+> character has, and passives can't leave it with fewer than 3 AP. Weapon techniques (a Spear Thrust, a Crossbow
+> Volley) only work in a fight while the character carries a weapon of that kind; you're told when it has none.
 
 ---
 

@@ -14,7 +14,7 @@ from discord.ext import commands
 from classes.combat.BestiaryFlow import BestiaryFlow
 from classes.combat.DamageTypes import DamageTypes
 from classes.combat.Engine import BEHAVIORS
-from classes.combat.Loadout import PRESETS
+from classes.combat.Loadout import PRESETS, preset_text
 from classes.gear.Gear import ARMOR, WEAPON
 from classes.gear.Legacy import Legacy
 from classes.gear.Packs import Packs
@@ -22,8 +22,8 @@ from database.transactions.BestiaryTransactions import BestiaryTransactions
 from database.transactions.GearItemTransactions import GearItemTransactions
 from views.combat.Pickers import reply
 
-PRESET_CHOICES = [Choice(name=f"{preset.capitalize()} (HP {hp}, AC {ac}, DT {dt}, {to_hit:+d}, {damage}, AP {ap})",
-                         value=preset) for preset, (hp, ac, dt, to_hit, damage, ap) in PRESETS.items()]
+PRESET_CHOICES = [Choice(name=f"{preset.capitalize()} ({preset_text(preset)})"[:100], value=preset)
+                  for preset in PRESETS]
 BEHAVIOR_CHOICES = [Choice(name=behavior.capitalize(), value=behavior) for behavior in BEHAVIORS]
 OPTION_HELP = {
 	"preset"          : "Starting numbers; the options you fill in replace them",
@@ -110,7 +110,9 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 	              special: app_commands.Range[str, 1, 100] = None, level: app_commands.Range[int, 1, 50] = None,
 	              weapons: app_commands.Range[str, 1, 300] = None, armor: str = None) :
 		"""
-		Adds an NPC or monster to the bestiary. The `preset` (minion, standard, elite, boss) fills in its numbers;
+		Adds an NPC or monster to the bestiary. The `preset` (minion, standard, elite, miniboss, boss) fills in its
+		numbers; a miniboss or boss gets 75 HP + 18.75 (miniboss) or 37.5 (boss) per player character it faces, set
+		when the fight starts;
 		the options you fill in replace them. A boss has 14 AP, so it acts about twice as much. GMs add bestiary
 		entries to a fight from the board's GM tools.
 

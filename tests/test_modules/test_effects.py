@@ -4,7 +4,8 @@ import random
 import unittest
 
 from classes.characters.Card import Card
-from classes.combat import Conditions as C, EffectCatalog, Effects, PassiveCatalog, Passives as P, SheetAbilities
+from classes.combat import Conditions as C, EffectCatalog, Effects, PassiveCatalog, Passives as P, Rules, \
+	SheetAbilities
 from classes.combat.Abilities import SPELL_SLOTS, check_learn
 from classes.combat.AbilityFlow import AbilityFlow
 from classes.combat.Engine import CombatError, Engine
@@ -13,6 +14,17 @@ from database.transactions.AbilityTransactions import APPROVED, AbilityTransacti
 from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
 from test_modules.base import DatabaseTestCase, GUILD_ID, USER_ID
 from test_modules.test_combat import TYPES, NOW, ability, duel, engine, fighter
+
+
+def weapon_for(needs: str, proficiency: str = "average") -> dict :
+	"""A weapon that meets a technique's requirement."""
+	ranged = needs in (Rules.NEEDS_RANGED, "bow", "crossbow", "sling", "javelin", "hatchet", "shuriken", "pistol",
+	                   "rifle", "scattergun")
+	properties = ["shield"] if needs == Rules.NEEDS_SHIELD else ["thrown"] if needs == Rules.NEEDS_THROWN else []
+	kind = needs if needs in Rules.WEAPON_KINDS else None
+	return {"key" : f"gear:{needs}", "name" : f"Test {needs}", "kind" : kind, "type" : "Piercing", "dice" : "1d8",
+	        "attack_stat" : "strength", "damage_stat" : "strength", "hit_mod" : 0,
+	        "range" : Rules.RANGED if ranged else Rules.MELEE, "properties" : properties, "proficiency" : proficiency}
 
 
 class TestCatalog(unittest.TestCase) :
@@ -80,6 +92,9 @@ class TestEveryEffectInAFight(unittest.TestCase) :
 		fight.combatants.append(fighter(4, 2, "Thug", sequence=4))
 		ayla = fight.combatant(1)
 		ayla.stats["abilities"] = [built]
+		needs = effect.params.get("requires")
+		if needs :
+			ayla.stats["weapons"].append(weapon_for(needs))
 		ayla.ap_max = 30
 		run = Engine(fight, TYPES, rng=random.Random(seed), now=NOW)
 		run.start()
@@ -142,7 +157,9 @@ class TestEffectsInFights(unittest.TestCase) :
 		self.assertTrue(C.has(bandit.conditions, C.ASLEEP))
 		run.damage(bandit, 1, ayla)
 		self.assertFalse(C.has(bandit.conditions, C.ASLEEP))
-		C.add(bandit.conditions, C.ASLEEP, turns=2)
+		# Just woken: it can't be put back to sleep this soon, except by the GM.
+		self.assertFalse(C.add(bandit.conditions, C.ASLEEP, turns=2))
+		C.add(bandit.conditions, C.ASLEEP, turns=2, force=True)
 		run.begin_turn(bandit)
 		self.assertEqual((bandit.ap, bandit.acted), (0, True))
 

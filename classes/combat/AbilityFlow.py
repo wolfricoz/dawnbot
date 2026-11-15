@@ -194,6 +194,21 @@ class AbilityFlow :
 
 	# ============================================================
 	@staticmethod
+	def missing_weapons(character: Characters, ability: Abilities) -> list[str] :
+		"""The weapons an ability's techniques need that the character doesn't own (fists always count)."""
+		from classes.gear.Gear import Gear, WEAPON
+
+		needs = Effects.requirements(AbilityRules.active_effects(ability.effects))
+		if not needs :
+			return []
+		owned = [dict(Rules.UNARMED)]
+		for entry, item in Gear.inventory(character.id) :
+			if entry.kind == WEAPON :
+				owned.append(Rules.normalise_weapon(item.combat if item is not None else {}) | {"name" : entry.name})
+		return [Rules.needs_label(need) for need in needs if not any(Rules.meets(weapon, need) for weapon in owned)]
+
+	# ============================================================
+	@staticmethod
 	def character_ap(character: Characters, known: list[Abilities]) -> int :
 		"""The AP the character has each turn after its approved passives take theirs."""
 		special = {stat : int(getattr(character, stat) or 0) for stat in Rules.STATS}

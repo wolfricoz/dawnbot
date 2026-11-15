@@ -158,6 +158,30 @@ def check_learn(known: list[tuple], kind: str, tier: str, legendary: bool, passi
 	return None
 
 
+# == in a fight ==
+
+# ============================================================
+def fight_data(ability_id, name: str, kind: str, tier: str, stat: str, damage_type: str | None,
+               stored: list | None, passive: bool = False) -> dict :
+	"""An ability as the fight uses it, with its effects copied from the catalog so a running fight doesn't change
+	when the catalog does. Active abilities carry their AP, uses, how many targets and who they aim at, and whether
+	they need concentration; passive ones their entries (see Passives.entries)."""
+	data = {"id" : ability_id, "name" : name, "kind" : kind, "tier" : tier, "stat" : stat,
+	        "damage_type" : damage_type, "activation" : "passive" if passive else "active", "magic" : kind == SPELL,
+	        "summary" : summary(kind, tier, stat, stored, damage_type, passive)}
+	if passive :
+		target, limit = options(stored)
+		data["entries"] = Passives.entries(ability_id, name, tier, passive_effects(stored), target, limit)
+		return data
+	effects = active_effects(stored)
+	data.update({"effects" : [Effects.snapshot(effect) for effect in effects], "ap" : Effects.ap_cost(tier, effects),
+	             "uses" : Effects.ability_uses(tier, effects), "targets" : Effects.target_limit(effects),
+	             "aim" : Effects.aim(effects), "steps" : Effects.dice_steps(effects),
+	             "modifiers" : sorted(Effects.modifiers(effects)), "concentration" : Effects.concentration(kind, effects),
+	             "drawbacks" : sorted(Effects.drawbacks(effects))})
+	return data
+
+
 # == describing ==
 
 # ============================================================

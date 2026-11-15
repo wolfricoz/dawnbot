@@ -7,7 +7,7 @@ import discord
 from classes.combat import Conditions as C
 from classes.combat.CombatFlow import CombatFlow
 from classes.combat.Engine import AUTOPILOTS, BEHAVIORS
-from classes.combat.Loadout import Loadout, PRESETS
+from classes.combat.Loadout import Loadout, PRESETS, preset_text, rank_of
 from classes.combat.State import ACTIVE, AUTO, DYING, ENDED, Fight, GM, LIVE, PAUSED, PLAYER, SETUP
 from database.transactions.BestiaryTransactions import BestiaryTransactions
 from database.transactions.CombatTransactions import CombatTransactions
@@ -148,14 +148,16 @@ class GMPanel(discord.ui.View) :
 			async def side_chosen(side_interaction: discord.Interaction, side_id: int) :
 				async def counted(form_interaction: discord.Interaction, fields: list[str]) :
 					count = max(1, min(MAX_NPCS, number(fields[0]) or 1))
+					rank = rank_of(fields[1])
 					await form_interaction.response.defer(ephemeral=True)
 					await CombatFlow.add_npcs(form_interaction.client, self.fight_id,
 					                          lambda name, side, position : Loadout.for_bestiary(entry, side, name,
-					                                                                             position),
+					                                                                             position, rank=rank),
 					                          count, side_id, entry.name, form_interaction)
 
 				await side_interaction.response.send_modal(Form(f"Add {entry.name}"[:45], [
-					Field("How many?", "1", "1", max_length=2)], counted))
+					Field("How many?", "1", "1", max_length=2),
+					Field("Miniboss or boss? (empty for neither)", "boss", required=False, max_length=10)], counted))
 
 			await self._pick_side(next_interaction, fight, f"Which side does {entry.name} fight on?", side_chosen,
 			                      enemies)
@@ -187,8 +189,7 @@ class GMPanel(discord.ui.View) :
 				Field("Name", "Bandit", max_length=80), Field("How many?", "1", "1", max_length=2),
 				Field("Damage type (optional)", "Slashing", required=False, max_length=50)], filled))
 
-		options = [Option(preset.capitalize(), preset, f"HP {hp} · AC {ac} · DT {dt} · {to_hit:+d} · {damage} · AP {ap}")
-		           for preset, (hp, ac, dt, to_hit, damage, ap) in PRESETS.items()]
+		options = [Option(preset.capitalize(), preset, preset_text(preset)) for preset in PRESETS]
 		await pick(interaction, "Which difficulty?", options, "Pick a preset", preset_chosen)
 
 	# ============================================================

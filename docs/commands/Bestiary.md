@@ -16,7 +16,8 @@ NPCs and monsters for fights.
 
 **Usage:** `/bestiary add <name> <preset> <description> <hp> <ac> <dt> <to_hit> <damage> <damage_type> <attack_name> <ap> <sequence> <behavior> <abilities> <avatar_url> <reward_xp> <reward_currency> <special> <level> <weapons> <armor>`
 
-> Adds an NPC or monster to the bestiary. The `preset` (minion, standard, elite, boss) fills in its numbers;
+> Adds an NPC or monster to the bestiary. The `preset` (minion, standard, elite, miniboss, boss) fills in its numbers; a miniboss or boss gets
+> 75 HP + 18.75 (miniboss) or 37.5 (boss) per player character it faces, set when the fight starts;
 > the options you fill in replace them. A boss has 14 AP, so it acts about twice as much. GMs add bestiary
 > entries to a fight from the board's GM tools.
 >

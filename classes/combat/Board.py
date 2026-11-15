@@ -55,6 +55,9 @@ def passive_notes(combatant: Combatant) -> list[str] :
 	notes = []
 	if Fortune.armed(combatant.stats.get("bad_streak")) :
 		notes.append("🍀 next failed roll is made again")
+	focus = combatant.stats.get("concentration")
+	if focus :
+		notes.append(f"🧠 concentrating on {focus.get('name')}")
 	state = combatant.stats.get("passive_state") or {}
 	for passive in combatant.passives :
 		kept = state.get(str(passive["id"])) or {}

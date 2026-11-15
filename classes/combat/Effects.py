@@ -12,7 +12,8 @@ An active effect has a mechanic, which is what the engine does with it, and para
   Parameters: `type` (damage type; None uses the ability's), `hits` (separate attacks, one dice step lower each),
   `ignore_dt`, `drain` (heals the user for half the damage), `on_hit` (a condition the target gets on a hit, no save),
   `execute` (one more die against targets at half HP or less), `accuracy` (to hit bonus), `crit` (crit range wider).
-- blast: the target saves (`save`, a stat) against the DC; a failed save takes the dice, a passed one half.
+- blast: the target saves (`save`, a stat) against the DC; a failed save takes the dice (one step below the tier's,
+  since a blast always does something), a passed one half.
   `on_fail` adds a condition to a failed save.
 - afflict: the target saves against the DC or gets `condition` for the tier's turns (+`turns`). `amount` overrides the
   tier's number for conditions that carry one (vulnerable, drained).
@@ -100,11 +101,14 @@ TIERS = [CANTRIP, WEAK, NORMAL, STRONG]
 TIER_INDEX = {CANTRIP : 0, WEAK : 1, NORMAL : 2, STRONG : 3}
 # tier: (uses per fight (None is unlimited), dice, condition turns, save DC bonus, base AP, most effects)
 TIER_DATA = {
-	CANTRIP : (None, "1d6", 1, 0, 1, 2),
+	CANTRIP : (None, "1d8", 1, 0, 1, 2),
 	WEAK    : (3, "2d6", 1, 1, 1, 3),
 	NORMAL  : (2, "3d6", 2, 2, 2, 4),
 	STRONG  : (1, "4d8", 3, 3, 3, 5),
 }
+# Blasts always deal something (half on a save), so they roll one die step below the tier's (balance report,
+# 2026-11-15: at the tier's dice they won far more often than attacks of the same cost).
+BLAST_STEPS = -1
 # The most an active ability may cost, whatever its effects.
 MAX_AP = 12
 MIN_AP = 1
@@ -167,6 +171,10 @@ def index(effects: list[Effect]) -> dict[str, Effect] :
 		for name in (effect.params.get("condition"), effect.params.get("on_hit"), effect.params.get("on_fail")) :
 			if name is not None and name not in C.DEFINITIONS :
 				raise ValueError(f"Effect {effect.key} uses unknown condition {name}")
+		needs = effect.params.get("requires")
+		if needs is not None and needs not in Rules.WEAPON_KINDS + [Rules.NEEDS_RANGED, Rules.NEEDS_THROWN,
+		                                                             Rules.NEEDS_SHIELD] :
+			raise ValueError(f"Effect {effect.key} needs an unknown weapon kind {needs}")
 		catalog[effect.key] = effect
 	return catalog
 
@@ -332,10 +340,16 @@ def dice_steps(effects: list[Effect]) -> int :
 def dice(tier: str, effect: Effect | dict, effects: list[Effect] | None = None) -> str :
 	"""An effect's dice: the tier's, moved by its own steps and the ability's modifiers; extra hits are a step lower."""
 	params = effect.params if isinstance(effect, Effect) else effect.get("params") or {}
+	mechanic = effect.mechanic if isinstance(effect, Effect) else effect.get("mechanic")
 	steps = int(params.get("steps") or 0) + (dice_steps(effects) if effects else 0)
-	if int(params.get("hits") or 1) > 1 :
-		steps -= 1
-	return shift(base_dice(tier), steps)
+	return shift(base_dice(tier), steps + effect_steps(mechanic, params))
+
+
+# ============================================================
+def effect_steps(mechanic: str | None, params: dict) -> int :
+	"""Dice steps an effect takes by its nature: extra hits are a step lower each, and so are blasts."""
+	steps = -1 if int(params.get("hits") or 1) > 1 else 0
+	return steps + (BLAST_STEPS if mechanic == BLAST else 0)
 
 
 # ============================================================
@@ -352,6 +366,17 @@ def snapshot(effect: Effect) -> dict :
 	"""An effect as a fight stores it, so changes to the catalog don't change a running fight."""
 	return {"key" : effect.key, "name" : effect.name, "realm" : effect.realm, "mechanic" : effect.mechanic,
 	        "aim" : effect.target, "params" : dict(effect.params)}
+
+
+# ============================================================
+def concentration(kind: str, effects: list[Effect]) -> bool :
+	"""Whether a spell needs concentration: it keeps something going on someone (a boost on another, a summon, a
+	condition from a save, a doom). Physical abilities and boosts only on the caster never do. A caster holds one
+	concentration at a time."""
+	if kind != "spell" :
+		return False
+	return any(effect.mechanic in (COMPANION, AFFLICT, DOOM) or (effect.mechanic == BOOST and effect.target != SELF)
+	           for effect in effects)
 
 
 # == describing ==
@@ -432,7 +457,21 @@ def describe(effect: Effect, tier: str, stat: str, effects: list[Effect], damage
 		        WEAKEN : "you are weakened for a turn", ONCE : "one use per fight"}.get(kind, kind)
 	if effect.target == SELF and mechanic not in (COMPANION, ESCAPE, MODIFIER, DRAWBACK) :
 		text += " (on you)"
+	if params.get("requires") :
+		text += f"; needs {Rules.needs_label(params['requires'])}"
 	return f"{effect.name}: {text}"
+
+
+# ============================================================
+def requirements(effects: list) -> list[str] :
+	"""The weapons an ability's effects need (Effect entries or fight snapshots), without repeats."""
+	found = []
+	for effect in effects :
+		params = effect.params if isinstance(effect, Effect) else effect.get("params") or {}
+		needs = params.get("requires")
+		if needs and needs not in found :
+			found.append(needs)
+	return found
 
 
 # ============================================================
@@ -441,6 +480,8 @@ def summary(kind: str, tier: str, stat: str, effects: list[Effect], damage_type:
 	count = ability_uses(tier, effects)
 	head = [f"{tier.capitalize()} {kind}", f"{ap_cost(tier, effects)} AP",
 	        "unlimited uses" if count is None else f"{count} use{'s' if count != 1 else ''}"]
+	if concentration(kind, effects) :
+		head.append("concentration")
 	limit = target_limit(effects)
 	if limit > 1 :
 		head.append(f"up to {limit} {'enemies' if aim(effects) == ENEMY else 'allies'}")

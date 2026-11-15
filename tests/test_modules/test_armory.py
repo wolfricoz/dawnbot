@@ -56,7 +56,11 @@ class TestPacks(DatabaseTestCase) :
 					self.assertTrue(item["effect_unmet"])
 				for minimum in item["requirements"].values() :
 					self.assertTrue(1 <= minimum <= 10)
-				self.assertEqual(set(item["combat"]), set(COMBAT_DEFAULTS[item["kind"]]))
+				# Weapons also name their kind (sword, bow...) unless they are a spell focus.
+				expected = set(COMBAT_DEFAULTS[item["kind"]])
+				if item["kind"] == "weapon" and "focus" not in item["combat"]["properties"] :
+					expected.add("kind")
+				self.assertEqual(set(item["combat"]), expected)
 
 	def test_import_adds_everything_then_skips_everything(self) :
 		count = len(Packs.load("fantasy")["items"])

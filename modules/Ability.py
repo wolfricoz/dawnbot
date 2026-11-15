@@ -17,6 +17,7 @@ from classes.combat import EffectCatalog, Effects, PassiveCatalog, Passives
 from classes.combat.AbilityFlow import AbilityFlow
 from classes.combat.AutoComplete import AutoComplete
 from classes.combat.DamageTypes import DamageTypes
+from classes.combat import Rules
 from classes.combat.Rules import STATS
 from classes.combat.SheetAbilities import SheetAbilities
 from database.database import Abilities
@@ -26,14 +27,21 @@ from views.combat.Pickers import Field, Form, reply
 
 KIND_CHOICES = [Choice(name="Spell (magic effects, needs a magic school)", value=AbilityRules.SPELL),
                 Choice(name="Ability (physical effects)", value=AbilityRules.ABILITY)]
-TIER_CHOICES = [Choice(name=f"{tier.capitalize()} ({Effects.base_dice(tier)}, "
-                            f"{'unlimited' if Effects.uses(tier) is None else Effects.uses(tier)} uses, "
+
+
+# ============================================================
+def uses_text(tier: str) -> str :
+	count = Effects.uses(tier)
+	return "unlimited uses" if count is None else f"{count} use{'s' if count != 1 else ''}"
+
+
+TIER_CHOICES = [Choice(name=f"{tier.capitalize()} ({Effects.base_dice(tier)}, {uses_text(tier)}, "
                             f"{Effects.base_ap(tier)} AP + effects, up to {Effects.max_effects(tier)} effects)",
                        value=tier) for tier in Effects.TIERS]
 STAT_CHOICES = [Choice(name=stat.capitalize(), value=stat) for stat in STATS]
 PASSIVE_TIER_CHOICES = [Choice(name=f"{tier.capitalize()} ({size} of to hit, AC, damage...; up to "
-                                    f"{Passives.MAX_EFFECTS[tier]} effect{'s' if Passives.MAX_EFFECTS[tier] > 1 else ''})",
-                               value=tier)
+                                    f"{Passives.MAX_EFFECTS[tier]} effect"
+                                    f"{'s' if Passives.MAX_EFFECTS[tier] > 1 else ''})", value=tier)
                         for tier, size in ((Passives.WEAK, "+1"), (Passives.NORMAL, "+2"), (Passives.STRONG, "+3"))]
 REALM_CHOICES = [Choice(name="Magic (spells)", value=Effects.MAGIC),
                  Choice(name="Physical (abilities)", value=Effects.PHYSICAL)]
@@ -203,7 +211,7 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 
 		- `kind`: a spell takes magic effects and needs a magic `school` (which sets its stat); an ability takes
 		  physical effects and uses the `stat` you pick.
-		- `tier`: Cantrip (1d6, unlimited, up to 2 effects), Weak (2d6, 3 uses, 3 effects), Normal (3d6, 2 uses, 4
+		- `tier`: Cantrip (1d8, unlimited, up to 2 effects), Weak (2d6, 3 uses, 3 effects), Normal (3d6, 2 uses, 4
 		  effects) or Strong (4d8, 1 use, 5 effects). Some effects need a higher tier.
 		- `effect1` to `effect5`: what it does. Its AP cost is the tier's base (1, 1, 2, 3) plus every effect's cost;
 		  modifiers (area, empowered...) add to it, drawbacks (blood price, reckless...) take 1 off.
@@ -420,7 +428,9 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 		for effect in found :
 			tier = f" · {effect.tier.capitalize()}+" if effect.tier not in (Effects.CANTRIP, Passives.WEAK) else ""
 			cost = f"-{effect.cost} AP/turn" if passive else f"{effect.cost:+d} AP"
-			lines.append(f"**{effect.name}** · {effect.realm} · {cost}{tier}: {effect.text}")
+			needs = effect.params.get("requires")
+			weapon = f" · needs {Rules.needs_label(needs)}" if needs else ""
+			lines.append(f"**{effect.name}** · {effect.realm} · {cost}{tier}{weapon}: {effect.text}")
 		text, shown = "", 0
 		for line in lines :
 			if len(text) + len(line) + 1 > EMBED_LIMIT - 80 :
@@ -476,7 +486,8 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 		1 Strong; a passive spell takes a slot of its tier); other characters have 3 ability slots, where an active
 		ability takes 1 and a passive 2 (at most 1 Strong). A character can't have both spells and abilities, unless
 		an event granted them. Legendary characters get one extra slot. An active ability can't cost more AP than the
-		character has, and passives can't leave it with fewer than 3 AP.
+		character has, and passives can't leave it with fewer than 3 AP. Weapon techniques (a Spear Thrust, a Crossbow
+		Volley) only work in a fight while the character carries a weapon of that kind; you're told when it has none.
 		"""
 		record = CharacterTransactions().get(interaction.user.id, interaction.guild_id, character)
 		if record is None or record.state != CHARACTER_APPROVED :
@@ -489,7 +500,10 @@ class Ability(commands.GroupCog, name="Ability", group_name="ability") :
 			return await reply(interaction, problem)
 		AbilityTransactions().learn(record.id, found.id)
 		logging.info(f"{interaction.user.name}'s character {record.id} learned ability {found.id}")
-		await reply(interaction, f"{record.name} learned **{found.name}**.")
+		missing = AbilityFlow.missing_weapons(record, found)
+		note = f"\nIt needs {' and '.join(missing)} in a fight, and {record.name} doesn't own one yet (see /shop)." \
+			if missing else ""
+		await reply(interaction, f"{record.name} learned **{found.name}**.{note}")
 		await ForumPost.sync(self.bot, record)
 
 	# ============================================================

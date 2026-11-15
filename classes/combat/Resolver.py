@@ -12,6 +12,7 @@ from classes.combat.DamageTypes import ALWAYS, CLEANSE as CLEANSE_KIND, IGNORE_D
 from classes.combat.State import Combatant, DEAD, FLED, STANDING
 
 CONFUSED_CHANCE = 50
+CONCENTRATION_DC = 10
 
 
 class Resolver :
@@ -95,6 +96,28 @@ class Resolver :
 		return self.targetable(actor, allies, offensive=False)
 
 	# ============================================================
+	def weapon_for(self, actor: Combatant, needs: str | None) -> dict | None :
+		"""The best weapon the actor can use that meets a requirement (the highest proficiency), or None."""
+		if not needs :
+			return None
+		matching = [weapon for weapon in self.usable_weapons(actor) if Rules.meets(weapon, needs)]
+		if not matching :
+			return None
+		return max(matching, key=lambda weapon : Rules.proficiency_bonus(weapon.get("proficiency")))
+
+	# ============================================================
+	def weapon_problem(self, actor: Combatant, ability: dict) -> str | None :
+		"""Why the actor can't use an ability for lack of a weapon (weapon techniques need one), or None."""
+		missing = [needs for needs in FX.requirements(ability.get("effects") or [])
+		           if self.weapon_for(actor, needs) is None]
+		if not missing :
+			return None
+		labels = " and ".join(Rules.needs_label(needs) for needs in missing)
+		if C.has(actor.conditions, C.DISARMED) :
+			return f"{ability['name']} needs {labels}, and {actor.name} is disarmed."
+		return f"{ability['name']} needs {labels}, and {actor.name} doesn't carry one."
+
+	# ============================================================
 	def use_ability(self, actor: Combatant, ability_id, target_ids: list) -> object :
 		self.require_turn(actor)
 		ability = actor.ability(ability_id)
@@ -123,6 +146,9 @@ class Resolver :
 
 		if C.has(actor.conditions, C.SILENCED) :
 			raise CombatError(f"{actor.name} is silenced and can't use abilities.")
+		problem = self.weapon_problem(actor, ability)
+		if problem :
+			raise CombatError(problem)
 		left = self.ability_uses_left(actor, ability)
 		if left is not None and left <= 0 :
 			raise CombatError(f"{ability['name']} has no uses left this fight.")
@@ -131,6 +157,11 @@ class Resolver :
 		self._spend(actor, self.ability_ap(ability))
 		actor.ability_uses[str(ability["id"])] = int(actor.ability_uses.get(str(ability["id"]), 0)) + 1
 		self.say(f"✨ **{actor.name}** uses **{ability['name']}**.")
+		focus = None
+		if ability.get("concentration") :
+			self.end_concentration(actor, f"{actor.name} turns to {ability['name']}")
+			focus = {"ability" : ability["id"], "name" : ability["name"], "applied" : []}
+		self._focus = focus
 		aim = self.ability_aim(ability)
 		if aim == FX.ENEMY :
 			C.remove(actor.conditions, C.HIDDEN)
@@ -147,7 +178,50 @@ class Resolver :
 		for effect in effects :
 			if effect.get("aim") == FX.SELF and actor.in_fight :
 				self.resolve_effect(actor, ability, effect, actor)
+		self._focus = None
+		if focus is not None and focus["applied"] and actor.standing :
+			actor.stats["concentration"] = focus
+			self.say(f"-# {actor.name} concentrates on {ability['name']}.")
 		self.drawbacks(actor, ability, landed or not resolved or aim != FX.ENEMY)
+
+	# == concentration ==
+
+	# ============================================================
+	def track(self, target: Combatant, name: str) -> None :
+		"""Remembers a condition the ability being used put on someone, while it needs concentration."""
+		focus = getattr(self, "_focus", None)
+		if focus is not None :
+			focus["applied"].append([target.id, name])
+
+	# ============================================================
+	def end_concentration(self, combatant: Combatant, reason: str | None = None) -> None :
+		"""Ends the combatant's concentration: what that spell keeps going stops."""
+		focus = combatant.stats.pop("concentration", None)
+		if not focus :
+			return
+		ended = []
+		for target_id, name in focus.get("applied") or [] :
+			target = self.fight.combatant(target_id)
+			if target is not None and C.remove(target.conditions, name) :
+				C.grant_immunity(target.conditions, name)
+				ended.append(f"{target.name} is no longer {C.label(name).lower()}")
+		why = f" ({reason})" if reason else ""
+		self.say(f"-# {combatant.name}'s concentration on {focus.get('name')} ends{why}"
+		         + (f": {'; '.join(ended)}." if ended else "."))
+
+	# ============================================================
+	def concentration_check(self, combatant: Combatant, damage: int) -> None :
+		"""Damage makes a concentrating caster save (END) against 10 or half the damage; failing, or going down, ends
+		it."""
+		if not combatant.stats.get("concentration") :
+			return
+		if not combatant.standing :
+			self.end_concentration(combatant, f"{combatant.name} went down")
+			return
+		dc = max(CONCENTRATION_DC, damage // 2)
+		save = self.saving_throw(combatant, "endurance")()
+		if save < dc :
+			self.end_concentration(combatant, f"END save {save} vs {dc}")
 
 	# ============================================================
 	def drawbacks(self, actor: Combatant, ability: dict, landed: bool) -> None :
@@ -172,9 +246,7 @@ class Resolver :
 	def effect_dice(self, ability: dict, effect: dict) -> str :
 		params = effect.get("params") or {}
 		steps = int(params.get("steps") or 0) + int(ability.get("steps") or 0)
-		if int(params.get("hits") or 1) > 1 :
-			steps -= 1
-		return FX.shift(FX.base_dice(ability["tier"]), steps)
+		return FX.shift(FX.base_dice(ability["tier"]), steps + FX.effect_steps(effect.get("mechanic"), params))
 
 	# ============================================================
 	def effect_turns(self, ability: dict, effect: dict) -> int :
@@ -209,14 +281,22 @@ class Resolver :
 		return bool(handler(actor, ability, effect, target))
 
 	# ============================================================
-	def ability_hit(self, actor: Combatant, ability: dict, target: Combatant, accuracy: int = 0, crit: int = 0) :
-		"""An ability's attack roll against the target."""
+	def ability_hit(self, actor: Combatant, ability: dict, target: Combatant, accuracy: int = 0, crit: int = 0,
+	                weapon: dict | None = None) :
+		"""An ability's attack roll against the target. A weapon technique adds the weapon's proficiency, hit modifier
+		and unmet requirements (the stat is still the ability's)."""
 		stat = ability.get("stat") or "intelligence"
 		magic = bool(ability.get("magic"))
 		bonuses = [Rules.Bonus(Rules.STAT_SHORT.get(stat, stat), self.mod(actor, stat)),
 		           Rules.Bonus("armor", int((actor.stats.get("armor") or {}).get("ability_hit_mod") or 0))]
 		if accuracy :
 			bonuses.append(Rules.Bonus("accuracy", accuracy))
+		if weapon is not None and "to_hit" not in weapon :
+			bonuses += [Rules.Bonus((weapon.get("proficiency") or Rules.AWFUL).capitalize(),
+			                        Rules.proficiency_bonus(weapon.get("proficiency"))),
+			            Rules.Bonus("weapon", int(weapon.get("hit_mod") or 0)),
+			            Rules.Bonus("requirements", int(weapon.get("requirement_penalty") or 0))]
+			crit += Rules.weapon_crit_widen(weapon)
 		if FX.PRECISE in (ability.get("modifiers") or []) :
 			bonuses.append(Rules.Bonus("precise", FX.PRECISE_BONUS))
 		bonuses += self.situational(actor, target)
@@ -272,7 +352,7 @@ class Resolver :
 				self.say(f"→ {label} on {target.name}: evaded.")
 				continue
 			roll = self.ability_hit(actor, ability, target, int(params.get("accuracy") or 0),
-			                        int(params.get("crit") or 0))
+			                        int(params.get("crit") or 0), self.weapon_for(actor, params.get("requires")))
 			head = f"→ {label} on {target.name}: {roll.text()}"
 			if roll.fumble :
 				C.add(actor.conditions, C.EXPOSED, turns=1)
@@ -354,6 +434,7 @@ class Resolver :
 			return False
 		if self.inflict(target, name, self.effect_turns(ability, effect),
 		                self.condition_amount(ability, name, params.get("amount")), actor.id) :
+			self.track(target, name)
 			self.say(f"→ {effect['name']}: {target.name} fails ({text}) and is {C.label(name).lower()}.")
 		else :
 			self.say(f"→ {effect['name']}: {target.name} fails ({text}) but shakes it off.")
@@ -373,6 +454,7 @@ class Resolver :
 		amount, _ = Rules.roll_dice(dice, rng=self.rng)
 		turns = self.effect_turns(ability, effect)
 		if self.inflict(target, C.DOOMED, turns, amount, actor.id) :
+			self.track(target, C.DOOMED)
 			self.say(f"→ {effect['name']}: {target.name} fails ({text}) and is doomed: {amount} damage in "
 			         f"{turns} turn{'s' if turns != 1 else ''}.")
 		return True
@@ -432,6 +514,8 @@ class Resolver :
 		if name == C.RIPOSTE :
 			extra["dice"] = FX.RIPOSTE_DICE[FX.tier_index(ability["tier"])]
 		C.add(target.conditions, name, turns=self.effect_turns(ability, effect), value=amount, **extra)
+		if target.id != actor.id or effect.get("aim") != FX.SELF :
+			self.track(target, name)
 		self.say(f"→ {effect['name']}: {target.name} is {C.label(name).lower()}{f' ({amount})' if amount else ''}.")
 		return True
 
@@ -470,6 +554,7 @@ class Resolver :
 		turns = self.effect_turns(ability, effect) + 1
 		C.add(actor.conditions, C.COMPANION, turns=turns, dice=dice, type=self.type_of(ability, effect),
 		      bonus=self.mod(actor, ability.get("stat") or "intelligence"), label=effect["name"])
+		self.track(actor, C.COMPANION)
 		self.say(f"→ {effect['name']}: a companion joins {actor.name} for {turns} turns ({dice}).")
 		return True
 

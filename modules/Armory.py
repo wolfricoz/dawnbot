@@ -48,6 +48,7 @@ OPTION_HELP = {
 	"range"           : "Weapon: melee or ranged",
 	"properties"      : "Weapon: like light, thrown (light, heavy, two_handed, reach, loading, keen, focus, shield)",
 	"ap_cost"         : "Weapon: AP per attack, if not the usual (light 2, normal 3, heavy 4, loading 5)",
+	"weapon_kind"     : "Weapon: sword, spear, bow, claw... (which weapon techniques it allows), or none",
 	"armor_class"     : "Armor: clothing, light, medium or heavy",
 	"ac"              : "Armor: added to the wearer's AC (0 to 10)",
 	"dt"              : "Armor: damage threshold, taken off every hit (0 to 10)",
@@ -99,10 +100,10 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	@staticmethod
 	def combat_changes(dice=None, damage_type=None, attack_stat=None, damage_stat=None, hit_mod=None, range=None,
 	                   properties=None, ap_cost=None, armor_class=None, ac=None, dt=None, ability_hit_mod=None,
-	                   use=None, condition=None) -> dict :
+	                   use=None, condition=None, weapon_kind=None) -> dict :
 		"""The combat options that were filled in, as combat values."""
 		values = {"dice" : dice, "type" : damage_type, "attack_stat" : attack_stat, "damage_stat" : damage_stat,
-		          "hit_mod" : hit_mod, "range" : range, "properties" : properties, "ap" : ap_cost,
+		          "hit_mod" : hit_mod, "range" : range, "properties" : properties, "ap" : ap_cost, "kind" : weapon_kind,
 		          "armor_class" : armor_class, "ac" : ac, "dt" : dt, "ability_hit_mod" : ability_hit_mod,
 		          "use" : use, "condition" : condition}
 		values = {key : value.value if isinstance(value, Choice) else value for key, value in values.items()}
@@ -120,6 +121,11 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 		if match is None :
 			raise ValueError(f"The server has no damage type called {name}; see /damagetype list.")
 		changes["type"] = match
+
+	# ============================================================
+	async def _weapon_kinds(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		return [Choice(name=kind, value=kind) for kind in ["none"] + Rules.WEAPON_KINDS
+		        if current.lower() in kind][:25]
 
 	# ============================================================
 	async def _types(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
@@ -174,7 +180,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	@app_commands.choices(use=USE_CHOICES, condition=ITEM_CONDITION_CHOICES)
 	@app_commands.choices(kind=KIND_CHOICES, attack_stat=STAT_CHOICES, damage_stat=DAMAGE_STAT_CHOICES,
 	                      range=RANGE_CHOICES, armor_class=ARMOR_CLASS_CHOICES)
-	@app_commands.autocomplete(damage_type=_types)
+	@app_commands.autocomplete(damage_type=_types, weapon_kind=_weapon_kinds)
 	@app_commands.describe(**OPTION_HELP)
 	async def add(self, interaction: discord.Interaction, kind: Choice[str], name: app_commands.Range[str, 1, 100],
 	              price: app_commands.Range[int, 0, 10000000], description: app_commands.Range[str, 1, TEXT_LIMIT] = None,
@@ -188,7 +194,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	              properties: app_commands.Range[str, 1, 200] = None, ap_cost: app_commands.Range[int, 1, 10] = None,
 	              armor_class: Choice[str] = None, ac: app_commands.Range[int, 0, 10] = None,
 	              dt: app_commands.Range[int, 0, 10] = None, ability_hit_mod: app_commands.Range[int, -10, 10] = None,
-	              use: Choice[str] = None, condition: Choice[str] = None) :
+	              use: Choice[str] = None, condition: Choice[str] = None, weapon_kind: str = None) :
 		"""
 		Adds a weapon, armor set or consumable to the catalog. `requirements` are SPECIAL minimums written like
 		`strength 8, agility 4` (short names like `str 8` work too); they never stop a character from owning or using
@@ -197,7 +203,9 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 
 		Combat values are optional. Weapons use `dice` (like 2d6), `damage_type`, `attack_stat` and `damage_stat`
 		(the stats added to attack and damage rolls), `hit_mod`, `range`, `properties` (like `light, thrown`; a
-		`shield` gives +2 AC while equipped) and `ap_cost`. Armor uses `armor_class`, `ac` (added to AC), `dt` (taken
+		`shield` gives +2 AC while equipped), `ap_cost` and `weapon_kind` (sword, spear, bow, claw...: which weapon
+		techniques it allows; without it the kind is read from the name). Armor uses `armor_class`, `ac` (added to
+		AC), `dt` (taken
 		off every hit), `hit_mod` and `ability_hit_mod`. Consumables use `use` (heal, cure, boost or nothing
 		automatic), `dice` (healing or a shield) and `condition` (what a cure removes or a boost gives); they cost 2 AP
 		in a fight and are used up. When a gear forum is set, the item is posted there.
@@ -209,7 +217,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 		try :
 			needs = Packs.parse_requirements(requirements)
 			changes = self.combat_changes(dice, damage_type, attack_stat, damage_stat, hit_mod, range, properties,
-			                              ap_cost, armor_class, ac, dt, ability_hit_mod, use, condition)
+			                              ap_cost, armor_class, ac, dt, ability_hit_mod, use, condition, weapon_kind)
 			self.check_type(interaction.guild_id, changes)
 			combat = Packs.combat_for(kind.value, None, changes)
 		except ValueError as e :
@@ -229,7 +237,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	@app_commands.autocomplete(name=_names)
 	@app_commands.choices(attack_stat=STAT_CHOICES, damage_stat=DAMAGE_STAT_CHOICES, range=RANGE_CHOICES,
 	                      armor_class=ARMOR_CLASS_CHOICES, use=USE_CHOICES, condition=ITEM_CONDITION_CHOICES)
-	@app_commands.autocomplete(damage_type=_types)
+	@app_commands.autocomplete(damage_type=_types, weapon_kind=_weapon_kinds)
 	@app_commands.describe(**OPTION_HELP)
 	async def edit(self, interaction: discord.Interaction, name: str, new_name: app_commands.Range[str, 1, 100] = None,
 	               price: app_commands.Range[int, 0, 10000000] = None,
@@ -245,7 +253,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	               armor_class: Choice[str] = None, ac: app_commands.Range[int, 0, 10] = None,
 	               dt: app_commands.Range[int, 0, 10] = None,
 	               ability_hit_mod: app_commands.Range[int, -10, 10] = None, use: Choice[str] = None,
-	               condition: Choice[str] = None) :
+	               condition: Choice[str] = None, weapon_kind: str = None) :
 		"""
 		Changes a catalog item; options you leave out keep their value. `requirements` replaces all of the item's
 		requirements, and `clear_requirements` removes them. Type `-` in description or one of the effects to clear
@@ -283,7 +291,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 			elif requirements is not None :
 				updates["requirements"] = Packs.parse_requirements(requirements)
 			changes = self.combat_changes(dice, damage_type, attack_stat, damage_stat, hit_mod, range, properties,
-			                              ap_cost, armor_class, ac, dt, ability_hit_mod, use, condition)
+			                              ap_cost, armor_class, ac, dt, ability_hit_mod, use, condition, weapon_kind)
 			self.check_type(interaction.guild_id, changes)
 			if changes :
 				updates["combat"] = Packs.combat_for(item.kind, item.combat, changes)

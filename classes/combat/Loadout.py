@@ -19,15 +19,37 @@ SHEET_ARMOR_LABEL = "armor proficiency"
 MINION = "minion"
 STANDARD = "standard"
 ELITE = "elite"
-BOSS = "boss"
+MINIBOSS = Rules.MINIBOSS
+BOSS = Rules.BOSS
 CUSTOM = "custom"
-# preset: (HP, AC, DT, to hit, damage, AP)
+# preset: (HP, AC, DT, to hit, damage, AP). Minibosses and bosses start at 75 HP; the fight sets their HP from the
+# number of player characters they face (Rules.boss_hp). A boss's 14 AP lets it act twice.
 PRESETS = {
 	MINION   : (8, 10, 0, 1, "1d6", 7),
 	STANDARD : (20, 12, 1, 2, "2d6", 7),
 	ELITE    : (40, 14, 2, 4, "2d8", 7),
-	BOSS     : (80, 15, 3, 5, "3d8", 14),
+	MINIBOSS : (Rules.BOSS_BASE_HP, 14, 2, 4, "2d8", 10),
+	BOSS     : (Rules.BOSS_BASE_HP, 15, 3, 5, "3d8", 14),
 }
+
+
+# ============================================================
+def preset_text(preset: str) -> str :
+	"""`HP 20 · AC 12 · DT 1 · +2 · 2d6 · AP 7`, with the scaling HP of minibosses and bosses."""
+	hp, ac, dt, to_hit, damage, ap = PRESETS[preset]
+	hp_text = Rules.rank_text(preset) if preset in Rules.RANKS else str(hp)
+	return f"HP {hp_text} · AC {ac} · DT {dt} · {to_hit:+d} · {damage} · AP {ap}"
+
+
+# ============================================================
+def rank_of(text: str | None) -> str | None :
+	"""A rank typed by a GM (miniboss, mini, boss), or None for a normal NPC."""
+	text = (text or "").strip().lower()
+	if text.startswith("mini") :
+		return MINIBOSS
+	if text.startswith("boss") :
+		return BOSS
+	return None
 
 
 class Loadout :
@@ -61,27 +83,10 @@ class Loadout :
 	# ============================================================
 	@staticmethod
 	def ability_data(ability) -> dict :
-		"""An ability as the fight uses it, with its effects copied from the catalog so a running fight doesn't change
-		when the catalog does. Active abilities carry their AP, uses, how many targets and who they aim at; passive
-		ones their entries (see Passives.entries)."""
+		"""An ability record as the fight uses it (see Abilities.fight_data)."""
 		passive = (getattr(ability, "activation", None) or "active") == "passive"
-		data = {"id" : ability.id, "name" : ability.name, "kind" : ability.kind, "tier" : ability.tier,
-		        "stat" : ability.stat, "damage_type" : ability.damage_type,
-		        "activation" : "passive" if passive else "active", "magic" : ability.kind == AbilityRules.SPELL,
-		        "summary" : AbilityRules.summary(ability.kind, ability.tier, ability.stat, ability.effects,
-		                                         ability.damage_type, passive)}
-		if passive :
-			target, limit = AbilityRules.options(ability.effects)
-			data["entries"] = Passives.entries(ability.id, ability.name, ability.tier,
-			                                   AbilityRules.passive_effects(ability.effects), target, limit)
-			return data
-		effects = AbilityRules.active_effects(ability.effects)
-		data.update({"effects" : [Effects.snapshot(effect) for effect in effects],
-		             "ap" : Effects.ap_cost(ability.tier, effects), "uses" : Effects.ability_uses(ability.tier, effects),
-		             "targets" : Effects.target_limit(effects), "aim" : Effects.aim(effects),
-		             "steps" : Effects.dice_steps(effects), "modifiers" : sorted(Effects.modifiers(effects)),
-		             "drawbacks" : sorted(Effects.drawbacks(effects))})
-		return data
+		return AbilityRules.fight_data(ability.id, ability.name, ability.kind, ability.tier, ability.stat,
+		                               ability.damage_type, ability.effects, passive)
 
 	# ============================================================
 	@staticmethod
@@ -201,7 +206,17 @@ class Loadout :
 	# ============================================================
 	@staticmethod
 	def for_bestiary(entry: Bestiary, side_id: int, name: str | None = None, position: int = 0,
-	                 controller: str = AUTO) -> Combatant :
+	                 controller: str = AUTO, rank: str | None = None) -> Combatant :
+		"""An NPC from the bestiary. rank makes it a miniboss or boss (an entry with that preset already is one)."""
+		combatant = Loadout._for_bestiary(entry, side_id, name, position, controller)
+		rank = rank or (entry.preset if entry.preset in Rules.RANKS else None)
+		if rank :
+			combatant.stats["rank"] = rank
+		return combatant
+
+	# ============================================================
+	@staticmethod
+	def _for_bestiary(entry: Bestiary, side_id: int, name: str | None, position: int, controller: str) -> Combatant :
 		from database.transactions.AbilityTransactions import AbilityTransactions
 
 		abilities = [Loadout.ability_data(ability) for ability in
@@ -280,6 +295,8 @@ class Loadout :
 	               controller: str = AUTO) -> Combatant :
 		hp, ac, dt, to_hit, damage, ap = PRESETS[preset]
 		stats = Loadout.npc_stats(hp, ac, dt, to_hit, damage, damage_type, "Attack", ap, preset=preset)
+		if preset in Rules.RANKS :
+			stats["rank"] = preset
 		return Combatant(id=0, side_id=side_id, kind=NPC, name=name, stats=stats, controller=controller,
 		                 behavior="aggressive", hp=hp, hp_max=hp, ap=ap, ap_max=ap, ac=ac, dt=dt, sequence=10,
 		                 weapon_key=NATURAL_KEY, position=position)

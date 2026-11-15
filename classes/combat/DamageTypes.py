@@ -3,8 +3,9 @@
 Every weapon, spell and ability has one damage type. Its effect triggers on a strong hit (or always, for Restoration,
 which only heals). A server gets the default set the first time its types are used; staff change them with /damagetype.
 """
+import logging
+
 from classes.combat import Conditions
-from database.transactions.DamageTypeTransactions import DamageTypeTransactions
 
 STRONG_HIT = "strong_hit"
 ALWAYS = "always"
@@ -20,6 +21,12 @@ NONE = "none"
 EFFECT_KINDS = [CONDITION, IGNORE_DT, ARC, CLEANSE, NONE]
 RESTORATION = "Restoration"
 PACK = "default"
+# Config row listing the default types a server has been given, so a type staff deleted on purpose isn't put back, and
+# defaults added in later versions still reach servers that already had a table.
+OFFERED_KEY = "DAMAGE_TYPE_DEFAULTS"
+# The defaults every server with a table already had before OFFERED_KEY existed.
+ORIGINAL_DEFAULTS = ["Slashing", "Piercing", "Blunt", "Fire", "Frost", "Lightning", "Arcane", "Poison", "Radiant",
+                     "Mental", "Restoration"]
 
 DEFAULTS = [
 	("Slashing", STRONG_HIT, {"kind" : CONDITION, "condition" : Conditions.BLEEDING, "turns" : 2}),
@@ -39,23 +46,78 @@ DEFAULTS = [
 ]
 
 
+
+# ============================================================
+def _transactions() :
+	"""The damage type table, imported when first needed so the engine (which only reads the constants above) never
+	loads the database."""
+	from database.transactions.DamageTypeTransactions import DamageTypeTransactions
+
+	return DamageTypeTransactions()
+
 class DamageTypes :
 
 	# ============================================================
 	@staticmethod
 	def ensure(guild_id: int) -> None :
-		"""Gives a server the default types when it has none."""
-		transactions = DamageTypeTransactions()
-		if transactions.get_all(guild_id) :
-			return
+		"""Gives a server the default types when it has none, and any default added since it got its table (like Acid,
+		Necrotic and Sonic) that it doesn't have yet. Each default is only offered once, so deleting one sticks."""
+		transactions = _transactions()
+		existing = {record.name.lower() for record in transactions.get_all(guild_id)}
+		offered = DamageTypes.offered(guild_id)
+		if not existing :
+			offered = []
+		elif offered is None :
+			offered = list(ORIGINAL_DEFAULTS)
+		added = False
 		for name, trigger, effect in DEFAULTS :
-			transactions.add(guild_id, name, trigger=trigger, effect=effect, pack=PACK)
+			if name in offered :
+				continue
+			if name.lower() not in existing :
+				transactions.add(guild_id, name, trigger=trigger, effect=effect, pack=PACK)
+			offered.append(name)
+			added = True
+		if added or DamageTypes.offered(guild_id) is None :
+			DamageTypes.remember(guild_id, offered)
+
+	# ============================================================
+	@staticmethod
+	def offered(guild_id: int) -> list[str] | None :
+		"""The default types the server has been given, or None when that was never written down."""
+		from classes.kernel.ConfigData import ConfigData
+
+		try :
+			value = ConfigData().get_guild(guild_id).get(OFFERED_KEY)
+		except Exception :
+			return None
+		if not value :
+			return None
+		return [name.strip() for name in str(value).split(",") if name.strip()]
+
+	# ============================================================
+	@staticmethod
+	def remember(guild_id: int, names: list[str]) -> None :
+		from classes.kernel.ConfigData import ConfigData
+
+		try :
+			ConfigData().add_key(guild_id, OFFERED_KEY, ",".join(dict.fromkeys(names)), overwrite=True)
+		except Exception as e :
+			# A server not in the servers table yet can't keep config; it is offered the defaults again next time.
+			logging.debug(f"Could not remember the damage type defaults of {guild_id}: {e}")
 
 	# ============================================================
 	@staticmethod
 	def reset(guild_id: int) -> None :
-		DamageTypeTransactions().delete_all(guild_id)
+		_transactions().delete_all(guild_id)
 		DamageTypes.ensure(guild_id)
+
+	# ============================================================
+	@staticmethod
+	def top_up(guild_id: int) -> None :
+		"""At start-up: gives servers that already have a table the defaults added since (servers without one get
+		the whole set the first time they use damage types)."""
+		if _transactions().get_all(guild_id) :
+			DamageTypes.ensure(guild_id)
 
 	# ============================================================
 	@staticmethod
@@ -63,7 +125,7 @@ class DamageTypes :
 		"""{lowercase name: {"name", "trigger", "effect"}} for the server."""
 		DamageTypes.ensure(guild_id)
 		return {record.name.lower() : {"name" : record.name, "trigger" : record.trigger, "effect" : record.effect or {}}
-		        for record in DamageTypeTransactions().get_all(guild_id)}
+		        for record in _transactions().get_all(guild_id)}
 
 	# ============================================================
 	@staticmethod

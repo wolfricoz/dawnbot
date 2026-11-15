@@ -112,6 +112,11 @@ HARMFUL = BASIC_HARMFUL + [POISONED, PRONE, FRIGHTENED, CONFUSED, CHARMED, TAUNT
 HELPFUL = BASIC_HELPFUL + [EMPOWERED, FORTIFIED, HASTED, EVASIVE, HIDDEN, INTANGIBLE, WARDED, REFLECTING, VAMPIRIC,
                            FOCUSED, BLESSED, RIPOSTE, COMPANION, THORNS, UNDYING]
 INTERNAL = [GUARD, EXPOSED, HELPED, STUN_IMMUNE]
+# Control conditions: once one ends (it runs out, is cleansed, or a sleeper is woken), the combatant can't get the same
+# one again until the end of its next turn, so a fight can't be locked down by re-applying it. Stunned already worked
+# this way (its immunity is STUN_IMMUNE); the others get an internal `<name>_immune` condition.
+CONTROL = [STUNNED, ASLEEP, CHARMED, RESTRAINED, CURSED, CONFUSED, SILENCED, DISARMED, TAUNTED, BANISHED]
+IMMUNE_SUFFIX = "_immune"
 DAMAGE_OVER_TIME = [BURNING, BLEEDING, POISONED]
 # Conditions that cost the combatant its turn, and the ones that keep it from being targeted.
 LOSE_TURN = [STUNNED, ASLEEP, BANISHED]
@@ -126,6 +131,30 @@ AC_MODIFIER = {SLOWED : -2, EXPOSED : -2, PRONE : -2, FORTIFIED : 2}
 DAMAGE_MODIFIER = {WEAKENED : -2, EMPOWERED : 2}
 # Attack bonuses against a combatant with the condition (hidden makes it harder).
 TARGET_MODIFIER = {MARKED : 2, RESTRAINED : 2, HIDDEN : -4}
+
+
+# ============================================================
+def immune_name(name: str) -> str :
+	"""The internal condition that keeps a control condition from being re-applied."""
+	return STUN_IMMUNE if name == STUNNED else f"{name}{IMMUNE_SUFFIX}"
+
+
+# ============================================================
+def internal(name: str | None) -> bool :
+	return name in INTERNAL or str(name or "").endswith(IMMUNE_SUFFIX)
+
+
+# ============================================================
+def immune(conditions: list[dict], name: str) -> bool :
+	"""Whether a control condition just ended and can't be re-applied yet."""
+	return name in CONTROL and has(conditions, immune_name(name))
+
+
+# ============================================================
+def grant_immunity(conditions: list[dict], name: str) -> None :
+	"""After a control condition ends: immune to it until the end of the combatant's next turn."""
+	if name in CONTROL and name != STUNNED :
+		add(conditions, immune_name(name), turns=1, force=True)
 
 
 # ============================================================
@@ -166,13 +195,14 @@ def total(conditions: list[dict], table: dict[str, int]) -> int :
 
 
 # ============================================================
-def add(conditions: list[dict], name: str, turns: int | None = 1, value: int | None = None, **extra) -> bool :
+def add(conditions: list[dict], name: str, turns: int | None = 1, value: int | None = None, force: bool = False,
+        **extra) -> bool :
 	"""Adds a condition, or refreshes it to the longer duration (and larger amount) when it is already there. extra
-	holds keys like source or dice, which replace the old ones.
+	holds keys like source or dice, which replace the old ones. force skips the control immunity (GM tools).
 
-	@return: False when it could not be added (a stunned-last-turn combatant can't be stunned again).
+	@return: False when it could not be added (a control condition that just ended can't be re-applied yet).
 	"""
-	if name == STUNNED and has(conditions, STUN_IMMUNE) :
+	if not force and immune(conditions, name) :
 		return False
 	current = get(conditions, name)
 	if current is None :
@@ -201,7 +231,7 @@ def remove(conditions: list[dict], name: str) -> bool :
 
 # ============================================================
 def visible(conditions: list[dict]) -> list[dict] :
-	return [condition for condition in conditions or [] if condition.get("name") not in INTERNAL]
+	return [condition for condition in conditions or [] if not internal(condition.get("name"))]
 
 
 # ============================================================
@@ -218,8 +248,10 @@ def count_down(conditions: list[dict]) -> list[str] :
 		condition["turns"] = int(condition["turns"]) - 1
 		if condition["turns"] <= 0 :
 			conditions.remove(condition)
-			if condition["name"] not in INTERNAL :
+			if not internal(condition["name"]) :
 				expired.append(condition["name"])
+	for name in expired :
+		grant_immunity(conditions, name)
 	return expired
 
 
@@ -243,6 +275,7 @@ def cleanse(conditions: list[dict]) -> str | None :
 	for condition in list(conditions) :
 		if condition.get("name") in HARMFUL :
 			conditions.remove(condition)
+			grant_immunity(conditions, condition["name"])
 			return condition["name"]
 	return None
 
