@@ -65,7 +65,7 @@ Migrations start at `0023`; the legacy combat drop is renumbered so it stays las
 
 ## 4. Phase 1 as built
 
-Migration `0023_economy_money` (the legacy drop is now `0026_drop_legacy_combat`).
+Migration `0023_economy_money` (the legacy drop is now `0027_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -78,7 +78,7 @@ Migration `0023_economy_money` (the legacy drop is now `0026_drop_legacy_combat`
 
 ## 5. Phase 2 as built
 
-Migration `0024_economy_equipment` (the legacy drop is now `0026_drop_legacy_combat`).
+Migration `0024_economy_equipment` (the legacy drop is now `0027_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -95,7 +95,7 @@ Migration `0024_economy_equipment` (the legacy drop is now `0026_drop_legacy_com
 
 ## 6. Phase 3 as built
 
-Migration `0025_economy_trading` (the legacy drop is now `0026_drop_legacy_combat`).
+Migration `0025_economy_trading` (the legacy drop is now `0027_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -106,3 +106,18 @@ Migration `0025_economy_trading` (the legacy drop is now `0026_drop_legacy_comba
 | Payments | `/currency pay <character> <member> <theirs> <amount> [note]` after a confirmation; ledger reason `pay` on both sides; the payee's player gets a DM. |
 | Market | `MARKET` (a forum, `/config singlechannels`), `MARKET_FEE` (5) and `MARKET_DAYS` (14) in `/config roleplay`. `/market sell` lists an item (it leaves the inventory) and posts it; `/market browse`; `/market withdraw` (seller or staff). Each post has Buy and Withdraw buttons that survive restarts (`MarketButton`, registered in `setup_hook`). Buying: the buyer picks a character (not the seller's player), pays the price (`market`), the seller gets the price (`market`) minus the fee (`market_fee`, rounded down) and a DM. Posts are renamed (🟢 open, ✅ sold, ⚪ withdrawn, ⌛ expired) and locked when they end. `tasks/MarketTask.py` ends expired listings every 10 minutes. No market in free mode. |
 | Histories | `/currency history` and `/economy audit` show the note for trades, payments, market sales and fees, repairs and refills; the report labels them. |
+
+## 7. Phase 4 as built
+
+Migration `0026_economy_merchants` (the legacy drop is now `0027_drop_legacy_combat`).
+
+| Topic | As built |
+|---|---|
+| Data | `merchants` (name, description, avatar, `location_ids`, faction, `markup`, `buys` kinds, `pays`, `services`, `lodging_price`, `haggle_dc`, `restock`, `last_restock`, `cycle`), `merchant_stock` (item, `quantity` (empty unlimited), `chance` %, own `price`, `in_stock`, `available`), `merchant_haggles` (per character, item and restock cycle: discount, or a refusal), `lodgings` (character, location, merchant, `paid_until`), and `character_gear.stash_location_id` (status `stashed`). |
+| Rules | `classes/economy/Merchants.py`. A merchant without locations trades anywhere, otherwise only in channels of its locations. Price: (line price or catalog price) × markup × Charisma × faction (the merchant's faction, else the item's) × haggle discount, at least 65% of price × markup; free mode 0. Buying runs in one transaction (`MerchantTransactions.buy`: stock count, currency, ledger `buy` noted "item from merchant", materials stack, `source = merchant`) after lock, faction and carry checks. Selling: `Gear.sell_value` × `pays`, only kinds the merchant buys. Legendary items can't be stocked. |
+| Restocks | `daily`, `weekly` (default) or `manual`. A restock sets every line to its quantity, rolls rotating lines against their chance, and starts a new cycle (haggles and refusals are per cycle). `tasks/MerchantTask.py` checks every 15 minutes; `/merchant restock` does it now. Stock added or changed with `/merchant stock` is in stock straight away. |
+| Haggling | `/merchant haggle`: Charisma against `haggle_dc`, once per item per cycle: success 10% off that item, strong success or crit 20%, failure nothing, bad failure or fumble a refusal until the next restock. Posted publicly. |
+| Services | `repair` (`/merchant repair`: the shop repair price × markup, ledger `repair`) and `lodging` (`/merchant lodge [weeks]`: `lodging_price` per week, added to time already paid, ledger `lodging`). Healing, training and enchanting come with phases 5 and 6. Merchants are shown as embeds with their name and avatar, not through webhooks; travelling merchants are moved by hand with `/merchant place`. |
+| Stashes | `/stash put` (needs a paid room at this location; not equipped items), `/stash take` (only needs being at the location, even after the rent ran out), `/stash list`. Stashed items leave the inventory, don't weigh anything and stay out of fights. |
+| Shop mode | `SHOP_MODE` in `/config roleplay`: `global` (default), `both` (`/shop` lists and sells only Common and Uncommon items), `merchants` (`/shop browse`, `/shop buy`, `/shop repair` and `/gear sell` point to the merchants). Starting gear in the interview always comes from the catalog. `/shop refill` works in every mode. |
+| Commands | `/merchant browse | buy | sell | haggle | repair | lodge` for players; `/merchant add | edit | remove | place | stock | restock` for staff and the GM role. |

@@ -43,6 +43,7 @@ class ConfigMapping(StrEnum) :
 	MARKET = "MARKET"
 	MARKET_FEE = "MARKET_FEE"
 	MARKET_DAYS = "MARKET_DAYS"
+	SHOP_MODE = "SHOP_MODE"
 
 	# === Combat ===
 	COMBAT_PACING = "COMBAT_PACING"
@@ -170,6 +171,7 @@ defaults = {
 	ConfigMapping.TRADING            : "ENABLED",
 	ConfigMapping.MARKET_FEE         : 5,
 	ConfigMapping.MARKET_DAYS        : 14,
+	ConfigMapping.SHOP_MODE          : "global",
 	ConfigMapping.COMBAT_PACING      : "async",
 	ConfigMapping.COMBAT_ASYNC_TIMER : 12,
 	ConfigMapping.COMBAT_LIVE_TIMER  : 3,
@@ -270,6 +272,7 @@ roleplay_settings = {
 	ConfigMapping.TRADING            : ("toggle",),
 	ConfigMapping.MARKET_FEE         : ("number", 0, 50),
 	ConfigMapping.MARKET_DAYS        : ("number", 1, 90),
+	ConfigMapping.SHOP_MODE          : ("choice", ["global", "merchants", "both"]),
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -322,6 +325,7 @@ docs = {
 	ConfigMapping.MARKET             : "Optional: the forum where characters sell items at a fixed price with /market sell, one post per item.",
 	ConfigMapping.MARKET_FEE         : "The share of a market sale the market keeps, in percent (default 5). It leaves the economy.",
 	ConfigMapping.MARKET_DAYS        : "Days before an unsold market listing ends and the item goes back to its seller (default 14).",
+	ConfigMapping.SHOP_MODE          : "Where characters buy gear: `global` (the default; the catalog shop sells everything, and merchants at locations are extra), `both` (the catalog shop sells only Common and Uncommon items, merchants the rest) or `merchants` (no catalog shop: buying, selling and repairs go through merchants).",
 	ConfigMapping.LEGENDARY_POINTS   : "How many extra SPECIAL points a character gets when staff make it legendary (default 5). Legendary characters also have doubled stat limits and one extra ability slot.",
 
 	# == combat ==

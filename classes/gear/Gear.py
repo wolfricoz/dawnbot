@@ -158,6 +158,11 @@ class Gear :
 		"""
 		if item.guild_id != character.guild_id :
 			return None, "That item is not sold on this server."
+		if source == SHOP :
+			from classes.economy import Merchants
+
+			if not Merchants.global_shop_sells(item) :
+				return None, f"{item.name} is sold by merchants, not the catalog shop (/merchant browse)."
 		# Reputation tags on the item's post read this character's standing.
 		access = access.for_character(character.id)
 		locked = Gear.lock_reason(item, access)

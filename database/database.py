@@ -453,6 +453,8 @@ class CharacterGear(Base) :
 	condition: Mapped[str] = mapped_column(String(16), default="good", server_default="good")
 	# A ranged weapon's ammunition die (d12 to d4, or empty when it ran out); unset is full.
 	ammo_die: Mapped[str | None] = mapped_column(String(8), nullable=True)
+	# The location whose stash holds it, while status is "stashed" (classes/economy/Merchants.py).
+	stash_location_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
 	                                             onupdate=func.now())
@@ -1437,6 +1439,73 @@ class MarketListings(Base) :
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 	finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# location_ids: where it trades (locations.id). buys: the gear kinds it buys (empty buys nothing). services: repair,
+# lodging (later also healing, training, enchanting). restock is daily, weekly or manual; cycle counts restocks, so
+# haggles last until the next one (design/economy.md, phase 4).
+class Merchants(Base) :
+	"""An NPC shop at one or more locations."""
+	__tablename__ = "merchants"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+	location_ids: Mapped[list] = mapped_column(JSON, default=list)
+	faction_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	markup: Mapped[float] = mapped_column(Float, default=1.0)
+	buys: Mapped[list] = mapped_column(JSON, default=list)
+	pays: Mapped[float] = mapped_column(Float, default=1.0)
+	services: Mapped[list] = mapped_column(JSON, default=list)
+	lodging_price: Mapped[int] = mapped_column(Integer, default=0)
+	haggle_dc: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	restock: Mapped[str] = mapped_column(String(16), default="weekly")
+	last_restock: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	cycle: Mapped[int] = mapped_column(Integer, default=0)
+
+	__table_args__ = (
+		Index('uq_merchant_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+# quantity: how many a restock brings (empty is unlimited). chance: the percent chance it is there after a restock
+# (100 always). in_stock: how many are left now (empty is unlimited); available: whether it is there this cycle.
+class MerchantStock(Base) :
+	"""An item a merchant sells."""
+	__tablename__ = "merchant_stock"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	merchant_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("merchants.id", ondelete="CASCADE"), index=True)
+	gear_item_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("gear_items.id", ondelete="CASCADE"))
+	quantity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	chance: Mapped[int] = mapped_column(Integer, default=100)
+	price: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	in_stock: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	available: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+# One per character, merchant, item and restock cycle: the discount won (percent), or refused (a bad failure: the
+# merchant won't deal with the character until the next restock; gear_item_id is then empty).
+class MerchantHaggles(Base) :
+	"""A character's haggle with a merchant."""
+	__tablename__ = "merchant_haggles"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	merchant_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("merchants.id", ondelete="CASCADE"), index=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+	gear_item_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	cycle: Mapped[int] = mapped_column(Integer)
+	discount: Mapped[int] = mapped_column(Integer, default=0)
+	refused: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Lodgings(Base) :
+	"""A room a character rents at a location: it opens the stash there."""
+	__tablename__ = "lodgings"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	location_id: Mapped[int] = mapped_column(BigInteger)
+	merchant_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	paid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 # ============================================================

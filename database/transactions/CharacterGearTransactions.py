@@ -15,7 +15,7 @@ MATERIAL = "material"
 
 # Columns update() accepts as keyword arguments.
 FIELDS = ["equipped", "status", "changed_by", "price_paid", "proficiency", "quantity", "quality", "name", "slot",
-          "condition", "ammo_die"]
+          "condition", "ammo_die", "stash_location_id"]
 
 
 class CharacterGearTransactions(DatabaseTransactions) :

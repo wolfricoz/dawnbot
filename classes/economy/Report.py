@@ -32,6 +32,7 @@ REASON_LABELS = {
 	"pay"      : "payments between characters",
 	"market"   : "market sales",
 	"market_fee" : "market fees",
+	"lodging"  : "rooms",
 }
 
 

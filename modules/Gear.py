@@ -249,6 +249,11 @@ class Gear(commands.GroupCog, name="Gear", group_name="gear") :
 		character's Charisma. Masterwork sells for half as much again and cursed gear for nothing. Nothing is paid in
 		free mode. You are asked to confirm first.
 		"""
+		from classes.economy import Merchants
+
+		closed = Merchants.global_shop_problem(interaction.guild_id, "buy gear")
+		if closed :
+			return await CharacterFlow.respond(interaction, closed)
 		record, entry, _ = await self._own_entry(interaction, character, item)
 		if entry is None :
 			return

@@ -434,7 +434,7 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	async def roleplay(self, interaction: Interaction, setting: str, value: app_commands.Range[str, 1, 100]) :
 		"""
 		Sets one of the roleplay tools' settings: in-world time and weather, travel, scenes, languages, letters, jobs,
-		downtime, rumors and omens, plus gear wear, carry weight, ammunition, trading and the market. Start typing to see them all with their current values; /config view lists them
+		downtime, rumors and omens, plus gear wear, carry weight, ammunition, trading, the market and the shop mode. Start typing to see them all with their current values; /config view lists them
 		too.
 
 		**Permissions:**
