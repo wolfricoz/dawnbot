@@ -118,7 +118,8 @@ HEAL_STEPS = -2
 MAX_AP = 12
 MIN_AP = 1
 # Numbers for conditions that carry one, by tier (Cantrip, Weak, Normal, Strong).
-TIER_AMOUNTS = {C.VULNERABLE : (1, 2, 3, 4), C.DRAINED : (1, 1, 2, 3), C.HASTED : (1, 1, 2, 2), C.THORNS : (1, 2, 3, 4)}
+# Vulnerable and Drained were raised in balance pass 4 (they cost about an attack's AP for a turn of effect).
+TIER_AMOUNTS = {C.VULNERABLE : (3, 4, 5, 6), C.DRAINED : (2, 2, 3, 4), C.HASTED : (1, 1, 2, 2), C.THORNS : (1, 2, 3, 4)}
 # The dice used for a companion's attack and for riposte, one step below the tier's.
 RIPOSTE_DICE = ("1d4", "1d6", "1d8", "2d6")
 

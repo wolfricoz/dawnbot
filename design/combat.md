@@ -158,7 +158,7 @@ the lower), Doomed (takes the stored damage when it runs out), Disarmed (only un
 
 Helpful: Shielded (absorbs damage), Inspired (+2 to hit), Regenerating (heals 1d4 each turn), Empowered (+2 damage),
 Fortified (+2 AC), Hasted (extra AP each turn), Evasive (the next attack against it misses), Hidden (attacks against it
-−4, ends when it attacks), Intangible (weapons and physical abilities can't hurt it), Warded (half damage from spells),
+−4; its next attack, or the rolls of its next offensive ability, gets +4 and ends it), Intangible (weapons and physical abilities can't hurt it), Warded (half damage from spells),
 Reflecting (the next spell that hurts it hits the caster for half), Vampiric (its hits heal it for half), Focused (+2
 to hit and DC), Blessed (+2 on saves), Riposte (melee attackers that miss take damage), Companion (a summon attacks at
 the start of each of its turns), Thorns (melee attackers that hit take damage), Undying (the next downing hit leaves
@@ -230,6 +230,13 @@ attacks such as Magic Missile and Whirlwind dropped a step; two-hit ones are unc
 two die steps below the tier's, so a Cantrip heal is 1d4 + modifier and stays unlimited (Rico chose this over limiting
 heals to Weak or making them dearer). Adrenaline Rush and Life Transfer lost their extra die step and Second Wind costs
 2. Measured: every heal 52–60%.
+
+**Balance pass 4** (2026-11-16, Rico asked to fix the weak Veils and Feints): Hidden is now an ambush, so the attack
+or offensive ability that breaks it gets +4 to hit (before, a fighter lost it on the spot and gained almost nothing), and
+Hidden boosts cost one AP less (Veils, Take Cover, Shadow Cloak; Vanish stays at 2). Vulnerable carries 3/4/5/6 by tier
+(was 1/2/3/4) and Feints, Curses and Hex last a turn longer; Drained carries 2/2/3/4 (was 1/1/2/3). Measured: Veils and
+Take Cover 33–37% duel / 46–47% team (were 9–20% / 30–35%), Feints and Curses 45–47% / 53–55% (were about 18% / 31%),
+drains about 43% in team fights.
 
 **NPC abilities**: automatic NPCs pick an ability by situation rather than only attacking (see
 `classes/combat/Autopilot.py`): bringing back a downed ally, then healing one below half HP, control on the toughest

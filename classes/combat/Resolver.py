@@ -164,8 +164,6 @@ class Resolver :
 			focus = {"ability" : ability["id"], "name" : ability["name"], "applied" : []}
 		self._focus = focus
 		aim = self.ability_aim(ability)
-		if aim == FX.ENEMY :
-			C.remove(actor.conditions, C.HIDDEN)
 		effects = ability.get("effects") or []
 		landed = False
 		resolved = False
@@ -176,6 +174,9 @@ class Resolver :
 				if effect.get("aim") in (FX.ENEMY, FX.ALLY) and target.in_fight :
 					resolved = True
 					landed = self.resolve_effect(actor, ability, effect, target) or landed
+		# Striking from hiding gives the ambush bonus to this ability's rolls, then gives the hiding place away.
+		if aim == FX.ENEMY :
+			C.remove(actor.conditions, C.HIDDEN)
 		for effect in effects :
 			if effect.get("aim") == FX.SELF and actor.in_fight :
 				self.resolve_effect(actor, ability, effect, actor)

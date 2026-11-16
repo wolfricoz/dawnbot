@@ -210,7 +210,7 @@ ACTIVE_EFFECTS = [
 	# == Shadow & void ==
 	attack("shadow_bolt", "Shadow Bolt", M, SHADOW_CAT, 2, "a bolt of living darkness", NECROTIC),
 	afflict("darkness", "Darkness", M, SHADOW_CAT, 2, "magical darkness swallows the target's sight", C.BLINDED),
-	boost("shadow_cloak", "Shadow Cloak", M, SHADOW_CAT, 3, "the target melts into the shadows", C.HIDDEN),
+	boost("shadow_cloak", "Shadow Cloak", M, SHADOW_CAT, 2, "the target melts into the shadows", C.HIDDEN),
 	attack("umbrakinesis", "Umbrakinesis", M, SHADOW_CAT, 3, "shadows lash and hold the target", NECROTIC,
 	       on_hit=C.RESTRAINED),
 	afflict("void_touch", "Void Touch", M, SHADOW_CAT, 3, "the void gnaws at the target's will", C.DRAINED),
@@ -321,10 +321,10 @@ ACTIVE_EFFECTS = [
 	make("counterspell", "Counterspell", M, WARD_CAT, DISPEL, 2, "unravels the target's magic", count=1),
 	make("bulwark", "Bulwark", P, WARD_CAT, SHIELD, 3, "braces a wall of shields", WEAK, steps=1, requires="shield"),
 	boost("shield_wall", "Shield Wall", P, WARD_CAT, 2, "locks shields with the target", C.FORTIFIED, requires="shield"),
-	boost("cover", "Take Cover", P, WARD_CAT, 3, "drags the target behind cover", C.HIDDEN),
+	boost("cover", "Take Cover", P, WARD_CAT, 2, "drags the target behind cover", C.HIDDEN),
 
 	# == Curses & hexes ==
-	afflict("hex", "Hex", M, CURSE_CAT, 2, "a hex that leaves the target open to harm", C.VULNERABLE),
+	afflict("hex", "Hex", M, CURSE_CAT, 2, "a hex that leaves the target open to harm", C.VULNERABLE, turns=1),
 	afflict("curse", "Curse", M, CURSE_CAT, 4, "a curse of misfortune", C.CURSED, tier=WEAK),
 	afflict("bane", "Bane", M, CURSE_CAT, 2, "saps the target's strength", C.WEAKENED),
 	make("doom", "Doom", M, CURSE_CAT, DOOM, 3, "seals the target's fate", NORMAL),
@@ -434,7 +434,7 @@ ACTIVE_EFFECTS = [
 	afflict("demoralize", "Demoralize", P, TACTICS_CAT, 3, "breaks the target's spirit", C.WEAKENED),
 	make("second_wind", "Second Wind", P, TACTICS_CAT, HEAL, 2, "catches your breath", aim=SELF),
 	make("retreat", "Tactical Retreat", P, TACTICS_CAT, ESCAPE, 3, "slips away from the fight", NORMAL),
-	afflict("feint", "Feint", P, TACTICS_CAT, 2, "draws the target off balance", C.VULNERABLE),
+	afflict("feint", "Feint", P, TACTICS_CAT, 2, "draws the target off balance", C.VULNERABLE, turns=1),
 
 	# == Stealth & trickery ==
 	boost("vanish", "Vanish", P, STEALTH_CAT, 2, "disappears from sight", C.HIDDEN, aim=SELF),
