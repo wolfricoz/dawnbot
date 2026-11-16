@@ -29,6 +29,9 @@ SUCCESS = "success"
 PARTIAL = "partial"
 FAILURE = "failure"
 STATE_MARKS = {OPEN : "🟢", TAKEN : "🟡", DONE : "✅", FAILED : "❌", CANCELLED : "⚪"}
+# The job board's forum tags, one per state; made on the board when a job is posted (if the bot may).
+STATE_TAGS = {OPEN : "Open", TAKEN : "Taken", DONE : "Done", FAILED : "Failed", CANCELLED : "Cancelled"}
+FORUM_TAG_LIMIT = 20
 JOB_REASON = "job"
 ESCROW_REASON = "escrow"
 REFUND_REASON = "refund"
@@ -45,8 +48,9 @@ class JobFlow :
 	# ============================================================
 	@staticmethod
 	def runs(job: Jobs, member) -> bool :
-		permissions = getattr(member, "guild_permissions", None)
-		return member.id == job.poster_uid or bool(permissions and permissions.manage_messages)
+		from classes.kernel.GMRole import is_gm
+
+		return member.id == job.poster_uid or is_gm(member)
 
 	# ============================================================
 	@staticmethod
@@ -95,6 +99,26 @@ class JobFlow :
 
 	# ============================================================
 	@staticmethod
+	def state_tags(board: discord.ForumChannel) -> dict[str, discord.ForumTag] :
+		"""The board's tags for job states, by state."""
+		by_name = {tag.name.lower() : tag for tag in board.available_tags}
+		return {state : by_name[name.lower()] for state, name in STATE_TAGS.items() if name.lower() in by_name}
+
+	# ============================================================
+	@staticmethod
+	async def ensure_tags(board: discord.ForumChannel) -> dict[str, discord.ForumTag] :
+		"""Adds the state tags the board lacks (needs Manage Channels; skipped quietly otherwise)."""
+		missing = [name for state, name in STATE_TAGS.items() if state not in JobFlow.state_tags(board)]
+		if missing and len(board.available_tags) + len(missing) <= FORUM_TAG_LIMIT :
+			try :
+				board = await board.edit(available_tags=list(board.available_tags) +
+				                                        [discord.ForumTag(name=name) for name in missing])
+			except discord.HTTPException as e :
+				logging.info(f"Could not add the job state tags to the job board: {e}")
+		return JobFlow.state_tags(board)
+
+	# ============================================================
+	@staticmethod
 	async def refresh(bot: discord.Client, job_id: int) -> None :
 		from views.economy.JobButtons import job_view
 
@@ -106,9 +130,17 @@ class JobFlow :
 			await thread.get_partial_message(job.message_id or job.thread_id).edit(embed=JobFlow.embed(job),
 			                                                                       view=job_view(job))
 			name = f"{STATE_MARKS.get(job.state, '')} {job.title}"[:100]
-			if isinstance(thread, discord.Thread) and thread.name != name :
-				await thread.edit(name=name, locked=job.state in (DONE, FAILED, CANCELLED),
-				                  archived=job.state in (DONE, FAILED, CANCELLED))
+			if isinstance(thread, discord.Thread) :
+				changes = {}
+				tag = JobFlow.state_tags(thread.parent).get(job.state) if isinstance(thread.parent,
+				                                                                     discord.ForumChannel) else None
+				if tag is not None and [applied.id for applied in thread.applied_tags] != [tag.id] :
+					changes["applied_tags"] = [tag]
+				if thread.name != name :
+					changes["name"] = name
+				if changes :
+					over = job.state in (DONE, FAILED, CANCELLED)
+					await thread.edit(**changes, locked=over, archived=over)
 		except discord.HTTPException as e :
 			logging.warning(f"Could not update job {job_id}: {e}")
 
@@ -128,7 +160,9 @@ class JobFlow :
 		if not isinstance(board, discord.ForumChannel) :
 			return await reply(interaction, "This server has no job board; staff set a forum with /config "
 			                                "singlechannels job_board.")
-		staff = interaction.user.guild_permissions.manage_messages
+		from classes.kernel.GMRole import is_gm
+
+		staff = is_gm(interaction.user)
 		poster_character = None
 		if as_character or not staff :
 			if not RoleplaySettings.toggle(guild.id, ConfigMapping.JOB_PLAYER_POSTS) and not staff :
@@ -167,9 +201,11 @@ class JobFlow :
 		                                    rep_success=rep_success, rep_failure=rep_failure,
 		                                    location_id=location.id if location else None, deadline=deadline,
 		                                    state=OPEN, escrow=escrow)
+		tags = await JobFlow.ensure_tags(board)
 		try :
 			created = await board.create_thread(name=f"{STATE_MARKS[OPEN]} {job.title}"[:100], embed=JobFlow.embed(job),
-			                                    view=job_view(job))
+			                                    view=job_view(job),
+			                                    applied_tags=[tags[OPEN]] if OPEN in tags else discord.utils.MISSING)
 		except discord.HTTPException as e :
 			logging.warning(f"Could not post job {job.id}: {e}")
 			return await reply(interaction, "I couldn't post on the job board; check my permissions there.")

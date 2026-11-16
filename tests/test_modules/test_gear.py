@@ -134,9 +134,10 @@ class TestEquipping(GearTestCase) :
 		self.assertEqual((worn.name, item.name), ("Leather", "Leather"))
 		self.assertTrue(CharacterGearTransactions().get(sword.id).equipped)
 		self.assertFalse(CharacterGearTransactions().get(plate.id).equipped)
+		# Broken armor stays worn (it gives nothing in a fight until repaired).
 		Gear.set_status(CharacterGearTransactions().get(leather.id), BROKEN, 1)
-		self.assertIsNone(Gear.equipped_armor(self.character.id))
-		self.assertIn("broken", Gear.equip(CharacterGearTransactions().get(leather.id))[1])
+		worn, _ = Gear.equipped_armor(self.character.id)
+		self.assertEqual((worn.name, worn.condition), ("Leather", BROKEN))
 
 	def test_combat_uses_the_equipped_armor(self) :
 		self.assertEqual(Loadout.character_stats(self.character)["armor"]["name"], "No armor")

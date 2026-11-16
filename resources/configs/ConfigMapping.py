@@ -35,6 +35,15 @@ class ConfigMapping(StrEnum) :
 	RETIRE_THREAD = "RETIRE_THREAD"
 	LEGENDARY_POINTS = "LEGENDARY_POINTS"
 
+	# === Economy and equipment ===
+	GEAR_WEAR = "GEAR_WEAR"
+	CARRY_WEIGHT = "CARRY_WEIGHT"
+	AMMO = "AMMO"
+	TRADING = "TRADING"
+	MARKET = "MARKET"
+	MARKET_FEE = "MARKET_FEE"
+	MARKET_DAYS = "MARKET_DAYS"
+
 	# === Combat ===
 	COMBAT_PACING = "COMBAT_PACING"
 	COMBAT_ASYNC_TIMER = "COMBAT_ASYNC_TIMER"
@@ -47,6 +56,7 @@ class ConfigMapping(StrEnum) :
 
 	# === Roleplay tools ===
 	GM_ROLL_LOG = "GM_ROLL_LOG"
+	GM_ROLE = "GM_ROLE"
 	TIME_FLOW = "TIME_FLOW"
 	WEATHER_HOURS = "WEATHER_HOURS"
 	WEATHER_EFFECTS = "WEATHER_EFFECTS"
@@ -57,6 +67,7 @@ class ConfigMapping(StrEnum) :
 	SCENE_IDLE_DAYS = "SCENE_IDLE_DAYS"
 	CHRONICLE = "CHRONICLE"
 	CHRONICLE_CHARACTER_POSTS = "CHRONICLE_CHARACTER_POSTS"
+	SCENE_AI_SUMMARY = "SCENE_AI_SUMMARY"
 	COMMON_LANGUAGE = "COMMON_LANGUAGE"
 	LANGUAGE_SLOTS = "LANGUAGE_SLOTS"
 	LANGUAGE_SCRAMBLE = "LANGUAGE_SCRAMBLE"
@@ -100,6 +111,7 @@ channels = [
 	ConfigMapping.LETTER_CHANNEL,
 	ConfigMapping.JOB_BOARD,
 	ConfigMapping.RUMOR_CHANNEL,
+	ConfigMapping.MARKET,
 	ConfigMapping.MODLOG,
 ]
 
@@ -136,7 +148,7 @@ toggles = [
 
 defaults = {
 	ConfigMapping.XP_GAIN            : 5,
-	ConfigMapping.CURRENCY_GAIN      : 30,
+	ConfigMapping.CURRENCY_GAIN      : 8,
 	ConfigMapping.CURRENCY_NAME      : "currency",
 	ConfigMapping.CHARACTER_CAP      : 3,
 	ConfigMapping.REAPPROVAL_ON_EDIT : "lore",
@@ -147,11 +159,17 @@ defaults = {
 	ConfigMapping.STAT_MAX           : 10,
 	ConfigMapping.LEVEL_BASE         : 1000,
 	ConfigMapping.POINTS_PER_LEVEL   : 1,
-	ConfigMapping.STARTING_CURRENCY  : 3000,
+	ConfigMapping.STARTING_CURRENCY  : 1500,
 	ConfigMapping.SPECIES_CREATION   : "everyone",
 	ConfigMapping.ECONOMY            : "economy",
 	ConfigMapping.RETIRE_THREAD      : "lock",
 	ConfigMapping.LEGENDARY_POINTS   : 5,
+	ConfigMapping.GEAR_WEAR          : "ENABLED",
+	ConfigMapping.CARRY_WEIGHT       : "off",
+	ConfigMapping.AMMO               : "off",
+	ConfigMapping.TRADING            : "ENABLED",
+	ConfigMapping.MARKET_FEE         : 5,
+	ConfigMapping.MARKET_DAYS        : 14,
 	ConfigMapping.COMBAT_PACING      : "async",
 	ConfigMapping.COMBAT_ASYNC_TIMER : 12,
 	ConfigMapping.COMBAT_LIVE_TIMER  : 3,
@@ -168,6 +186,7 @@ defaults = {
 	ConfigMapping.SCENE_SKIP_HOURS   : 72,
 	ConfigMapping.SCENE_IDLE_DAYS    : 14,
 	ConfigMapping.CHRONICLE_CHARACTER_POSTS : "DISABLED",
+	ConfigMapping.SCENE_AI_SUMMARY   : "ENABLED",
 	ConfigMapping.COMMON_LANGUAGE    : "Common",
 	ConfigMapping.LANGUAGE_SLOTS     : 1,
 	ConfigMapping.LANGUAGE_SCRAMBLE  : "speech",
@@ -178,7 +197,7 @@ defaults = {
 	ConfigMapping.DOWNTIME_RESET     : 0,
 	ConfigMapping.DOWNTIME_ACTIVE_DAYS : 7,
 	ConfigMapping.DOWNTIME_PRIVATE   : "DISABLED",
-	ConfigMapping.WORK_PAY           : 50,
+	ConfigMapping.WORK_PAY           : 125,
 	ConfigMapping.STUDY_DAYS         : 10,
 	ConfigMapping.CAROUSE_COST       : 50,
 	ConfigMapping.RUMOR_MODE         : "board",
@@ -226,6 +245,7 @@ roleplay_settings = {
 	ConfigMapping.SCENE_SKIP_HOURS   : ("number", 0, 720),
 	ConfigMapping.SCENE_IDLE_DAYS    : ("number", 0, 90),
 	ConfigMapping.CHRONICLE_CHARACTER_POSTS : ("toggle",),
+	ConfigMapping.SCENE_AI_SUMMARY   : ("toggle",),
 	ConfigMapping.COMMON_LANGUAGE    : ("text", 50),
 	ConfigMapping.LANGUAGE_SLOTS     : ("number", 0, 10),
 	ConfigMapping.LANGUAGE_SCRAMBLE  : ("choice", ["speech", "all"]),
@@ -243,6 +263,13 @@ roleplay_settings = {
 	ConfigMapping.RUMOR_DAYS         : ("number", 1, 90),
 	ConfigMapping.OMEN_DAYS          : ("number", 1, 60),
 	ConfigMapping.OMEN_EFFECTS       : ("toggle",),
+	# Economy and equipment (design/economy.md), set the same way.
+	ConfigMapping.GEAR_WEAR          : ("toggle",),
+	ConfigMapping.CARRY_WEIGHT       : ("choice", ["off", "kg", "lb"]),
+	ConfigMapping.AMMO               : ("choice", ["off", "die"]),
+	ConfigMapping.TRADING            : ("toggle",),
+	ConfigMapping.MARKET_FEE         : ("number", 0, 50),
+	ConfigMapping.MARKET_DAYS        : ("number", 1, 90),
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -261,7 +288,7 @@ docs = {
 	# == progression ==
 	ConfigMapping.XP_CHANNELS   : "Text channels and forums where roleplay happens: messages earn XP there, and posts made as a character also earn that character currency. Threads count when their parent channel is listed. Messages shorter than 300 characters are removed there.",
 	ConfigMapping.XP_GAIN       : "How many characters a message needs per point of XP (default 5).",
-	ConfigMapping.CURRENCY_GAIN : "How many characters a post made as a character needs per unit of currency for that character (default 30).",
+	ConfigMapping.CURRENCY_GAIN : "How many characters a post made as a character needs per unit of currency for that character (default 8, so a 300-character post earns about 38).",
 	ConfigMapping.CURRENCY_NAME : "The name shown for the server's currency (default 'currency').",
 	ConfigMapping.ANNOUNCEMENT  : "The channel where level-up announcements are posted.",
 
@@ -280,14 +307,21 @@ docs = {
 	ConfigMapping.STAT_MAX           : "The highest value a SPECIAL stat can have (default 10).",
 	ConfigMapping.LEVEL_BASE         : "How fast characters level: reaching level L takes this number x L(L-1)/2 XP (default 1000, so level 2 at 1000 XP and level 3 at 3000).",
 	ConfigMapping.POINTS_PER_LEVEL   : "How many SPECIAL points a character gets for each level (default 1).",
-	ConfigMapping.STARTING_CURRENCY  : "How much currency a new character starts with (default 3000).",
+	ConfigMapping.STARTING_CURRENCY  : "How much currency a new character starts with (default 1500).",
 	ConfigMapping.PROXY_OUTSIDE_RP   : "Whether members can post as their characters outside the XP channels (default off). Posts there earn no XP and have no minimum length.",
 	ConfigMapping.SPECIES_FORUM      : "The forum (or channel) where approved species are posted. Tags on a species' post can restrict who may pick it; see /tagrule.",
 	ConfigMapping.SPECIES_CREATION   : "Who can create species with /species create: `everyone` (the default), `staff` (Manage Messages) or `off`.",
 	ConfigMapping.GEAR_FORUM         : "Optional: the forum where the gear catalog is posted, one post per item. Tags on an item's post can restrict who may buy it; see /tagrule.",
 	ConfigMapping.RETIRE_THREAD      : "What happens to a retired character's post in the character channel: `lock` (the default; the forum thread is locked and archived, and opened again if the character returns) or `delete`.",
-	ConfigMapping.ECONOMY            : "`economy` (the default): characters buy gear with their currency and sell it for 30% of what they paid. `free`: all gear costs nothing and selling returns nothing.",
+	ConfigMapping.ECONOMY            : "`economy` (the default): characters buy gear with their currency and sell it for 30% of its catalog price (20% to 40% by Charisma, which also lowers buying prices by up to 15%). `free`: all gear costs nothing and selling returns nothing.",
 
+	ConfigMapping.GEAR_WEAR          : "Whether gear wears down in fights (default on): when a fight ends, the weapon each character held and its armor each have a 1 in 20 chance to drop a step (Good, Worn, Damaged, Broken; 1 in 40 for masterwork). Repair it at the shop (/shop repair) or with a repairing occupation (/downtime repair).",
+	ConfigMapping.CARRY_WEIGHT       : "Whether characters have a carry limit: `off` (the default), `kg` or `lb`. A character carries 11 + 11 x Strength kg (25 + 25 x Strength lb); over that it has 2 AP less in fights and travels slower, and past 150% it can't buy more.",
+	ConfigMapping.AMMO               : "Whether ranged weapons use ammunition: `off` (the default) or `die`: each has an ammunition die (d12 when full) rolled after every fight; a 1 or 2 steps it down, and a weapon that runs out can't be used until it is refilled with /shop refill.",
+	ConfigMapping.TRADING            : "Whether players can trade items and currency between their characters with /trade and /currency pay (default on). A player's own characters never trade with each other.",
+	ConfigMapping.MARKET             : "Optional: the forum where characters sell items at a fixed price with /market sell, one post per item.",
+	ConfigMapping.MARKET_FEE         : "The share of a market sale the market keeps, in percent (default 5). It leaves the economy.",
+	ConfigMapping.MARKET_DAYS        : "Days before an unsold market listing ends and the item goes back to its seller (default 14).",
 	ConfigMapping.LEGENDARY_POINTS   : "How many extra SPECIAL points a character gets when staff make it legendary (default 5). Legendary characters also have doubled stat limits and one extra ability slot.",
 
 	# == combat ==
@@ -301,6 +335,7 @@ docs = {
 	ConfigMapping.ABILITY_FORUM      : "Optional: the forum where approved abilities are posted. Tags on an ability's post can restrict who may learn it; see /tagrule.",
 
 	# == roleplay tools ==
+	ConfigMapping.GM_ROLE            : "Optional: the role of the server's game masters. Members with it run the roleplay tools like staff (tables, locations, rumors, recipes and the rest; not /gm or fights), and it is pinged when an encounter on the road needs a GM.",
 	ConfigMapping.GM_ROLL_LOG        : "Optional: a channel where every secret roll is copied (secret and passive checks, secret /dice rolls and secret table rolls), so the server can audit them.",
 
 	ConfigMapping.TIME_FLOW          : "How in-world time moves: `manual` (the default; staff move it with /time advance) or a ratio of in-world days to real days, such as `1:1`, `2:1` or `1:4`.",
@@ -313,6 +348,7 @@ docs = {
 	ConfigMapping.SCENE_IDLE_DAYS    : "Days without posts before a scene asks its host whether to end it; 7 days later it ends by itself (default 14; 0 never).",
 	ConfigMapping.CHRONICLE          : "The forum (or channel) where finished scenes are written up as transcripts.",
 	ConfigMapping.CHRONICLE_CHARACTER_POSTS : "Whether each finished scene adds a line to its characters' posts in the character forum (default off).",
+	ConfigMapping.SCENE_AI_SUMMARY   : "Whether the bot drafts a summary of scenes that end without one, and answers /scene summary (default on; needs the bot's local model, OLLAMA_URL).",
 	ConfigMapping.COMMON_LANGUAGE    : "The language every character speaks (default Common).",
 	ConfigMapping.LANGUAGE_SLOTS     : "Languages a new character picks besides the common one, plus 1 per 2 Intelligence above 5 (default 1).",
 	ConfigMapping.LANGUAGE_SCRAMBLE  : "What a language scrambles: `speech` (the default; only quoted text) or `all`.",
@@ -325,7 +361,7 @@ docs = {
 	ConfigMapping.DOWNTIME_RESET     : "The hour (UTC) when a new downtime day starts (default 0).",
 	ConfigMapping.DOWNTIME_ACTIVE_DAYS : "Downtime is only for characters that posted in the last this many days (default 7; 0 lets every character).",
 	ConfigMapping.DOWNTIME_PRIVATE   : "Whether downtime results are private instead of posted (default off).",
-	ConfigMapping.WORK_PAY           : "What a day of downtime work pays when the occupation sets no pay (default 50).",
+	ConfigMapping.WORK_PAY           : "What a day of downtime work pays when the occupation sets no pay (default 125).",
 	ConfigMapping.STUDY_DAYS         : "Successful study days to learn a language partly, and again to speak it fluently (default 10).",
 	ConfigMapping.CAROUSE_COST       : "What carousing in downtime costs (default 50).",
 	ConfigMapping.RUMOR_MODE         : "`board` (the default): rumors are posted to the rumor channel straight away. `whisper`: characters overhear them with /rumor listen, and one heard 3 times is posted.",

@@ -28,8 +28,8 @@ LIGHT = {C.BURNING, C.BLEEDING, C.POISONED, C.SLOWED, C.MARKED, C.PRONE, C.BLIND
          C.WITHERED, C.FRIGHTENED, C.DRAINED, C.VULNERABLE}
 HEAVY = {C.STUNNED, C.SILENCED, C.ASLEEP, C.RESTRAINED, C.DISARMED, C.CHARMED, C.CURSED, C.CONFUSED}
 # Boosts a theme's veil may give: minor ones cost 2, medium ones 3.
-MINOR_BOOSTS = {C.INSPIRED, C.REGENERATING, C.EMPOWERED, C.FORTIFIED, C.BLESSED, C.FOCUSED}
-MEDIUM_BOOSTS = {C.HASTED, C.EVASIVE, C.HIDDEN, C.WARDED, C.VAMPIRIC}
+MINOR_BOOSTS = {C.INSPIRED, C.REGENERATING, C.EMPOWERED, C.FORTIFIED, C.BLESSED, C.FOCUSED, C.HIDDEN}
+MEDIUM_BOOSTS = {C.HASTED, C.EVASIVE, C.WARDED, C.VAMPIRIC}
 
 # Fighting styles that need no weapon (fists, kicks, elbows); every other weapon theme needs a weapon of its kind.
 UNARMED = {"fist", "martial", "elbow"}
@@ -248,7 +248,8 @@ def magic_effects(theme: Theme) -> list[Effect] :
 			    condition=theme.heavy)
 		if theme.heavy != C.RESTRAINED :
 			add("grasp", f"{A} Grasp", AFFLICT, 3, f"{n} holds the target fast", condition=C.RESTRAINED)
-		add("curse", f"{A} Curse", AFFLICT, 2, f"{n} that opens the target to harm", condition=C.VULNERABLE)
+		add("curse", f"{A} Curse", AFFLICT, 2, f"{n} that opens the target to harm", condition=C.VULNERABLE,
+		    turns=1)
 		add("purge", f"{A} Purge", DISPEL, 2, f"{n} that strips away protections", count=1)
 	if "D" in theme.groups :
 		if t :
@@ -325,7 +326,7 @@ def physical_effects(weapon: Weapon) -> list[Effect] :
 		    turns=2)
 		add("riposte", f"{W} Riposte", BOOST, 2, f"answers every missed blow with the {n}", aim=SELF,
 		    condition=C.RIPOSTE)
-		add("feint", f"{W} Feint", AFFLICT, 2, f"a feint with the {n} that leaves the target open",
+		add("feint", f"{W} Feint", AFFLICT, 2, f"a feint with the {n} that leaves the target open", turns=1,
 		    condition=C.VULNERABLE)
 	return found
 

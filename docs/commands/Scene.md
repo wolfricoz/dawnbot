@@ -2,7 +2,7 @@
 layout: default
 title: Scene
 parent: Commands
-nav_order: 29
+nav_order: 31
 ---
 
 <h1>Scene</h1>
@@ -125,6 +125,16 @@ Scenes with a post order, reminders and a chronicle when they end.
 **Usage:** `/scene card`
 
 > Posts the scene's card again (and pins it), for when it scrolled far up.
+
+---
+
+### `summary`
+
+**Usage:** `/scene summary`
+
+> Sends you (and only you) a short summary of the scene here so far, written by the bot's own model. Handy when
+> you join late or come back after a break. Summaries are written one at a time, so it can take a few minutes.
+> Scenes that end without a summary get one drafted on their own.
 
 ---
 

@@ -66,7 +66,7 @@ class DowntimeFlow :
 		currency = ConfigData().get_key(character.guild_id, ConfigMapping.CURRENCY_NAME)
 		job = occupation.name if occupation else "odd jobs"
 		lines = [f"⚒️ {character.name} works ({job}): {result.breakdown()} on {stat.capitalize()} · "
-		         f"{Checks.OUTCOME_LABELS[result.outcome]}", f"*{Downtime.FLAVOR.get(result.outcome, '')}*"]
+		         f"{Checks.OUTCOME_LABELS[result.outcome]}", f"*{DowntimeFlow.flavor(occupation, result.outcome)}*"]
 		if earned :
 			Gear.change_currency(character, earned, WORK_REASON, character.uid, note=f"Downtime: {job}")
 			lines.append(f"Earned **{earned} {currency}**.")
@@ -80,6 +80,15 @@ class DowntimeFlow :
 
 			table = RollTableTransactions().get(occupation.table_id)
 		return result.outcome, lines, {"earned" : earned, "stat" : stat, "total" : result.total}, table
+
+	# ============================================================
+	@staticmethod
+	def flavor(occupation, outcome: str) -> str :
+		"""A line for how the work went: one of the occupation's own lines for the outcome, else the default."""
+		import random
+
+		own = ((occupation.flavor or {}).get(outcome) or []) if occupation is not None else []
+		return random.choice(own) if own else Downtime.FLAVOR.get(outcome, "")
 
 	# ============================================================
 	@staticmethod
@@ -105,8 +114,9 @@ class DowntimeFlow :
 
 	# ============================================================
 	@staticmethod
-	def carouse(character: Characters) -> tuple[str | None, list[str], dict] :
-		"""Spends CAROUSE_COST for a free rumor listen at +2. Returns None as the outcome when it can't be paid."""
+	def carouse(character: Characters, location=None) -> tuple[str | None, list[str], dict] :
+		"""Spends CAROUSE_COST for a free rumor listen at +2, and +1 standing with the faction that holds the location.
+		Returns None as the outcome when it can't be paid."""
 		from classes.gear.Gear import Gear
 
 		cost = RoleplaySettings.number(character.guild_id, ConfigMapping.CAROUSE_COST) \
@@ -119,11 +129,16 @@ class DowntimeFlow :
 		try :
 			from classes.flavor.RumorFlow import RumorFlow
 
-			outcome, heard = RumorFlow.overhear(character, bonus=2)
+			outcome, heard = RumorFlow.overhear(character, bonus=2, location=location)
 		except ImportError :
 			outcome, heard = Checks.SUCCESS, []
 		lines = [f"🍻 {character.name} carouses{f' ({cost} spent)' if cost else ''}."]
 		lines += [f"👂 *{text}*" for text in heard] or ["Lots of laughter, but no news worth repeating."]
+		faction = EconomyTransactions().faction(getattr(location, "faction_id", None)) if location else None
+		if faction is not None :
+			from classes.economy.FactionFlow import FactionFlow
+
+			lines += FactionFlow.change(character, faction, 1, "carousing", character.uid)
 		return outcome, lines, {"heard" : len(heard), "cost" : cost}
 
 	# ============================================================
@@ -156,7 +171,11 @@ class DowntimeFlow :
 			outcome, lines, finished = Crafting.work(character, project, interaction.user.id)
 			details = {"project_id" : project.id, "finished" : finished}
 		else :
-			outcome, lines, details = DowntimeFlow.carouse(character)
+			from classes.world.WorldFlow import WorldFlow
+
+			location = WorldFlow.location_here(interaction.channel) or WorldFlow.where_is(interaction.guild,
+			                                                                              character.id)
+			outcome, lines, details = DowntimeFlow.carouse(character, location)
 			if outcome is None :
 				return await reply(interaction, lines[0])
 		EconomyTransactions().add_downtime(character.id, DowntimeFlow.day(interaction.guild_id), activity, outcome,

@@ -314,3 +314,29 @@ class TestFreshDurations(unittest.TestCase) :
 		ayla.acted = False
 		run.end_turn(ayla)
 		self.assertFalse(C.has(ayla.conditions, C.EMPOWERED))
+
+
+class TestAmbush(unittest.TestCase) :
+
+	def test_striking_from_hiding(self) :
+		fight = duel()
+		ayla, bandit = fight.combatant(1), fight.combatant(2)
+		run = engine(fight)
+		C.add(ayla.conditions, C.HIDDEN, turns=2)
+		bonuses = run.situational(ayla, bandit)
+		self.assertIn(("hidden", 4), [(bonus.label, bonus.value) for bonus in bonuses])
+		# d20 6 + 4 ambush = 10 meets AC 10: the hit gives the hiding place away.
+		engine(fight, 6, 3).resolve_attack(ayla, bandit, ayla.weapons[0])
+		self.assertLess(bandit.hp, 30)
+		self.assertFalse(C.has(ayla.conditions, C.HIDDEN))
+
+	def test_an_ability_keeps_the_ambush_for_its_roll(self) :
+		fight = duel()
+		ayla = fight.combatant(1)
+		ayla.stats["abilities"] = [ability(1, "Bolt", "spell", "cantrip", ["fire_bolt"])]
+		C.add(ayla.conditions, C.HIDDEN, turns=2)
+		run = engine(fight, 6, 3)
+		run.start()
+		run.use_ability(ayla, 1, [2])
+		self.assertLess(fight.combatant(2).hp, 30)
+		self.assertFalse(C.has(ayla.conditions, C.HIDDEN))

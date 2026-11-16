@@ -205,6 +205,11 @@ class CombatFlow :
 			CombatTransactions().save(fight)
 			CombatFlow.use_up(outcome.used_items)
 			CombatFlow.save_streaks(outcome.streaks)
+			if outcome.ended :
+				# Gear wears down and ammunition runs low once per fight (design/economy.md).
+				from classes.gear import Condition
+
+				outcome.lines += Condition.after_fight(fight)
 			if outcome.lines :
 				CombatTransactions().log(fight.id, fight.round, label, "\n".join(outcome.lines), actor_id, target_id,
 				                         snapshot=snapshot)

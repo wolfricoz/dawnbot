@@ -9,6 +9,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.characters.ImageStorage import ImageStorage
 from classes.world import Weather
 from classes.world.WorldFlow import WorldFlow
@@ -28,6 +29,15 @@ async def region_autocomplete(interaction: discord.Interaction, current: str) ->
 	return [Choice(name=region.name[:100], value=region.name[:100])
 	        for region in WorldTransactions().regions(interaction.guild_id)
 	        if current.lower() in region.name.lower()][:25]
+
+
+# ============================================================
+async def faction_autocomplete(interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+	from database.transactions.EconomyTransactions import EconomyTransactions
+
+	return [Choice(name=faction.name[:100], value=faction.name[:100])
+	        for faction in EconomyTransactions().factions(interaction.guild_id)
+	        if current.lower() in faction.name.lower()][:25]
 
 
 # ============================================================
@@ -93,23 +103,25 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 
 	# ============================================================
 	@app_commands.command(name="set", description="Makes this channel a location, or changes it")
-	@app_commands.checks.has_permissions(manage_messages=True)
-	@app_commands.autocomplete(region=region_autocomplete, encounters=table_autocomplete)
+	@gm_only()
+	@app_commands.autocomplete(region=region_autocomplete, encounters=table_autocomplete,
+	                           faction=faction_autocomplete)
 	@app_commands.choices(climate=CLIMATE_CHOICES)
 	@app_commands.describe(name="The location's name", region="The region it is in",
 	                       climate="Its own climate (default: its region's)", indoor="Indoors: no weather",
 	                       danger=DANGER_HELP, encounters="The roll table for encounters on the way here",
-	                       image="A picture of the place")
+	                       image="A picture of the place", faction="The faction that holds it (carousing here gains "
+	                                                               "standing)")
 	async def set_location(self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100] = None,
 	                       region: str = None, climate: Choice[str] = None, indoor: bool = None,
 	                       danger: app_commands.Range[int, 0, 5] = None, encounters: str = None,
-	                       image: discord.Attachment = None) :
+	                       image: discord.Attachment = None, faction: str = None) :
 		"""
 		Makes the channel (or thread) you use it in a location, or changes the one it is. A form asks for the
 		description and hazards. Options you leave out keep their value.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		guild_id = interaction.guild_id
 		current = WorldTransactions().location_of(interaction.channel_id)
@@ -130,6 +142,13 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 			fields["indoor"] = indoor
 		if danger is not None :
 			fields["danger"] = danger
+		if faction :
+			from database.transactions.EconomyTransactions import EconomyTransactions
+
+			holder = EconomyTransactions().find_faction(guild_id, faction)
+			if holder is None :
+				return await reply(interaction, f"There is no faction called {faction}.")
+			fields["faction_id"] = holder.id
 		if encounters :
 			table = RollTableTransactions().find(guild_id, encounters)
 			if table is None :
@@ -200,13 +219,13 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 
 	# ============================================================
 	@app_commands.command(name="remove", description="Stops this channel being a location")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	async def remove(self, interaction: discord.Interaction) :
 		"""
 		Removes the location of this channel, with its routes.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		location = WorldTransactions().location_of(interaction.channel_id)
 		if location is None :
@@ -220,7 +239,7 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 
 	# ============================================================
 	@region.command(name="add", description="Adds a region")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.choices(climate=CLIMATE_CHOICES)
 	async def region_add(self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100],
 	                     climate: Choice[str], description: app_commands.Range[str, 1, 1000] = None) :
@@ -228,7 +247,7 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 		Adds a region. Its locations share its climate (unless they set their own) and its weather.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		region = WorldTransactions().add_region(interaction.guild_id, name, climate=climate.value,
 		                                        description=description)
@@ -238,7 +257,7 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 
 	# ============================================================
 	@region.command(name="edit", description="Changes a region")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(region=region_autocomplete)
 	@app_commands.choices(climate=CLIMATE_CHOICES)
 	async def region_edit(self, interaction: discord.Interaction, region: str,
@@ -248,7 +267,7 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 		Changes a region's name, climate or description.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = WorldTransactions().find_region(interaction.guild_id, region)
 		if record is None :
@@ -262,14 +281,14 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 
 	# ============================================================
 	@region.command(name="remove", description="Removes a region")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(region=region_autocomplete)
 	async def region_remove(self, interaction: discord.Interaction, region: str) :
 		"""
 		Removes a region; its locations keep existing without one.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = WorldTransactions().find_region(interaction.guild_id, region)
 		if record is None :
@@ -294,7 +313,7 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 
 	# ============================================================
 	@route.command(name="add", description="Adds a route between two locations")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(encounters=table_autocomplete)
 	@app_commands.describe(start="One location's channel", end="The other location's channel",
 	                       hours="In-world hours the journey takes", danger=DANGER_HELP,
@@ -308,7 +327,7 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 		danger.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		first, second = WorldTransactions().location_of(start.id), WorldTransactions().location_of(end.id)
 		if first is None or second is None or first.id == second.id :
@@ -326,14 +345,14 @@ class Location(commands.GroupCog, name="Location", group_name="location") :
 
 	# ============================================================
 	@route.command(name="remove", description="Removes the route between two locations")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	async def route_remove(self, interaction: discord.Interaction, start: discord.TextChannel,
 	                       end: discord.TextChannel) :
 		"""
 		Removes a route.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		first, second = WorldTransactions().location_of(start.id), WorldTransactions().location_of(end.id)
 		route = WorldTransactions().route(first.id, second.id) if first and second else None

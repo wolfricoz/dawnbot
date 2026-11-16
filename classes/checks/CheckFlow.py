@@ -32,7 +32,9 @@ class CheckFlow :
 	@staticmethod
 	def runs(check: CheckRecord, member: discord.Member) -> bool :
 		"""Whether a member runs the check: its caller, or staff."""
-		return member.id == check.caller_uid or member.guild_permissions.manage_messages
+		from classes.kernel.GMRole import is_gm
+
+		return member.id == check.caller_uid or is_gm(member)
 
 	# ============================================================
 	@staticmethod

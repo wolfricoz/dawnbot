@@ -2,7 +2,7 @@
 layout: default
 title: Weather
 parent: Commands
-nav_order: 41
+nav_order: 44
 ---
 
 <h1>Weather</h1>
@@ -28,7 +28,7 @@ The weather where you are, rolled per region from its climate and the season.
 > Sets the weather by hand. It keeps until the weather would normally change next.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

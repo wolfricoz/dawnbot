@@ -1,4 +1,6 @@
-from sqlalchemy import Select
+from datetime import datetime
+
+from sqlalchemy import Select, case, func
 
 from database.database import CurrencyTransactions as CurrencyRows
 from database.transactions.DatabaseTransactions import DatabaseTransactions
@@ -30,3 +32,28 @@ class CurrencyTransactions(DatabaseTransactions) :
 		with self.createsession() as session :
 			return list(session.scalars(Select(CurrencyRows).where(CurrencyRows.character_id == character_id)
 			                            .order_by(CurrencyRows.id.desc()).limit(limit)).all())
+
+	# ============================================================
+	def totals(self, guild_id: int, since: datetime) -> list[tuple[str, int, int]] :
+		"""Every reason's gains and losses on the server since then: (reason, amount gained or lost, changes),
+		gains and losses of one reason apart, biggest first."""
+		with self.createsession() as session :
+			gained = case((CurrencyRows.amount > 0, "in"), else_="out")
+			rows = session.execute(Select(CurrencyRows.reason, gained, func.sum(CurrencyRows.amount),
+			                              func.count(CurrencyRows.id))
+			                       .where(CurrencyRows.guild_id == guild_id, CurrencyRows.created_at >= since,
+			                              CurrencyRows.amount != 0)
+			                       .group_by(CurrencyRows.reason, gained)).all()
+			return sorted(((reason, int(total), int(count)) for reason, _, total, count in rows),
+			              key=lambda row : -abs(row[1]))
+
+	# ============================================================
+	def earners(self, guild_id: int, since: datetime, limit: int = 5) -> list[tuple[int, int]] :
+		"""The characters that gained the most since then (gains only): (character id, amount)."""
+		with self.createsession() as session :
+			total = func.sum(CurrencyRows.amount)
+			rows = session.execute(Select(CurrencyRows.character_id, total)
+			                       .where(CurrencyRows.guild_id == guild_id, CurrencyRows.created_at >= since,
+			                              CurrencyRows.amount > 0)
+			                       .group_by(CurrencyRows.character_id).order_by(total.desc()).limit(limit)).all()
+			return [(int(character_id), int(amount)) for character_id, amount in rows]

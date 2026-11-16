@@ -107,8 +107,8 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 > Sets one of the channels the bot posts in. Approved characters and species are posted in the character channel
 > and the species forum (a forum gives each its own thread); new and edited characters and species wait for staff
 > in the character review channel. The GM roll log gets a copy of every secret roll. The chronicle gets finished
-> scenes, the job board (a forum) jobs, the letter channel notices for members with DMs closed, and the rumor
-> channel rumors.
+> scenes, the job board (a forum) jobs, the letter channel notices for members with DMs closed, the rumor
+> channel rumors, and the market (a forum) items characters sell to each other.
 >
 > **Permissions:**
 > - `Manage Server`
@@ -167,8 +167,8 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 
 **Usage:** `/config economy <mode>`
 
-> Sets whether gear costs currency: economy (characters buy gear and sell it for 30% of what they paid) or
-> free (all gear costs nothing and selling returns nothing).
+> Sets whether gear costs currency: economy (characters buy gear and sell it for 30% of its catalog price, 20%
+> to 40% by Charisma) or free (all gear costs nothing and selling returns nothing).
 >
 > **Permissions:**
 > - `Manage Server`
@@ -227,8 +227,21 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 **Usage:** `/config roleplay <setting> <value>`
 
 > Sets one of the roleplay tools' settings: in-world time and weather, travel, scenes, languages, letters, jobs,
-> downtime, rumors and omens. Start typing to see them all with their current values; /config view lists them
+> downtime, rumors and omens, plus gear wear, carry weight, ammunition, trading and the market. Start typing to see them all with their current values; /config view lists them
 > too.
+>
+> **Permissions:**
+> - `Manage Server`
+
+---
+
+### `gmrole`
+
+**Usage:** `/config gmrole <role>`
+
+> Sets the role of the server's game masters. Members with it run the roleplay tools as staff do (roll tables,
+> calendar and time, weather, locations, languages, letters in transit, factions, jobs, recipes, rumors), and
+> the role is pinged when an encounter on the road needs a GM. It doesn't give /gm or fight GM powers.
 >
 > **Permissions:**
 > - `Manage Server`

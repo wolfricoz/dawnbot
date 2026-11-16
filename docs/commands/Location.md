@@ -2,7 +2,7 @@
 layout: default
 title: Location
 parent: Commands
-nav_order: 24
+nav_order: 25
 ---
 
 <h1>Location</h1>
@@ -14,13 +14,13 @@ Places in the world, bound to channels, grouped in regions and joined by routes.
 
 ### `set`
 
-**Usage:** `/location set <name> <region> <climate> <indoor> <danger> <encounters> <image>`
+**Usage:** `/location set <name> <region> <climate> <indoor> <danger> <encounters> <image> <faction>`
 
 > Makes the channel (or thread) you use it in a location, or changes the one it is. A form asks for the
 > description and hazards. Options you leave out keep their value.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -55,7 +55,7 @@ Places in the world, bound to channels, grouped in regions and joined by routes.
 > Removes the location of this channel, with its routes.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -66,7 +66,7 @@ Places in the world, bound to channels, grouped in regions and joined by routes.
 > Adds a region. Its locations share its climate (unless they set their own) and its weather.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -77,7 +77,7 @@ Places in the world, bound to channels, grouped in regions and joined by routes.
 > Changes a region's name, climate or description.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -88,7 +88,7 @@ Places in the world, bound to channels, grouped in regions and joined by routes.
 > Removes a region; its locations keep existing without one.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -108,7 +108,7 @@ Places in the world, bound to channels, grouped in regions and joined by routes.
 > danger.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -119,7 +119,7 @@ Places in the world, bound to channels, grouped in regions and joined by routes.
 > Removes a route.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

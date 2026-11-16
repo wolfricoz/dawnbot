@@ -103,7 +103,7 @@ class TestCreate(InterviewTestCase) :
 		self.assertEqual((character.strength, character.agility, character.luck), (5, 6, 6))
 		# 38 of the 40 points were spent; the starting currency is the server's default.
 		self.assertEqual((character.stat_method, character.unspent_points, character.currency),
-		                 ("point_buy", 2, 3000))
+		                 ("point_buy", 2, 1500))
 		self.assertEqual([(info.key, info.value) for info in CharacterInfoTransactions().get_all(character.id)],
 		                 [("Age", "30"), ("Archetype", "Melee"), ("History", "Born in the hills.")])
 

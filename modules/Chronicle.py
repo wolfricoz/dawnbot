@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from classes.combat.AutoComplete import AutoComplete
+from classes.kernel.GMRole import is_gm
 from classes.scenes.ChronicleFlow import ChronicleFlow
 from database.transactions.CharacterTransactions import CharacterTransactions
 from database.transactions.ProxyTransactions import ProxyTransactions
@@ -42,7 +43,7 @@ class Chronicle(commands.GroupCog, name="Chronicle", group_name="chronicle") :
 		channel = interaction.guild.get_channel_or_thread(start[1])
 		if channel is None :
 			return await reply(interaction, "I can't see that channel.")
-		if not interaction.user.guild_permissions.manage_messages :
+		if not is_gm(interaction.user) :
 			logged = ProxyTransactions().in_range(channel.id, first_id, last_id)
 			if not any(entry.uid == interaction.user.id for entry in logged) :
 				return await reply(interaction, "None of your characters posted there; staff can chronicle it.")

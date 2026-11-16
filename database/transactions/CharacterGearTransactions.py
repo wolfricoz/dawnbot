@@ -14,7 +14,8 @@ STATUSES = [OWNED, LOST, BROKEN, SOLD, USED]
 MATERIAL = "material"
 
 # Columns update() accepts as keyword arguments.
-FIELDS = ["equipped", "status", "changed_by", "price_paid", "proficiency", "quantity", "quality", "name"]
+FIELDS = ["equipped", "status", "changed_by", "price_paid", "proficiency", "quantity", "quality", "name", "slot",
+          "condition", "ammo_die"]
 
 
 class CharacterGearTransactions(DatabaseTransactions) :
@@ -47,7 +48,7 @@ class CharacterGearTransactions(DatabaseTransactions) :
 
 	# ============================================================
 	def get_all(self, character_id: int, include_gone: bool = False) -> list[CharacterGear] :
-		"""The character's gear, oldest first; include_gone adds lost, broken, sold and used items."""
+		"""The character's gear, oldest first; include_gone adds lost, sold and used items."""
 		with self.createsession() as session :
 			query = Select(CharacterGear).where(CharacterGear.character_id == character_id)
 			if not include_gone :

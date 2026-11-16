@@ -12,7 +12,8 @@ from classes.characters.ForumPost import ForumPost
 from classes.combat import Rules
 from classes.combat.AutoComplete import AutoComplete
 from classes.combat.Proficiency import Proficiency
-from classes.gear.Gear import ARMOR, Gear as GearRules, SELL_RATE
+from classes.gear import Carry, Condition, Pricing, Slots
+from classes.gear.Gear import ARMOR, Gear as GearRules
 from database.database import CharacterGear, Characters, GearItems
 from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST, OWNED
 from database.transactions.CharacterTransactions import APPROVED, CharacterTransactions
@@ -20,6 +21,9 @@ from database.transactions.GearItemTransactions import GearItemTransactions
 from modules.Currency import balance_text, find_own_character
 from views.buttons.Confirm import ask
 
+SLOT_CHOICES = [Choice(name="Main hand", value=Slots.MAIN_HAND), Choice(name="Off hand", value=Slots.OFF_HAND),
+                Choice(name="Readied", value=Slots.READIED), Choice(name="First ring", value=Slots.RING_1),
+                Choice(name="Second ring", value=Slots.RING_2)]
 PROFICIENCY_CHOICES = [Choice(name=f"{tier.capitalize()} ({Rules.proficiency_bonus(tier):+d})", value=tier)
                        for tier in Rules.PROFICIENCY_ORDER]
 
@@ -70,19 +74,35 @@ def unmet_warning(character: Characters, item: GearItems | None) -> str :
 
 
 # ============================================================
+def equipped_text(entry: CharacterGear) -> str :
+	"""How an equipped item is carried: `worn`, `main hand`, `readied`, `worn (neck)`."""
+	if entry.kind == ARMOR :
+		return "worn"
+	if entry.kind == "accessory" :
+		return f"worn ({Slots.label(entry.slot)})" if entry.slot else "worn"
+	return Slots.label(entry.slot) if entry.slot else "equipped"
+
+
+# ============================================================
 def inventory_lines(character: Characters, inventory: list[tuple[CharacterGear, GearItems | None]]) -> list[str] :
-	"""One line per item: equipped items first, then the rest, then lost, broken and sold items."""
+	"""One line per item: equipped items first, then the rest, then lost, sold and used items."""
 	stats = GearRules.stats_of(character)
 	owned = [pair for pair in inventory if pair[0].status == OWNED]
 	gone = [pair for pair in inventory if pair[0].status != OWNED]
-	owned.sort(key=lambda pair : not pair[0].equipped)
+	owned.sort(key=lambda pair : (not pair[0].equipped, Slots.SLOTS.index(pair[0].slot)
+	                              if pair[0].slot in Slots.SLOTS else len(Slots.SLOTS)))
 	lines = []
 	for entry, item in owned :
 		parts = [f"**{entry.name}** ({entry.kind})"]
 		if entry.kind == "weapon" :
 			parts.append(Proficiency.label(entry))
 		if entry.equipped :
-			parts.append("worn" if entry.kind == ARMOR else "equipped")
+			parts.append(equipped_text(entry))
+		if Condition.of(entry) != Condition.GOOD :
+			parts.append(Condition.label(Condition.of(entry)).lower())
+		if item is not None and Carry.ammo_on(character.guild_id) and Carry.uses_ammo(item.combat) :
+			die = Carry.die_of(entry)
+			parts.append("out of ammunition" if die == Carry.EMPTY else f"ammunition {die}")
 		unmet = GearRules.unmet_requirements(stats, item) if item is not None else []
 		if unmet :
 			parts.append(f"misses {', '.join(unmet)}")
@@ -148,8 +168,9 @@ class Gear(commands.GroupCog, name="Gear", group_name="gear") :
 	async def inventory(self, interaction: discord.Interaction, character: str, history: bool = False,
 	                    member: discord.Member = None) :
 		"""
-		Shows what one of your characters owns: what it wears and carries, and any SPECIAL requirements it doesn't
-		meet. Turn on `history` to include gear that was lost, broken or sold.
+		Shows what one of your characters owns: what it wears and holds in which slot, each item's condition when it
+		isn't good, ammunition and carried weight when the server uses them, and any SPECIAL requirements it doesn't
+		meet. Turn on `history` to include gear that was lost, sold or used up.
 
 		Staff can look at another member's character with `member`.
 		"""
@@ -165,32 +186,39 @@ class Gear(commands.GroupCog, name="Gear", group_name="gear") :
 		lines = inventory_lines(record, GearRules.inventory(record.id, include_gone=history))
 		embed = discord.Embed(title=f"{record.name}'s gear", description="\n".join(lines)[:4000] or "No gear yet.",
 		                      color=discord.Color.dark_gold())
+		footer = [Carry.load_text(record)]
 		if GearRules.economy(interaction.guild_id) :
-			embed.set_footer(text=balance_text(interaction.guild_id, record.currency))
+			footer.append(balance_text(interaction.guild_id, record.currency))
+		if any(footer) :
+			embed.set_footer(text=" · ".join(part for part in footer if part))
 		await interaction.response.send_message(embed=embed, ephemeral=True)
 
 	# ============================================================
 	@app_commands.command(name="equip")
 	@app_commands.autocomplete(character=AutoComplete().approved_character, item=_owned_items)
-	async def equip(self, interaction: discord.Interaction, character: str, item: str) :
+	@app_commands.choices(slot=SLOT_CHOICES)
+	@app_commands.describe(slot="Weapons and rings: where it goes (leave out for the usual place)")
+	async def equip(self, interaction: discord.Interaction, character: str, item: str, slot: Choice[str] = None) :
 		"""
-		Equips an item. A character wears one armor set at a time, so equipping armor takes off the armor it wore;
-		weapons can all be equipped together. Gear works even when the character misses its SPECIAL requirements,
-		but with a penalty.
+		Equips an item in a slot: armor on the body, an accessory where it is worn (head, neck, back, hands, feet or
+		one of two rings), a weapon in the main hand, the off hand or the readied slot. A two-handed weapon takes both
+		hands and a shield goes in the off hand. Whatever was in the slot is put away. Every weapon your character
+		owns can still be used in a fight; the one in the main hand is the one it starts holding. Gear works even when
+		the character misses its SPECIAL requirements, but with a penalty.
 		"""
 		record, entry, catalog_item = await self._own_entry(interaction, character, item)
 		if entry is None :
 			return
-		if entry.equipped :
-			return await CharacterFlow.respond(interaction, f"{entry.name} is already equipped.")
-		previous = GearRules.equipped_armor(record.id) if entry.kind == ARMOR else None
-		updated, problem = GearRules.equip(entry)
+		before = {other.id for other in CharacterGearTransactions().get_all(record.id)
+		          if other.equipped and other.id != entry.id}
+		updated, problem = GearRules.equip(entry, slot.value if slot else None)
 		if problem or updated is None :
 			return await CharacterFlow.respond(interaction, problem or "That item no longer exists.")
-		text = f"{record.name} now wears **{entry.name}**." if entry.kind == ARMOR \
-			else f"{record.name} now has **{entry.name}** equipped."
-		if previous is not None :
-			text += f" {previous[0].name} was taken off."
+		put_away = [other.name for other in CharacterGearTransactions().get_all(record.id)
+		            if other.id in before and not other.equipped]
+		text = f"{record.name} now has **{entry.name}** ({equipped_text(updated)})."
+		if put_away :
+			text += f" Put away: {', '.join(put_away)}."
 		await CharacterFlow.respond(interaction, text + unmet_warning(record, catalog_item))
 		await refresh_post(self.bot, record.id)
 
@@ -217,17 +245,18 @@ class Gear(commands.GroupCog, name="Gear", group_name="gear") :
 	@app_commands.autocomplete(character=AutoComplete().approved_character, item=_owned_items)
 	async def sell(self, interaction: discord.Interaction, character: str, item: str) :
 		"""
-		Sells an item for 30% of what your character paid for it. Gear that was given to you or bought in free mode
-		sells for nothing. You are asked to confirm first.
+		Sells an item for a share of its catalog price: 30% at average Charisma, from 20% to 40% depending on your
+		character's Charisma. Masterwork sells for half as much again and cursed gear for nothing. Nothing is paid in
+		free mode. You are asked to confirm first.
 		"""
 		record, entry, _ = await self._own_entry(interaction, character, item)
 		if entry is None :
 			return
 		guild_id = interaction.guild_id
-		value = GearRules.sell_value(entry, guild_id)
+		value = GearRules.sell_value(entry)
 		if value :
-			worth = (f"{record.name} gets {balance_text(guild_id, value)} "
-			         f"({round(SELL_RATE * 100)}% of the {entry.price_paid} paid).")
+			rate = round(Pricing.sell_rate(record) * 100)
+			worth = f"{record.name} gets {balance_text(guild_id, value)} ({rate}% of the catalog price)."
 		else :
 			worth = f"{record.name} gets nothing back for it."
 		if not await ask(interaction, f"Sell **{entry.name}**? {worth}", "Sell") :
@@ -250,14 +279,17 @@ class Gear(commands.GroupCog, name="Gear", group_name="gear") :
 		record, entry, _ = await self._own_entry(interaction, character, item)
 		if entry is None :
 			return
-		if not await ask(interaction, f"Mark **{entry.name}** as {status}? Only staff can give it back.",
-		                 f"Mark {status}") :
+		warning = "It stays with your character until it is repaired." if status == BROKEN else \
+			"Only staff can give it back."
+		if not await ask(interaction, f"Mark **{entry.name}** as {status}? {warning}", f"Mark {status}") :
 			return
 		_, problem = GearRules.set_status(entry, status, interaction.user.id)
 		if problem :
 			return await interaction.followup.send(problem, ephemeral=True)
 		logging.info(f"{interaction.user.name} marked gear {entry.id} ({entry.name}) of character {record.id} {status}")
-		await interaction.followup.send(f"**{entry.name}** is now {status}. It stays in {record.name}'s history.",
+		where = "It does nothing until repaired (/shop repair)." if status == BROKEN else \
+			f"It stays in {record.name}'s history."
+		await interaction.followup.send(f"**{entry.name}** is now {status}. {where}",
 		                                ephemeral=True)
 		await refresh_post(self.bot, record.id)
 
@@ -276,8 +308,9 @@ class Gear(commands.GroupCog, name="Gear", group_name="gear") :
 	@app_commands.autocomplete(character=AutoComplete().approved_character, item=_owned_items)
 	async def break_gear(self, interaction: discord.Interaction, character: str, item: str) :
 		"""
-		Marks an item as broken, for when it breaks in the story. It leaves the inventory but stays in its history
-		(/gear inventory with `history`). You are asked to confirm first.
+		Marks an item as broken, for when it breaks in the story. It stays in the inventory but does nothing in a fight
+		until it is repaired at the shop (/shop repair) or by a character whose occupation repairs it (/downtime
+		repair). You are asked to confirm first.
 		"""
 		await self._mark(interaction, character, item, BROKEN)
 

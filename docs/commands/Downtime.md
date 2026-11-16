@@ -9,7 +9,7 @@ nav_order: 14
 <h6>version: 1.0: Restructure</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-Once a day: work, study, craft or carouse.
+Once a day: work, study, craft, carouse or repair gear.
 
 
 ### `spend`
@@ -29,15 +29,39 @@ Once a day: work, study, craft or carouse.
 
 ---
 
+### `repair`
+
+**Usage:** `/downtime repair <character> <item> <member> <owner>`
+
+> Spends the character's downtime for the day repairing an item, its own or another character's. Its occupation
+> has to repair that kind of gear (staff set it with /downtime occupation). It rolls the better of Agility and
+> Intelligence against 10 (Worn), 13 (Damaged) or 16 (Broken); a success makes the item good as new. When the
+> item has a salvage list, the repair uses one of those materials from the repairer (lost on a bad failure too).
+
+---
+
 ### `occupation`
 
-**Usage:** `/downtime occupation <occupation> <pay> <stat> <table> <seer>`
+**Usage:** `/downtime occupation <occupation> <pay> <stat> <table> <seer> <repairs>`
 
 > Sets an occupation's downtime work: its pay, the stat it rolls and a roll table for a crit. `seer` lets its
-> characters read omens for others (/omen read).
+> characters read omens for others (/omen read). `repairs` lists the gear its characters can repair with
+> /downtime repair, like `weapon, medium, heavy` for a blacksmith (armor goes by its class); `none` clears it.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
+
+---
+
+### `flavor`
+
+**Usage:** `/downtime flavor <occupation> <outcome> <line>`
+
+> Adds a flavor line shown when a character of this occupation has that result at work; one is picked at random.
+> Without a line, that result's lines are cleared and the default line is used again.
+>
+> **Permissions:**
+> - `Manage Messages`, or the GM role
 
 ---
 

@@ -11,6 +11,7 @@ from classes.characters.Death import Death
 from classes.combat.Legendary import Legendary
 from classes.kernel.ConfigData import ConfigData
 from classes.combat.Proficiency import Proficiency
+from classes.gear import Condition
 from classes.gear.Gear import Gear
 from database.database import CharacterGear, Characters, GearItems
 from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST
@@ -170,12 +171,36 @@ class GM(commands.GroupCog, name="GM", group_name="gm") :
 	@app_commands.autocomplete(character=_characters, item=_owned)
 	async def gear_break(self, interaction: discord.Interaction, member: discord.Member, character: str, item: str) :
 		"""
-		Marks an item of a member's character as broken. It leaves the inventory but stays in its history.
+		Marks an item of a member's character as broken. It stays in the inventory but does nothing in a fight until
+		it is repaired.
 
 		**Permissions:**
 		- `Manage Messages`
 		"""
 		await self._mark(interaction, member, character, item, BROKEN)
+
+	# ============================================================
+	@gear.command(name="repair")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(character=_characters, item=_owned)
+	async def gear_repair(self, interaction: discord.Interaction, member: discord.Member, character: str, item: str) :
+		"""
+		Repairs an item of a member's character back to good condition, for free. Cursed items keep their curse; lift
+		it with /craft uncurse.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		record, entry = await self._entry(interaction, member, character, item)
+		if entry is None :
+			return
+		if Condition.of(entry) == Condition.GOOD :
+			return await interaction.followup.send(f"{entry.name} is in good condition already.", ephemeral=True)
+		Condition.restore(entry, interaction.user.id)
+		logging.info(f"GM {interaction.user.name} repaired gear {entry.id} of character {record.id}")
+		await interaction.followup.send(f"{record.name}'s **{entry.name}** is repaired.", ephemeral=True)
+		await refresh_post(self.bot, record.id)
 
 	# ============================================================
 	@gear.command(name="proficiency")

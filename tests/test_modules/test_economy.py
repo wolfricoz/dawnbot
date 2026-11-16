@@ -192,6 +192,13 @@ class TestCrafting(EconomyCase) :
 		outcome, lines, finished = Crafting.work(self.character, EconomyTransactions().project(project.id),
 		                                         rng=FixedRng(15))
 		self.assertTrue(finished)
+		# The crit made it masterwork and the bad failure left a flaw: they cancel out.
+		names = [entry.name for entry in CharacterGearTransactions().get_all(self.character.id) if entry.kind == "weapon"]
+		self.assertEqual(names, ["Arming Sword"])
+		self.stock(self.iron, 2)
+		clean = Crafting.start_project(self.character, recipe)
+		Crafting.work(self.character, clean, rng=FixedRng(20))
+		Crafting.work(self.character, EconomyTransactions().project(clean.id), rng=FixedRng(15))
 		self.assertTrue(any(entry.name == "Masterwork Arming Sword"
 		                    for entry in CharacterGearTransactions().get_all(self.character.id)))
 
@@ -203,7 +210,7 @@ class TestCrafting(EconomyCase) :
 		self.assertEqual(CharacterGearTransactions().get(entry.id).status, Crafting.SALVAGED)
 		armor = self.item("Plate", "armor", 1000)
 		cursed = Crafting.give(self.character, armor, 1, Crafting.CURSED)[0]
-		self.assertEqual(Gear.sell_value(cursed, GUILD_ID), 0)
+		self.assertEqual(Gear.sell_value(cursed), 0)
 		Gear.equip(cursed)
 		cursed = CharacterGearTransactions().get(cursed.id)
 		self.assertIsNone(Gear.unequip(cursed))
@@ -212,7 +219,7 @@ class TestCrafting(EconomyCase) :
 		lifted = Crafting.uncurse(cursed)
 		self.assertEqual((lifted.name, lifted.quality), ("Plate", None))
 		masterwork = Crafting.give(self.character, self.sword, 1, Crafting.MASTERWORK)[0]
-		self.assertEqual(Gear.sell_value(masterwork, GUILD_ID), int(250 * 0.3 * 1.5))
+		self.assertEqual(Gear.sell_value(masterwork), int(250 * 0.3 * 1.5))
 
 	def test_quality_reaches_fights(self) :
 		from classes.combat.Loadout import Loadout

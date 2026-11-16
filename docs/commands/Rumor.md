@@ -2,7 +2,7 @@
 layout: default
 title: Rumor
 parent: Commands
-nav_order: 28
+nav_order: 30
 ---
 
 <h1>Rumor</h1>
@@ -37,7 +37,7 @@ Rumors: post them anonymously, overhear them, and plant some as a GM.
 > Plants a rumor. Characters who overhear it with a strong success get a hint about its truth.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -48,7 +48,7 @@ Rumors: post them anonymously, overhear them, and plant some as a GM.
 > Marks whether a rumor is true; players only learn it from hints.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -59,7 +59,7 @@ Rumors: post them anonymously, overhear them, and plant some as a GM.
 > Pinned rumors never fade.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -70,7 +70,7 @@ Rumors: post them anonymously, overhear them, and plant some as a GM.
 > Blocks (or unblocks) a member from /rumor post.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -81,7 +81,7 @@ Rumors: post them anonymously, overhear them, and plant some as a GM.
 > Lists live rumors with their number, author, truth and how often they were overheard.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

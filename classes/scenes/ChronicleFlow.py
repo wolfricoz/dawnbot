@@ -35,6 +35,13 @@ def snowflake(moment: datetime, high: bool = False) -> int :
 
 
 # ============================================================
+def scene_range(scene: SceneRecord) -> tuple[int, int] :
+	"""The message ids a scene covers: from its start to its end (or now). Not from its card: /scene card moves
+	card_message_id to the reposted card, which would cut everything before it."""
+	return snowflake(scene.started_at), snowflake(scene.ended_at or datetime.now(timezone.utc), high=True)
+
+
+# ============================================================
 def card_note(message: discord.Message) -> str | None :
 	"""A check, dice or table card as a one-line note."""
 	for embed in message.embeds :
@@ -241,8 +248,7 @@ class ChronicleFlow :
 		channel = guild.get_channel_or_thread(scene.channel_id)
 		if channel is None :
 			return None
-		first = scene.card_message_id or snowflake(scene.started_at)
-		last = snowflake(scene.ended_at or datetime.now(timezone.utc), high=True)
+		first, last = scene_range(scene)
 		record, problem = await ChronicleFlow.write(bot, guild, scene.title, channel, first, last, ender_uid, scene)
 		if problem :
 			logging.info(f"No chronicle for scene {scene.id}: {problem}")

@@ -7,6 +7,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.world import Weather as WeatherRules
 from classes.world.WorldFlow import WorldFlow
 from database.transactions.WorldTransactions import WorldTransactions
@@ -51,7 +52,7 @@ class Weather(commands.GroupCog, name="Weather", group_name="weather") :
 
 	# ============================================================
 	@app_commands.command(name="set", description="Sets the weather of a region (or the server's own)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(region=region_autocomplete, weather=weather_autocomplete)
 	@app_commands.describe(weather="The weather", region="The region (default: the server's weather outside any "
 	                                                     "region)")
@@ -60,7 +61,7 @@ class Weather(commands.GroupCog, name="Weather", group_name="weather") :
 		Sets the weather by hand. It keeps until the weather would normally change next.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = None
 		if region :

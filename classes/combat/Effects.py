@@ -20,7 +20,8 @@ An active effect has a mechanic, which is what the engine does with it, and para
   tier's number for conditions that carry one (vulnerable, drained).
 - doom: the target saves or is doomed; when the doom runs out it takes the dice.
 - dispel: removes `count` helpful conditions from the target (no save).
-- heal: heals the dice + modifier; also reaches downed allies. `cleanse` removes a harmful condition, `self_cost`
+- heal: heals the dice (two steps below the tier's, since a heal always works) + modifier; also reaches downed
+  allies. `cleanse` removes a harmful condition, `self_cost`
   makes the user pay half of it in HP.
 - shield: the target is shielded for the dice + modifier.
 - boost: the target gets a helpful `condition` for the tier's turns (+`turns`).
@@ -110,11 +111,15 @@ TIER_DATA = {
 # Blasts always deal something (half on a save), so they roll one die step below the tier's (balance report,
 # 2026-11-15: at the tier's dice they won far more often than attacks of the same cost).
 BLAST_STEPS = -1
+# Heals never miss and ignore armor, so they roll two die steps below the tier's (balance pass 3, Rico's choice over
+# limiting Cantrip heals: a Cantrip heal is 1d4 + modifier and stays unlimited).
+HEAL_STEPS = -2
 # The most an active ability may cost, whatever its effects.
 MAX_AP = 12
 MIN_AP = 1
 # Numbers for conditions that carry one, by tier (Cantrip, Weak, Normal, Strong).
-TIER_AMOUNTS = {C.VULNERABLE : (1, 2, 3, 4), C.DRAINED : (1, 1, 2, 3), C.HASTED : (1, 1, 2, 2), C.THORNS : (1, 2, 3, 4)}
+# Vulnerable and Drained were raised in balance pass 4 (they cost about an attack's AP for a turn of effect).
+TIER_AMOUNTS = {C.VULNERABLE : (3, 4, 5, 6), C.DRAINED : (2, 2, 3, 4), C.HASTED : (1, 1, 2, 2), C.THORNS : (1, 2, 3, 4)}
 # The dice used for a companion's attack and for riposte, one step below the tier's.
 RIPOSTE_DICE = ("1d4", "1d6", "1d8", "2d6")
 
@@ -219,10 +224,13 @@ def max_effects(tier: str) -> int :
 
 # ============================================================
 def step_up(dice: str) -> str :
-	"""One dice step higher: one die more (2d6 becomes 3d6); a single small die gets 2 sides bigger (1d4 becomes 1d6)."""
+	"""One dice step higher: one die more (2d6 becomes 3d6); a single die gets 2 sides bigger up to a d12 (1d8 becomes
+	1d10), and a d12 becomes 2d8. Before balance pass 5, 1d8 jumped to 2d8, doubling Cantrip damage in one step."""
 	amount, sides = Rules.parse_dice(dice)
-	if amount == 1 and sides < 8 :
+	if amount == 1 and sides < 12 :
 		return Rules.dice_text(1, sides + 2)
+	if amount == 1 :
+		return Rules.dice_text(2, 8)
 	return Rules.dice_text(amount + 1, sides)
 
 
@@ -352,7 +360,7 @@ def effect_steps(mechanic: str | None, params: dict) -> int :
 	"""Dice steps an effect takes by its nature: each hit after the first takes one step off every hit (two hits are a
 	step lower, three hits two), and blasts are a step lower."""
 	steps = -(max(1, int(params.get("hits") or 1)) - 1)
-	return steps + (BLAST_STEPS if mechanic == BLAST else 0)
+	return steps + (BLAST_STEPS if mechanic == BLAST else HEAL_STEPS if mechanic == HEAL else 0)
 
 
 # ============================================================

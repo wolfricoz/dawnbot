@@ -91,7 +91,7 @@ DEFINITIONS = {
 	FORTIFIED    : ("Fortified", "endurance", "+2 AC"),
 	HASTED       : ("Hasted", "agility", "starts its next turns with extra AP"),
 	EVASIVE      : ("Evasive", "agility", "the next attack against it misses"),
-	HIDDEN       : ("Hidden", "agility", "attacks against it get -4; ends when it attacks"),
+	HIDDEN       : ("Hidden", "agility", "attacks against it get -4; its next attack gets +4 and ends it"),
 	INTANGIBLE   : ("Intangible", "endurance", "weapon attacks and physical abilities can't hurt it"),
 	WARDED       : ("Warded", "intelligence", "takes half damage from spells"),
 	REFLECTING   : ("Reflecting", "intelligence", "the next spell that hurts it hits the caster for half"),
@@ -125,7 +125,7 @@ UNTARGETABLE = [BANISHED]
 AMOUNTS = {SHIELDED : 5, VULNERABLE : 2, DRAINED : 2, HASTED : 1, THORNS : 2, DOOMED : 10}
 # Bonuses and penalties the engine reads.
 HIT_MODIFIER = {WEAKENED : -2, BLINDED : -4, POISONED : -1, PRONE : -2, FRIGHTENED : -2, RESTRAINED : -2,
-                INSPIRED : 2, FOCUSED : 2}
+                INSPIRED : 2, FOCUSED : 2, HIDDEN : 4}
 SAVE_MODIFIER = {FRIGHTENED : -2, BLESSED : 2}
 AC_MODIFIER = {SLOWED : -2, EXPOSED : -2, PRONE : -2, FORTIFIED : 2}
 DAMAGE_MODIFIER = {WEAKENED : -2, EMPOWERED : 2}

@@ -10,6 +10,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only, is_gm
 from classes.combat.AutoComplete import AutoComplete
 from classes.economy import FactionFlow as Rules
 from classes.economy.FactionFlow import FactionFlow
@@ -23,7 +24,7 @@ TIER_CHOICES = [Choice(name=tier.capitalize(), value=tier) for tier in Rules.TIE
 
 # ============================================================
 async def faction_autocomplete(interaction: discord.Interaction, current: str) -> list[Choice[str]] :
-	staff = interaction.user.guild_permissions.manage_messages
+	staff = is_gm(interaction.user)
 	return [Choice(name=faction.name[:100], value=faction.name[:100])
 	        for faction in EconomyTransactions().factions(interaction.guild_id)
 	        if (staff or not faction.hidden) and current.lower() in faction.name.lower()][:25]
@@ -43,6 +44,15 @@ async def member_characters(interaction: discord.Interaction, current: str) -> l
 async def item_autocomplete(interaction: discord.Interaction, current: str) -> list[Choice[str]] :
 	return [Choice(name=item.name[:100], value=item.name[:100])
 	        for item in GearItemTransactions().get_all(interaction.guild_id) if current.lower() in item.name.lower()][:25]
+
+
+# ============================================================
+async def occupation_autocomplete(interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+	from database.transactions.OccupationTransactions import OccupationTransactions
+
+	return [Choice(name=occupation.name[:100], value=occupation.name[:100])
+	        for occupation in OccupationTransactions().get_all(interaction.guild_id)
+	        if current.lower() in occupation.name.lower()][:25]
 
 
 # ============================================================
@@ -73,7 +83,7 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 
 	# ============================================================
 	@app_commands.command(name="add", description="Adds a faction")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.describe(name="Its name", description="What it is", emoji="An emoji for it",
 	                       colour="A colour, like #aa3322", hidden="Only shown to characters with standing",
 	                       rivals="Rival factions, separated by commas")
@@ -84,7 +94,7 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 		Adds a faction. Rivals lose half of what a character gains with this one.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		rival_ids, problem = self._rivals(interaction.guild_id, rivals)
 		if problem :
@@ -98,7 +108,7 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 
 	# ============================================================
 	@app_commands.command(name="edit", description="Changes a faction")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(faction=faction_autocomplete)
 	async def edit(self, interaction: discord.Interaction, faction: str, name: app_commands.Range[str, 1, 100] = None,
 	               description: app_commands.Range[str, 1, 1000] = None, emoji: app_commands.Range[str, 1, 64] = None,
@@ -107,7 +117,7 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 		Changes a faction. `rivals` replaces its rival list.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = EconomyTransactions().find_faction(interaction.guild_id, faction)
 		if record is None :
@@ -125,14 +135,14 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 
 	# ============================================================
 	@app_commands.command(name="remove", description="Removes a faction")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(faction=faction_autocomplete)
 	async def remove(self, interaction: discord.Interaction, faction: str) :
 		"""
 		Removes a faction and everyone's standing with it.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = EconomyTransactions().find_faction(interaction.guild_id, faction)
 		if record is None :
@@ -146,7 +156,7 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 		"""
 		Lists the factions (staff also see hidden ones).
 		"""
-		staff = interaction.user.guild_permissions.manage_messages
+		staff = is_gm(interaction.user)
 		factions = [faction for faction in EconomyTransactions().factions(interaction.guild_id)
 		            if staff or not faction.hidden]
 		if not factions :
@@ -173,7 +183,7 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 
 	# ============================================================
 	@app_commands.command(name="give", description="Raises or lowers a character's standing (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(character=member_characters, faction=faction_autocomplete)
 	@app_commands.describe(amount="How much; negative lowers it", reason="Why, for the log")
 	async def give(self, interaction: discord.Interaction, member: discord.Member, character: str, faction: str,
@@ -183,7 +193,7 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 		as they are.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = CharacterTransactions().get(member.id, interaction.guild_id, character)
 		target = EconomyTransactions().find_faction(interaction.guild_id, faction)
@@ -194,7 +204,7 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 
 	# ============================================================
 	@app_commands.command(name="item", description="Makes a catalog item a faction's (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(item=item_autocomplete, faction=faction_autocomplete)
 	@app_commands.choices(tier=TIER_CHOICES)
 	@app_commands.describe(faction="The faction (leave empty to make it no faction's)",
@@ -206,7 +216,7 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 		Disliked; Vilified characters can't buy it, and a tier can be required.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = GearItemTransactions().find(interaction.guild_id, item)
 		if record is None :
@@ -218,6 +228,37 @@ class Faction(commands.GroupCog, name="Faction", group_name="faction") :
 		                              faction_tier=tier.value if tier and target else None)
 		await reply(interaction, f"{record.name} now belongs to {target.name}" + (f" (needs {tier.value})" if tier else "")
 		                         + "." if target else f"{record.name} belongs to no faction now.")
+
+
+	# ============================================================
+	@app_commands.command(name="occupation", description="Makes an occupation need standing with a faction (staff)")
+	@gm_only()
+	@app_commands.autocomplete(occupation=occupation_autocomplete, faction=faction_autocomplete)
+	@app_commands.choices(tier=TIER_CHOICES)
+	@app_commands.describe(faction="The faction (leave empty to remove the requirement)",
+	                       tier="The standing needed at least")
+	async def occupation(self, interaction: discord.Interaction, occupation: str, faction: str = None,
+	                     tier: Choice[str] = None) :
+		"""
+		A character needs at least this standing with the faction to take the occupation. New characters are Neutral
+		everywhere, so a higher tier can only be reached by changing occupation later.
+
+		**Permissions:**
+		- `Manage Messages`, or the GM role
+		"""
+		from database.transactions.OccupationTransactions import OccupationTransactions
+
+		record = OccupationTransactions().find(interaction.guild_id, occupation)
+		if record is None :
+			return await reply(interaction, f"There is no occupation called {occupation}.")
+		if not faction :
+			OccupationTransactions().update(record.id, faction_id=None, faction_tier=None)
+			return await reply(interaction, f"{record.name} needs no faction standing now.")
+		target = EconomyTransactions().find_faction(interaction.guild_id, faction)
+		if target is None or tier is None :
+			return await reply(interaction, "Pick a faction and a tier.")
+		OccupationTransactions().update(record.id, faction_id=target.id, faction_tier=tier.value)
+		await reply(interaction, f"{record.name} needs {tier.name} standing with {target.name}.")
 
 
 async def setup(bot) :

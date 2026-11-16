@@ -1,6 +1,7 @@
 """How a catalog item is shown: one line in a list, or a full embed."""
 import discord
 
+from classes.gear import Carry, Rarity
 from classes.gear.Gear import Gear, KIND_LABELS
 from classes.kernel.ConfigData import ConfigData
 from database.database import GearItems
@@ -27,8 +28,9 @@ class GearCard :
 	# ============================================================
 	@staticmethod
 	def line(item: GearItems, locked: str | None = None) -> str :
-		"""`**Plate** (armor) · 1000 caps · needs Strength 8`, with the reason when the member cannot buy it."""
-		parts = [f"**{item.name}** ({item.kind})", GearCard.price_text(item.guild_id, Gear.price(item))]
+		"""`**Plate** (armor, Rare) · 2000 caps · needs Strength 8`, with the reason when the member cannot buy it."""
+		parts = [f"**{item.name}** ({item.kind}, {Rarity.label(Rarity.of(item))})",
+		         GearCard.price_text(item.guild_id, Gear.price(item))]
 		requirements = GearCard.requirements_text(item)
 		if requirements :
 			parts.append(f"needs {requirements}")
@@ -41,6 +43,11 @@ class GearCard :
 		embed = discord.Embed(title=item.name[:256], description=(item.description or "")[:4000],
 		                      color=discord.Color.dark_gold())
 		embed.add_field(name="Kind", value=KIND_LABELS.get(item.kind, item.kind.capitalize()))
+		embed.add_field(name="Rarity", value=Rarity.label(Rarity.of(item)))
+		if getattr(item, "slot", None) :
+			embed.add_field(name="Worn on", value=item.slot.capitalize())
+		if getattr(item, "weight", None) :
+			embed.add_field(name="Weight", value=Carry.show(item.guild_id, item.weight))
 		embed.add_field(name="Price", value=GearCard.price_text(item.guild_id, Gear.price(item)))
 		requirements = GearCard.requirements_text(item)
 		if requirements :

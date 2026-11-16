@@ -123,7 +123,7 @@ class TestImport(DatabaseTestCase) :
 		self.assertEqual((character.guild_id, character.state, character.imported_from), (GUILD_ID, PENDING,
 		                                                                                   self.source.id))
 		# Experience, stats and currency start fresh.
-		self.assertEqual((character.xp, character.level, character.strength, character.currency), (0, 1, 5, 3000))
+		self.assertEqual((character.xp, character.level, character.strength, character.currency), (0, 1, 5, 1500))
 		self.assertEqual([(info.key, info.value) for info in CharacterInfoTransactions().get_all(character.id)],
 		                 [("Age", "30"), ("History", "Born in the hills."), ("Looks", "tall"), ("Motto", "Onward.")])
 		# The original is left as it was.

@@ -237,10 +237,10 @@ class TestPosting(DatabaseTestCase) :
 		self.assertEqual((sent["content"], sent["username"]), (text, "Aria"))
 		message.delete.assert_awaited_once()
 		entry = ProxyTransactions().get(1001)
-		# XP: 400 / 5 = 80; currency: 400 / 30 = 13.
-		self.assertEqual((entry.length, entry.counted, entry.xp_awarded, entry.currency_awarded), (400, True, 80, 13))
+		# XP: 400 / 5 = 80; currency: 400 / 8 = 50.
+		self.assertEqual((entry.length, entry.counted, entry.xp_awarded, entry.currency_awarded), (400, True, 80, 50))
 		character = CharacterTransactions().get_by_id(self.character.id)
-		self.assertEqual((character.xp, character.currency), (80, 13))
+		self.assertEqual((character.xp, character.currency), (80, 50))
 		self.assertEqual(ExperienceTransactions().get(USER_ID, GUILD_ID).xp, 80)
 
 	def test_a_long_post_is_split(self) :

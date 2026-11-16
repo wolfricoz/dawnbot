@@ -218,15 +218,15 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	                              [ConfigMapping.CHARACTER, ConfigMapping.CHARACTER_REVIEW, ConfigMapping.SPECIES_FORUM,
 	                               ConfigMapping.GEAR_FORUM, ConfigMapping.TIMELINE, ConfigMapping.MODLOG,
 	                               ConfigMapping.GM_ROLL_LOG, ConfigMapping.CHRONICLE, ConfigMapping.JOB_BOARD,
-	                               ConfigMapping.LETTER_CHANNEL, ConfigMapping.RUMOR_CHANNEL]])
+	                               ConfigMapping.LETTER_CHANNEL, ConfigMapping.RUMOR_CHANNEL, ConfigMapping.MARKET]])
 	async def singlechannels(self, interaction: Interaction, option: Choice[str],
 	                         channel: discord.TextChannel | discord.ForumChannel) :
 		"""
 		Sets one of the channels the bot posts in. Approved characters and species are posted in the character channel
 		and the species forum (a forum gives each its own thread); new and edited characters and species wait for staff
 		in the character review channel. The GM roll log gets a copy of every secret roll. The chronicle gets finished
-		scenes, the job board (a forum) jobs, the letter channel notices for members with DMs closed, and the rumor
-		channel rumors.
+		scenes, the job board (a forum) jobs, the letter channel notices for members with DMs closed, the rumor
+		channel rumors, and the market (a forum) items characters sell to each other.
 
 		**Permissions:**
 		- `Manage Server`
@@ -239,6 +239,8 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 			return await interaction.followup.send(f"The {option.name} channel has to be a text channel.")
 		if option.value == ConfigMapping.JOB_BOARD and not isinstance(channel, discord.ForumChannel) :
 			return await interaction.followup.send("The job board has to be a forum.")
+		if option.value == ConfigMapping.MARKET and not isinstance(channel, discord.ForumChannel) :
+			return await interaction.followup.send("The market has to be a forum.")
 		ConfigData().add_key(interaction.guild.id, option.value, channel.id, overwrite=True)
 		await interaction.followup.send(f"{option.name} channel set to {channel.mention}")
 
@@ -330,8 +332,8 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	@app_commands.choices(mode=[Choice(name=x, value=x) for x in choice_settings[ConfigMapping.ECONOMY]])
 	async def economy(self, interaction: Interaction, mode: Choice[str]) :
 		"""
-		Sets whether gear costs currency: economy (characters buy gear and sell it for 30% of what they paid) or
-		free (all gear costs nothing and selling returns nothing).
+		Sets whether gear costs currency: economy (characters buy gear and sell it for 30% of its catalog price, 20%
+		to 40% by Charisma) or free (all gear costs nothing and selling returns nothing).
 
 		**Permissions:**
 		- `Manage Server`
@@ -432,7 +434,7 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 	async def roleplay(self, interaction: Interaction, setting: str, value: app_commands.Range[str, 1, 100]) :
 		"""
 		Sets one of the roleplay tools' settings: in-world time and weather, travel, scenes, languages, letters, jobs,
-		downtime, rumors and omens. Start typing to see them all with their current values; /config view lists them
+		downtime, rumors and omens, plus gear wear, carry weight, ammunition, trading and the market. Start typing to see them all with their current values; /config view lists them
 		too.
 
 		**Permissions:**
@@ -446,6 +448,27 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 		ConfigData().add_key(interaction.guild.id, key, stored, overwrite=True)
 		await interaction.response.send_message(f"{key.lower()} set to {RoleplaySettings.shown(interaction.guild.id, key)}.",
 		                                        ephemeral=True)
+
+	# ============================================================
+	@app_commands.command(name='gmrole')
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.describe(role="The game masters' role (leave empty to remove it)")
+	async def gmrole(self, interaction: Interaction, role: discord.Role = None) :
+		"""
+		Sets the role of the server's game masters. Members with it run the roleplay tools as staff do (roll tables,
+		calendar and time, weather, locations, languages, letters in transit, factions, jobs, recipes, rumors), and
+		the role is pinged when an encounter on the road needs a GM. It doesn't give /gm or fight GM powers.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		self._prepare(interaction.guild)
+		if role is None :
+			ConfigData().remove_key(interaction.guild.id, ConfigMapping.GM_ROLE)
+			return await interaction.response.send_message("The GM role was removed.", ephemeral=True)
+		ConfigData().add_key(interaction.guild.id, ConfigMapping.GM_ROLE, role.id, overwrite=True)
+		await interaction.response.send_message(f"{role.mention} is the GM role now.", ephemeral=True,
+		                                        allowed_mentions=discord.AllowedMentions.none())
 
 	# ============================================================
 	@app_commands.command(name='view')
@@ -468,6 +491,8 @@ class Config(commands.GroupCog, name="Config", group_name="config") :
 			# get_key reads "0" and "1" as off and on, so whole-number settings are read as numbers.
 			value = config.get_int(guild.id, key) if key in number_settings else config.get_key(guild.id, key)
 			lines.append(f"**{key.lower()}:** {value}")
+		gm_role = config.get_int(guild.id, ConfigMapping.GM_ROLE)
+		lines.append(f"**gm_role:** {f'<@&{gm_role}>' if gm_role else 'not set'}")
 		for key in roleplay_settings :
 			lines.append(f"**{key.lower()}:** {RoleplaySettings.shown(guild.id, key)}")
 		levels = LevelTransactions().get_all(guild.id)

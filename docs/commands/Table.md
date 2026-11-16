@@ -2,7 +2,7 @@
 layout: default
 title: Table
 parent: Commands
-nav_order: 34
+nav_order: 36
 ---
 
 <h1>Table</h1>
@@ -31,7 +31,7 @@ Roll tables for loot, encounters, names and plot hooks; staff make them, anyone 
 > twice their Luck modifier. A `deck` is drawn from with /omen draw instead (one card per entry, `Name: meaning`).
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -44,7 +44,7 @@ Roll tables for loot, encounters, names and plot hooks; staff make them, anyone 
 > and upload it here.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -55,7 +55,7 @@ Roll tables for loot, encounters, names and plot hooks; staff make them, anyone 
 > Deletes a table after asking. Tables that roll it with [[name]] show its name instead from then on.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -94,7 +94,7 @@ Roll tables for loot, encounters, names and plot hooks; staff make them, anyone 
 > /armory import and /bestiary import.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

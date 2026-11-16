@@ -38,7 +38,10 @@ class TravelFlow :
 		if origin is not None and origin.id == target.id :
 			return await reply(interaction, f"{character.name} is already at {target.name}.")
 		route = WorldTransactions().route(origin.id, target.id) if origin is not None else None
-		hours = route.hours if route else 0
+		from classes.gear import Carry
+
+		# An overloaded character (CARRY_WEIGHT) travels half as long again.
+		hours = (route.hours if route else 0) * Carry.travel_factor(character)
 		danger = route.danger if route else target.danger
 		table_id = (route.table_id if route else None) or target.table_id
 		natural, total, encounter = WorldFlow.encounter_roll(character.luck, danger, Special.rules(guild.id).base)
@@ -80,18 +83,21 @@ class TravelFlow :
 			return
 		if not roll or not roll.get("encounter") :
 			return
+		from classes.kernel import GMRole
+
 		table = RollTableTransactions().get(roll.get("table_id"))
-		heading = f"⚠️ Trouble on the road for **{character.name}** (<@{character.uid}>)."
+		# The GM role (when the server has one) is pinged: an encounter needs a GM.
+		gm, allowed = GMRole.mention(guild.id)
+		heading = f"⚠️ {gm}Trouble on the road for **{character.name}** (<@{character.uid}>)."
 		if table is None :
 			try :
-				await channel.send(f"{heading} The GM decides what waits for them.",
-				                   allowed_mentions=discord.AllowedMentions.none())
+				await channel.send(f"{heading} The GM decides what waits for them.", allowed_mentions=allowed)
 			except discord.HTTPException :
 				pass
 			return
 		from classes.tables.TableFlow import TableFlow
 
-		await TableFlow.post_roll(channel, table, character.uid, character, heading)
+		await TableFlow.post_roll(channel, table, character.uid, character, heading, allowed)
 
 	# ============================================================
 	@staticmethod

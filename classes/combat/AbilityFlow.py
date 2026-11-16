@@ -179,7 +179,8 @@ class AbilityFlow :
 		if ability.state != APPROVED :
 			return f"{ability.name} has not been approved yet."
 		if access is not None :
-			locked = access.check(AbilityFlow.requirements(ability))
+			# Reputation tags on the ability's post read this character's standing.
+			locked = access.for_character(character.id).check(AbilityFlow.requirements(ability))
 			if locked :
 				return f"{ability.name} {locked}."
 		known = AbilityTransactions().known(character.id)

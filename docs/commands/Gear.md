@@ -2,7 +2,7 @@
 layout: default
 title: Gear
 parent: Commands
-nav_order: 18
+nav_order: 19
 ---
 
 <h1>Gear</h1>
@@ -17,8 +17,9 @@ broken. The rules live in classes/gear/Gear.py.
 
 **Usage:** `/gear inventory <character> <history> <member>`
 
-> Shows what one of your characters owns: what it wears and carries, and any SPECIAL requirements it doesn't
-> meet. Turn on `history` to include gear that was lost, broken or sold.
+> Shows what one of your characters owns: what it wears and holds in which slot, each item's condition when it
+> isn't good, ammunition and carried weight when the server uses them, and any SPECIAL requirements it doesn't
+> meet. Turn on `history` to include gear that was lost, sold or used up.
 >
 > Staff can look at another member's character with `member`.
 
@@ -26,11 +27,13 @@ broken. The rules live in classes/gear/Gear.py.
 
 ### `equip`
 
-**Usage:** `/gear equip <character> <item>`
+**Usage:** `/gear equip <character> <item> <slot>`
 
-> Equips an item. A character wears one armor set at a time, so equipping armor takes off the armor it wore;
-> weapons can all be equipped together. Gear works even when the character misses its SPECIAL requirements,
-> but with a penalty.
+> Equips an item in a slot: armor on the body, an accessory where it is worn (head, neck, back, hands, feet or
+> one of two rings), a weapon in the main hand, the off hand or the readied slot. A two-handed weapon takes both
+> hands and a shield goes in the off hand. Whatever was in the slot is put away. Every weapon your character
+> owns can still be used in a fight; the one in the main hand is the one it starts holding. Gear works even when
+> the character misses its SPECIAL requirements, but with a penalty.
 
 ---
 
@@ -46,8 +49,9 @@ broken. The rules live in classes/gear/Gear.py.
 
 **Usage:** `/gear sell <character> <item>`
 
-> Sells an item for 30% of what your character paid for it. Gear that was given to you or bought in free mode
-> sells for nothing. You are asked to confirm first.
+> Sells an item for a share of its catalog price: 30% at average Charisma, from 20% to 40% depending on your
+> character's Charisma. Masterwork sells for half as much again and cursed gear for nothing. Nothing is paid in
+> free mode. You are asked to confirm first.
 
 ---
 
@@ -64,8 +68,9 @@ broken. The rules live in classes/gear/Gear.py.
 
 **Usage:** `/gear break <character> <item>`
 
-> Marks an item as broken, for when it breaks in the story. It leaves the inventory but stays in its history
-> (/gear inventory with `history`). You are asked to confirm first.
+> Marks an item as broken, for when it breaks in the story. It stays in the inventory but does nothing in a fight
+> until it is repaired at the shop (/shop repair) or by a character whose occupation repairs it (/downtime
+> repair). You are asked to confirm first.
 
 ---
 

@@ -5,7 +5,8 @@ mode a proxied post by the character whose turn it is passes the turn on, and a 
 the current spot. `free` mode has no turns and reminds whoever everyone else has posted after. Reminders come after
 SCENE_NUDGE_HOURS, skips after SCENE_SKIP_HOURS; `/scene away` pauses both for you. A fight started from the scene's
 channel pauses it until the fight ends. `/scene end` writes the chronicle (CHRONICLE) and the timeline entry
-(TIMELINE). See design/roleplay-tools.md, sections 2 and 3.
+(TIMELINE), and the bot drafts a summary when none was given; `/scene summary` sends you the story so far
+(classes/scenes/AutoSummary.py). See design/roleplay-tools.md, sections 2 and 3.
 """
 from datetime import datetime, timedelta, timezone
 
@@ -81,8 +82,11 @@ class Scene(commands.GroupCog, name="Scene", group_name="scene") :
 			return
 		await interaction.response.defer(ephemeral=True, thinking=True)
 		scene, chronicle = await SceneFlow.finish(interaction.client, scene.id, interaction.user.id, summary, date)
+		from classes.scenes import AutoSummary
+
 		where = f" The chronicle is in <#{chronicle.thread_id}>." if chronicle and chronicle.thread_id else ""
-		await reply(interaction, f"🏁 **{scene.title}** has ended.{where}")
+		drafting = " The bot is drafting its summary." if not summary and AutoSummary.available(scene.guild_id) else ""
+		await reply(interaction, f"🏁 **{scene.title}** has ended.{where}{drafting}")
 
 	# ============================================================
 	@app_commands.command(name="join", description="Joins the scene here with one of your characters")
@@ -231,6 +235,21 @@ class Scene(commands.GroupCog, name="Scene", group_name="scene") :
 			await message.pin(reason=f"Scene card: {scene.title}")
 		except discord.HTTPException :
 			pass
+
+	# ============================================================
+	@app_commands.command(name="summary", description="Sends you a summary of the scene here so far")
+	async def summary(self, interaction: discord.Interaction) :
+		"""
+		Sends you (and only you) a short summary of the scene here so far, written by the bot's own model. Handy when
+		you join late or come back after a break. Summaries are written one at a time, so it can take a few minutes.
+		Scenes that end without a summary get one drafted on their own.
+		"""
+		from classes.scenes import AutoSummary
+
+		scene = await self._scene(interaction)
+		if scene is None :
+			return
+		await AutoSummary.request(interaction, scene)
 
 
 async def setup(bot) :

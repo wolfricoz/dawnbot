@@ -2,7 +2,7 @@
 layout: default
 title: Language
 parent: Commands
-nav_order: 22
+nav_order: 23
 ---
 
 <h1>Language</h1>
@@ -19,7 +19,7 @@ Languages characters speak; others see them scrambled until they understand.
 > Adds a language characters can learn. Its scrambled text is built from the sound's pieces (or your own).
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -30,7 +30,7 @@ Languages characters speak; others see them scrambled until they understand.
 > Changes a language's name, sound or description. Posts already made scramble with the new sound.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -42,7 +42,7 @@ Languages characters speak; others see them scrambled until they understand.
 > can't be removed.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -87,7 +87,7 @@ Languages characters speak; others see them scrambled until they understand.
 > Teaches a character a language (fluently unless you say partly), outside its starting picks.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -98,7 +98,7 @@ Languages characters speak; others see them scrambled until they understand.
 > Takes a language away from a character (species languages stay).
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -109,7 +109,7 @@ Languages characters speak; others see them scrambled until they understand.
 > Every character of the species speaks the language fluently. Using it again takes the language away.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

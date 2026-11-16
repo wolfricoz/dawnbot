@@ -2,7 +2,7 @@
 layout: default
 title: Letter
 parent: Commands
-nav_order: 23
+nav_order: 24
 ---
 
 <h1>Letter</h1>
@@ -45,7 +45,7 @@ In-character letters between characters, delivered after a while.
 > the text never shows here.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 
@@ -57,7 +57,7 @@ In-character letters between characters, delivered after a while.
 > recipient sees.
 >
 > **Permissions:**
-> - `Manage Messages`
+> - `Manage Messages`, or the GM role
 
 ---
 

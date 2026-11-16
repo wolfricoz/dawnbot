@@ -25,8 +25,10 @@ class TableFlow :
 	# ============================================================
 	@staticmethod
 	def is_staff(member) -> bool :
-		permissions = getattr(member, "guild_permissions", None)
-		return bool(permissions and permissions.manage_messages)
+		"""Staff or the GM role."""
+		from classes.kernel.GMRole import is_gm
+
+		return is_gm(member)
 
 	# ============================================================
 	@staticmethod
@@ -107,8 +109,10 @@ class TableFlow :
 	# ============================================================
 	@staticmethod
 	async def post_roll(channel, table: RollTables, uid: int, character: Characters | None,
-	                    heading: str | None = None) -> TableRolls | None :
-		"""Rolls a table and posts its card in a channel (travel encounters). Returns the roll."""
+	                    heading: str | None = None,
+	                    allowed: discord.AllowedMentions | None = None) -> TableRolls | None :
+		"""Rolls a table and posts its card in a channel (travel encounters). Returns the roll. allowed says who the
+		heading may ping (nobody by default)."""
 		from views.tables.TableButtons import roll_view
 
 		record, rolled, shift = TableFlow.make_roll(channel.guild.id, table, uid, character, channel.id)
@@ -118,7 +122,7 @@ class TableFlow :
 		view = roll_view(record)
 		try :
 			await channel.send(content=heading, embed=embed, view=view or discord.utils.MISSING,
-			                   allowed_mentions=discord.AllowedMentions.none())
+			                   allowed_mentions=allowed or discord.AllowedMentions.none())
 		except discord.HTTPException as e :
 			logging.warning(f"Could not post a roll on table {table.id}: {e}")
 		return record

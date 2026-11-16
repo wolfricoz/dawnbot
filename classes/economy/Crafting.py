@@ -246,29 +246,35 @@ def start_project(character: Characters, recipe: Recipes) -> object | None :
 def work(character: Characters, project, actor_uid: int | None = None,
          rng: random.Random | None = None) -> tuple[str, list[str], bool] :
 	"""A downtime day on a project: success adds a day (a crit also makes it masterwork), a failure adds nothing, a bad
-	failure takes a day back. Returns the outcome, lines, and whether the project is finished."""
+	failure takes a day back and leaves a flaw. A flawed weapon or armor comes out cursed; one that is both masterwork
+	and flawed comes out plain. Returns the outcome, lines, and whether the project is finished."""
 	recipe = EconomyTransactions().recipe(project.recipe_id)
 	if recipe is None :
 		EconomyTransactions().update_project(project.id, state="abandoned")
 		return FAILURE, ["The recipe is gone, so the project was abandoned."], False
 	result, first = roll(character, recipe, rng)
 	outcome = outcome_of(result)
-	days, masterwork = project.days_done, project.masterwork
+	days, masterwork, flawed = project.days_done, project.masterwork, bool(getattr(project, "flawed", False))
 	if outcome in (SUCCESS, CRIT) :
 		days += 1
 		masterwork = masterwork or outcome == CRIT
 	elif outcome == BAD :
 		days = max(0, days - 1)
+		flawed = True
 	lines = [f"🎲 {result.breakdown()} against DC {recipe.dc}: **{outcome}** · day {days} of {recipe.days}"]
 	if first is not None :
 		lines.append(f"-# {Fortune.note(str(first.total))}")
 	finished = days >= recipe.days
-	EconomyTransactions().update_project(project.id, days_done=days, masterwork=masterwork,
+	EconomyTransactions().update_project(project.id, days_done=days, masterwork=masterwork, flawed=flawed,
 	                                     state="done" if finished else "working")
+	if outcome == BAD and not finished :
+		lines.append("💢 A flaw crept in; it may haunt the finished piece.")
 	if finished :
 		item = GearItemTransactions().get(recipe.result_item_id)
 		if item is not None :
-			quality = MASTERWORK if masterwork and item.kind in QUALITY_ITEMS else None
+			quality = None
+			if item.kind in QUALITY_ITEMS and masterwork != flawed :
+				quality = MASTERWORK if masterwork else CURSED
 			give(character, item, recipe.result_amount or 1, quality, actor_uid)
 			lines.append(f"✅ Finished: **{(quality.capitalize() + ' ') if quality else ''}{item.name}**.")
 	return outcome, lines, finished

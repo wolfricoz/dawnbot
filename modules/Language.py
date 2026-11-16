@@ -12,6 +12,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.kernel.GMRole import gm_only
 from classes.combat.AutoComplete import AutoComplete
 from classes.language import Languages
 from classes.language.LanguageFlow import GRANTED, LanguageFlow, START
@@ -77,7 +78,7 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 
 	# ============================================================
 	@app_commands.command(name="add", description="Adds a language")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.choices(sound=SOUND_CHOICES)
 	@app_commands.describe(name="The language's name", sound="How its scrambled text looks",
 	                       syllables="Your own sounds instead, separated by commas: ae, th, el",
@@ -89,7 +90,7 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 		Adds a language characters can learn. Its scrambled text is built from the sound's pieces (or your own).
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		LanguageFlow.common(interaction.guild_id)
 		if name.strip().lower() == "common" :
@@ -104,7 +105,7 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 
 	# ============================================================
 	@app_commands.command(name="edit", description="Changes a language")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(language=language_autocomplete)
 	@app_commands.choices(sound=SOUND_CHOICES)
 	async def edit(self, interaction: discord.Interaction, language: str, name: app_commands.Range[str, 1, 50] = None,
@@ -114,7 +115,7 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 		Changes a language's name, sound or description. Posts already made scramble with the new sound.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = LanguageTransactions().find(interaction.guild_id, language)
 		if record is None :
@@ -129,7 +130,7 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 
 	# ============================================================
 	@app_commands.command(name="remove", description="Removes a language")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(language=language_autocomplete)
 	async def remove(self, interaction: discord.Interaction, language: str) :
 		"""
@@ -137,7 +138,7 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 		can't be removed.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = LanguageTransactions().find(interaction.guild_id, language)
 		if record is None :
@@ -235,7 +236,7 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 
 	# ============================================================
 	@app_commands.command(name="grant", description="Teaches a member's character a language (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(character=member_characters, language=language_autocomplete)
 	@app_commands.choices(fluency=FLUENCY_CHOICES)
 	async def grant(self, interaction: discord.Interaction, member: discord.Member, character: str, language: str,
@@ -244,7 +245,7 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 		Teaches a character a language (fluently unless you say partly), outside its starting picks.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = CharacterTransactions().get(member.id, interaction.guild_id, character)
 		target = LanguageTransactions().find(interaction.guild_id, language)
@@ -256,14 +257,14 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 
 	# ============================================================
 	@app_commands.command(name="take", description="Makes a member's character forget a language (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(character=member_characters, language=language_autocomplete)
 	async def take(self, interaction: discord.Interaction, member: discord.Member, character: str, language: str) :
 		"""
 		Takes a language away from a character (species languages stay).
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = CharacterTransactions().get(member.id, interaction.guild_id, character)
 		target = LanguageTransactions().find(interaction.guild_id, language)
@@ -275,14 +276,14 @@ class Language(commands.GroupCog, name="Language", group_name="language") :
 
 	# ============================================================
 	@app_commands.command(name="species", description="Gives a species a language, or takes it away (staff)")
-	@app_commands.checks.has_permissions(manage_messages=True)
+	@gm_only()
 	@app_commands.autocomplete(species=species_autocomplete, language=language_autocomplete)
 	async def species(self, interaction: discord.Interaction, species: str, language: str) :
 		"""
 		Every character of the species speaks the language fluently. Using it again takes the language away.
 
 		**Permissions:**
-		- `Manage Messages`
+		- `Manage Messages`, or the GM role
 		"""
 		record = SpeciesTransactions().find(interaction.guild_id, species)
 		target = LanguageTransactions().find(interaction.guild_id, language)
