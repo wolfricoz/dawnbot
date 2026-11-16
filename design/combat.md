@@ -238,6 +238,11 @@ Hidden boosts cost one AP less (Veils, Take Cover, Shadow Cloak; Vanish stays at
 Take Cover 33–37% duel / 46–47% team (were 9–20% / 30–35%), Feints and Curses 45–47% / 53–55% (were about 18% / 31%),
 drains about 43% in team fights.
 
+**Balance pass 5** (2026-11-17): since Cantrip dice became 1d8, one die step up jumped from 1d8 to 2d8 and doubled the
+damage, so Cantrip effects with an extra step (Mighty and Power attacks, Rend, Lightning Bolt) won 64–69%. One step up
+from a single die now adds 2 sides until 1d12 (1d8 → 1d10 → 1d12), and a d12 becomes 2d8; several dice still gain one
+die. Measured: those effects 47–55%. After pass 4 the report showed 1 too strong, 5 too weak.
+
 **NPC abilities**: automatic NPCs pick an ability by situation rather than only attacking (see
 `classes/combat/Autopilot.py`): bringing back a downed ally, then healing one below half HP, control on the toughest
 enemy not yet under it (or immune to it), cleansing a controlled ally, damage (area abilities preferred against several

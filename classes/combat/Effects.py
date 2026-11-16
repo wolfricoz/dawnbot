@@ -224,10 +224,13 @@ def max_effects(tier: str) -> int :
 
 # ============================================================
 def step_up(dice: str) -> str :
-	"""One dice step higher: one die more (2d6 becomes 3d6); a single small die gets 2 sides bigger (1d4 becomes 1d6)."""
+	"""One dice step higher: one die more (2d6 becomes 3d6); a single die gets 2 sides bigger up to a d12 (1d8 becomes
+	1d10), and a d12 becomes 2d8. Before balance pass 5, 1d8 jumped to 2d8, doubling Cantrip damage in one step."""
 	amount, sides = Rules.parse_dice(dice)
-	if amount == 1 and sides < 8 :
+	if amount == 1 and sides < 12 :
 		return Rules.dice_text(1, sides + 2)
+	if amount == 1 :
+		return Rules.dice_text(2, 8)
 	return Rules.dice_text(amount + 1, sides)
 
 
