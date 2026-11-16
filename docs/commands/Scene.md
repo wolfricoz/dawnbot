@@ -128,3 +128,13 @@ Scenes with a post order, reminders and a chronicle when they end.
 
 ---
 
+### `summary`
+
+**Usage:** `/scene summary`
+
+> Sends you (and only you) a short summary of the scene here so far, written by the bot's own model. Handy when
+> you join late or come back after a break. Summaries are written one at a time, so it can take a few minutes.
+> Scenes that end without a summary get one drafted on their own.
+
+---
+

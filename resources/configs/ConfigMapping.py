@@ -63,6 +63,7 @@ class ConfigMapping(StrEnum) :
 	SCENE_IDLE_DAYS = "SCENE_IDLE_DAYS"
 	CHRONICLE = "CHRONICLE"
 	CHRONICLE_CHARACTER_POSTS = "CHRONICLE_CHARACTER_POSTS"
+	SCENE_AI_SUMMARY = "SCENE_AI_SUMMARY"
 	COMMON_LANGUAGE = "COMMON_LANGUAGE"
 	LANGUAGE_SLOTS = "LANGUAGE_SLOTS"
 	LANGUAGE_SCRAMBLE = "LANGUAGE_SCRAMBLE"
@@ -177,6 +178,7 @@ defaults = {
 	ConfigMapping.SCENE_SKIP_HOURS   : 72,
 	ConfigMapping.SCENE_IDLE_DAYS    : 14,
 	ConfigMapping.CHRONICLE_CHARACTER_POSTS : "DISABLED",
+	ConfigMapping.SCENE_AI_SUMMARY   : "ENABLED",
 	ConfigMapping.COMMON_LANGUAGE    : "Common",
 	ConfigMapping.LANGUAGE_SLOTS     : 1,
 	ConfigMapping.LANGUAGE_SCRAMBLE  : "speech",
@@ -235,6 +237,7 @@ roleplay_settings = {
 	ConfigMapping.SCENE_SKIP_HOURS   : ("number", 0, 720),
 	ConfigMapping.SCENE_IDLE_DAYS    : ("number", 0, 90),
 	ConfigMapping.CHRONICLE_CHARACTER_POSTS : ("toggle",),
+	ConfigMapping.SCENE_AI_SUMMARY   : ("toggle",),
 	ConfigMapping.COMMON_LANGUAGE    : ("text", 50),
 	ConfigMapping.LANGUAGE_SLOTS     : ("number", 0, 10),
 	ConfigMapping.LANGUAGE_SCRAMBLE  : ("choice", ["speech", "all"]),
@@ -330,6 +333,7 @@ docs = {
 	ConfigMapping.SCENE_IDLE_DAYS    : "Days without posts before a scene asks its host whether to end it; 7 days later it ends by itself (default 14; 0 never).",
 	ConfigMapping.CHRONICLE          : "The forum (or channel) where finished scenes are written up as transcripts.",
 	ConfigMapping.CHRONICLE_CHARACTER_POSTS : "Whether each finished scene adds a line to its characters' posts in the character forum (default off).",
+	ConfigMapping.SCENE_AI_SUMMARY   : "Whether the bot drafts a summary of scenes that end without one, and answers /scene summary (default on; needs the bot's local model, OLLAMA_URL).",
 	ConfigMapping.COMMON_LANGUAGE    : "The language every character speaks (default Common).",
 	ConfigMapping.LANGUAGE_SLOTS     : "Languages a new character picks besides the common one, plus 1 per 2 Intelligence above 5 (default 1).",
 	ConfigMapping.LANGUAGE_SCRAMBLE  : "What a language scrambles: `speech` (the default; only quoted text) or `all`.",

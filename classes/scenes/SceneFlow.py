@@ -381,7 +381,9 @@ class SceneFlow :
 	async def finish(bot: discord.Client, scene_id: int, ender_uid: int | None, summary: str | None = None,
 	                 world_date: str | None = None) -> tuple[SceneRecord | None, object | None] :
 		"""Ends a scene: freezes the card, writes the chronicle (when CHRONICLE is set) and the timeline entry (when
-		TIMELINE is set). Returns the scene and the chronicle (or None)."""
+		TIMELINE is set), and queues a drafted summary when it ended without one (classes/scenes/AutoSummary.py).
+		Returns the scene and the chronicle (or None)."""
+		from classes.scenes import AutoSummary
 		from classes.scenes.ChronicleFlow import ChronicleFlow
 		from classes.world.WorldFlow import WorldFlow
 
@@ -402,27 +404,34 @@ class SceneFlow :
 				chronicle = await ChronicleFlow.for_scene(bot, guild, scene, ender_uid)
 			except Exception as e :
 				logging.error(f"Writing the chronicle of scene {scene_id} failed: {e}", exc_info=True)
-			await SceneFlow._timeline(bot, guild, scene, ender_uid, chronicle)
+			drafting = not scene.summary and AutoSummary.available(guild.id)
+			timeline = await SceneFlow._timeline(bot, guild, scene, ender_uid, chronicle, drafting)
+			if drafting :
+				AutoSummary.queue_scene_end(bot, scene.id, chronicle.id if chronicle else None, timeline)
 		SceneFlow._locks.pop(scene_id, None)
 		return scene, chronicle
 
 	# ============================================================
 	@staticmethod
 	async def _timeline(bot: discord.Client, guild: discord.Guild, scene: SceneRecord, ender_uid: int | None,
-	                    chronicle) -> None :
+	                    chronicle, drafting: bool = False) -> discord.Message | None :
+		"""Posts the timeline entry and returns it. While a summary is being drafted it says so; the draft fills it in."""
 		from classes.kernel.ConfigData import ConfigData
+		from classes.scenes import AutoSummary
 
 		channel = await ConfigData().get_channel(guild, ConfigMapping.TIMELINE, optional=True)
 		if channel is None :
-			return
+			return None
 		link = f"https://discord.com/channels/{scene.guild_id}/{scene.channel_id}"
 		lines = [f"# {scene.title}", f"Author: <@{ender_uid or scene.host_uid}>", f"Scene: {link}"]
 		if scene.world_end :
 			lines.append(f"In roleplay date: {scene.world_end.get('text')}")
 		if chronicle is not None and chronicle.thread_id :
 			lines.append(f"Chronicle: <#{chronicle.thread_id}>")
-		lines.append(f"Brief summary of what happened: {scene.summary or '(Post below!)'}")
+		placeholder = AutoSummary.DRAFTING if drafting else AutoSummary.NO_SUMMARY
+		lines.append(f"{AutoSummary.TIMELINE_LINE}{scene.summary or placeholder}")
 		try :
-			await channel.send("\n".join(lines)[:2000], allowed_mentions=discord.AllowedMentions.none())
+			return await channel.send("\n".join(lines)[:2000], allowed_mentions=discord.AllowedMentions.none())
 		except discord.HTTPException as e :
 			logging.warning(f"Could not post the timeline entry of scene {scene.id}: {e}")
+			return None

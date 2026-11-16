@@ -322,6 +322,7 @@ Rico's answers, 15 November 2026. The sections above already follow them.
 | `SCENE_IDLE_DAYS` | 14 | 0 (never) to 90 |
 | `CHRONICLE` | none | a forum channel |
 | `CHRONICLE_CHARACTER_POSTS` | off | toggle |
+| `SCENE_AI_SUMMARY` | on (needs `OLLAMA_URL`) | toggle |
 | `TIME_FLOW` | `manual` | `manual`, `1:1`, `1:2`, `1:4`, `2:1`… |
 | `WEATHER_HOURS` | 12 | 1 to 168 |
 | `WEATHER_EFFECTS` | on | toggle |
@@ -349,8 +350,8 @@ Rico's answers, 15 November 2026. The sections above already follow them.
 ## 18. Commands
 
 - `/language add | edit | remove | list | speak | known`, `/gm language grant | take`, context menu "Understand".
-- `/scene start | end | join | leave | pass | away | back | add | remove | move | host | pause | resume | card`,
-  `/endscene` (kept).
+- `/scene start | end | join | leave | pass | away | back | add | remove | move | host | pause | resume | card |
+  summary`, `/endscene` (kept).
 - `/chronicle make`, `/character scenes`, `/character birthday`.
 - `/calendar setup | event add | event remove | events`, `/time`, `/time advance | set`, `/weather`, `/weather set`.
 - `/location set | view | who | remove`, `/region add | edit | remove`, `/route add | remove`, `/travel`.
@@ -492,3 +493,17 @@ Rico asked for the pieces section 21 listed as not built, and for a GM role (16 
 | Job tags | Posting a job adds Open, Taken, Done, Failed and Cancelled tags to the job board when the bot may (Manage Channels, and room under Discord's 20 tags), and each job thread carries its state's tag; the emoji stays in the thread name. |
 | Interview languages | New characters (and imports) pick their starting languages in the interview, after the stats, from the server's languages minus the common one and the species' own; **skip** leaves them for `/language pick`. The summary shows them and they are taught on submit (trimmed if the stats changed). |
 | Kept as they are | Command placement differs from the spec's names in places (`/faction give` for `/gm rep`, `/calendar birthday`, `/chronicle character`, `/language grant`, `/letter intercept`, `/dice … secret` for `/gm roll`, `/craft uncurse`); the spec's names would duplicate these commands. |
+
+## 23. Drafted scene summaries
+
+Rico asked for scene summaries from a model that runs on the bot's own server, with no GPU, both on request and when
+a scene closes (16 November 2026). The model is Qwen3 4B Instruct (`qwen3:4b-instruct-2507-q4_K_M`) in Ollama on the
+same machine. Code: `classes/scenes/AutoSummary.py`.
+
+| Topic | Decision |
+|---|---|
+| Switch | `OLLAMA_URL` in `.env` turns it on for the bot (`SUMMARY_MODEL` and `SUMMARY_THREADS`, default 4, tune it); `SCENE_AI_SUMMARY` (default on) lets a server switch it off. |
+| The queue | Every summary is a job in the bot's `Queue` (`classes/kernel/Queue.py`), so one is written at a time and a summary never shares the CPU with another. Requests go in at high priority, end-of-scene drafts at normal. |
+| On close | A scene ended with `/scene end` or `/endscene` without a summary gets one drafted (scenes that idle out keep their "Ended after going quiet.") from its posts, start to end. It is saved as the scene's and its chronicle's summary, posted as a "Draft summary" in the chronicle thread (or the scene's channel without one), added to the chronicle card, and fills the timeline entry, which says "(Being drafted…)" meanwhile and "(Post below!)" if the model fails. A summary someone writes before the draft is done is kept. Players correct a draft with **Add summary**, which opens with it filled in. |
+| On request | `/scene summary` in a channel with an open scene sends the story so far to whoever asked, privately (a follow-up within the command's 15 minutes, else a DM). Asking again while one is queued joins it. |
+| What the model reads | The chronicle's entries as `Name: text` lines, check and dice notes in brackets, blank and OOC lines (`((…))`, `//…`, `OOC:`) dropped. Over 40,000 characters it is summarised in parts and the parts merged. The answer is capped at 1,500 characters, the Add summary form's limit. |

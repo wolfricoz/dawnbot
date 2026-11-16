@@ -100,6 +100,15 @@ class TestChronicleText(unittest.TestCase) :
 		dice.set_author(name="Aria · Agility check")
 		self.assertIn("rolled 17", Chronicle.card_note(SimpleNamespace(embeds=[dice])))
 
+	def test_scene_range_ignores_a_reposted_card(self) :
+		# /scene card moves card_message_id to the new card; the chronicle still starts where the scene did.
+		later_card = Chronicle.snowflake(NOW + timedelta(days=2))
+		scene = SimpleNamespace(started_at=NOW, ended_at=NOW + timedelta(days=3), card_message_id=later_card)
+		first, last = Chronicle.scene_range(scene)
+		self.assertEqual(first, Chronicle.snowflake(NOW))
+		self.assertLess(first, later_card)
+		self.assertEqual(last, Chronicle.snowflake(NOW + timedelta(days=3), high=True))
+
 	def test_links(self) :
 		self.assertEqual(Chronicle.ChronicleFlow.parse_link("https://discord.com/channels/1/2/3"), (1, 2, 3))
 		self.assertIsNone(Chronicle.ChronicleFlow.parse_link("nope"))
