@@ -107,8 +107,8 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 > Sets one of the channels the bot posts in. Approved characters and species are posted in the character channel
 > and the species forum (a forum gives each its own thread); new and edited characters and species wait for staff
 > in the character review channel. The GM roll log gets a copy of every secret roll. The chronicle gets finished
-> scenes, the job board (a forum) jobs, the letter channel notices for members with DMs closed, and the rumor
-> channel rumors.
+> scenes, the job board (a forum) jobs, the letter channel notices for members with DMs closed, the rumor
+> channel rumors, and the market (a forum) items characters sell to each other.
 >
 > **Permissions:**
 > - `Manage Server`
@@ -227,7 +227,7 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 **Usage:** `/config roleplay <setting> <value>`
 
 > Sets one of the roleplay tools' settings: in-world time and weather, travel, scenes, languages, letters, jobs,
-> downtime, rumors and omens, plus gear wear, carry weight and ammunition. Start typing to see them all with their current values; /config view lists them
+> downtime, rumors and omens, plus gear wear, carry weight, ammunition, trading and the market. Start typing to see them all with their current values; /config view lists them
 > too.
 >
 > **Permissions:**

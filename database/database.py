@@ -1395,6 +1395,50 @@ class ArchivedChannels(Base) :
 	archived_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+# offers is {"left": {"items": [character_gear ids], "currency": n}, "right": {...}}; accepted lists the sides that
+# pressed Accept ("left", "right"). state is open, done, cancelled or expired (design/economy.md, phase 3).
+class Trades(Base) :
+	"""A trade between two characters of different players."""
+	__tablename__ = "trades"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	channel_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	left_character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+	right_character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+	left_uid: Mapped[int] = mapped_column(BigInteger)
+	right_uid: Mapped[int] = mapped_column(BigInteger)
+	offers: Mapped[dict] = mapped_column(JSON, default=dict)
+	accepted: Mapped[list] = mapped_column(JSON, default=list)
+	state: Mapped[str] = mapped_column(String(16), default="open")
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+	finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# state is open, sold, withdrawn or expired. While open, the item (character_gear) has the status "listed".
+class MarketListings(Base) :
+	"""An item a character offers on the market forum at a fixed price."""
+	__tablename__ = "market_listings"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	entry_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("character_gear.id", ondelete="SET NULL"),
+	                                             nullable=True)
+	seller_character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id",
+	                                                                               ondelete="SET NULL"), nullable=True)
+	seller_uid: Mapped[int] = mapped_column(BigInteger)
+	name: Mapped[str] = mapped_column(String(100))
+	price: Mapped[int] = mapped_column(BigInteger)
+	fee: Mapped[int] = mapped_column(BigInteger, default=0)
+	thread_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	state: Mapped[str] = mapped_column(String(16), default="open")
+	buyer_character_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	buyer_uid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+	expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 # ============================================================
 # Helpers
 # ============================================================

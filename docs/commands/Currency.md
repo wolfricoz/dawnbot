@@ -23,6 +23,15 @@ roleplaying as that character; GMs can give or take it with /gm currency.
 
 ---
 
+### `pay`
+
+**Usage:** `/currency pay <character> <member> <theirs> <amount> <note>`
+
+> Pays currency from one of your characters to another player's character, after you confirm. Your own
+> characters can't pay each other. The payment shows in both characters' currency history.
+
+---
+
 ### `history`
 
 **Usage:** `/currency history <character>`

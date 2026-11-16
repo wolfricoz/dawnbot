@@ -55,6 +55,9 @@ The forum where jobs are posted with /job post.
 ### RUMOR_CHANNEL
 The channel where rumors are posted.
 
+### MARKET
+Optional: the forum where characters sell items at a fixed price with /market sell, one post per item.
+
 ### MODLOG
 The staff channel for bot notices, such as missing permissions.
 <h2>Settings</h2>

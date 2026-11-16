@@ -2,7 +2,7 @@
 layout: default
 title: Omen
 parent: Commands
-nav_order: 27
+nav_order: 28
 ---
 
 <h1>Omen</h1>

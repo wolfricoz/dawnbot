@@ -18,6 +18,9 @@ from database.transactions.CurrencyTransactions import BUY, CurrencyTransactions
 from resources.configs.ConfigMapping import ConfigMapping
 
 HISTORY_LENGTH = 15
+# Ledger reasons from the economy round, shown with their note (who the other side was, which item).
+NOTED_REASONS = {"trade_in" : "trade", "trade_out" : "trade", "pay" : "payment", "market" : "market",
+                 "market_fee" : "market fee", "repair" : "repair", "refill" : "ammunition"}
 FREE_NOTE = "Gear is free on this server right now, so currency isn't spent."
 
 
@@ -46,6 +49,8 @@ def ledger_line(row, name: str) -> str :
 	reason = reasons.get(row.reason, row.reason)
 	if row.reason in (GM_GIVE, GM_TAKE) and row.note :
 		reason += f": {row.note}"
+	elif row.reason in NOTED_REASONS :
+		reason = NOTED_REASONS[row.reason] + (f": {row.note}" if row.note else "")
 	parts = [f"`{row.amount:+}` {name}", reason]
 	if row.created_at is not None :
 		parts.append(discord.utils.format_dt(row.created_at, "R"))
@@ -95,6 +100,50 @@ class Currency(commands.GroupCog, name="currency", group_name="currency", descri
 		if not Gear.economy(guild_id) :
 			embed.set_footer(text=FREE_NOTE)
 		await interaction.response.send_message(embed=embed, ephemeral=True)
+
+	# ============================================================
+	async def _theirs(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]] :
+		member = interaction.namespace.member
+		if member is None :
+			return []
+		return [app_commands.Choice(name=character.name, value=character.name)
+		        for character in CharacterTransactions().get_all(member.id, interaction.guild_id, states=[APPROVED])
+		        if current.lower() in character.name.lower()][:25]
+
+	# ============================================================
+	@app_commands.command(name="pay")
+	@app_commands.autocomplete(character=AutoComplete().approved_character, theirs=_theirs)
+	@app_commands.describe(character="Your character, who pays", member="The other player",
+	                       theirs="The other player's character", note="What it is for (shown in both histories)")
+	async def pay(self, interaction: discord.Interaction, character: str, member: discord.Member, theirs: str,
+	              amount: app_commands.Range[int, 1, 1000000000], note: app_commands.Range[str, 1, 100] = None) :
+		"""
+		Pays currency from one of your characters to another player's character, after you confirm. Your own
+		characters can't pay each other. The payment shows in both characters' currency history.
+		"""
+		from classes.economy import Trading
+		from views.buttons.Confirm import ask
+
+		payer = CharacterTransactions().get(interaction.user.id, interaction.guild_id, character)
+		payee = CharacterTransactions().get(member.id, interaction.guild_id, theirs)
+		problem = Trading.pair_problem(payer, payee)
+		if problem :
+			return await CharacterFlow.respond(interaction, problem)
+		guild_id = interaction.guild_id
+		if not await ask(interaction, f"Pay {balance_text(guild_id, amount)} from {payer.name} to {payee.name}?",
+		                 "Pay") :
+			return
+		problem = Trading.pay(payer, payee, amount, interaction.user.id, note)
+		if problem :
+			return await interaction.followup.send(problem, ephemeral=True)
+		balance = CharacterTransactions().get_by_id(payer.id).currency
+		await interaction.followup.send(f"{payer.name} paid {balance_text(guild_id, amount)} to {payee.name} and has "
+		                                f"{balance_text(guild_id, balance)} left.", ephemeral=True)
+		try :
+			await member.send(f"💰 {payer.name} paid {balance_text(guild_id, amount)} to your character {payee.name} on "
+			                  f"{interaction.guild.name}." + (f" Note: {note}" if note else ""))
+		except discord.HTTPException :
+			pass
 
 	# ============================================================
 	@app_commands.command(name="history")

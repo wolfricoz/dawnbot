@@ -27,6 +27,11 @@ REASON_LABELS = {
 	"refund"   : "refunds",
 	"repair"   : "repairs",
 	"refill"   : "ammunition refills",
+	"trade_in" : "trades (received)",
+	"trade_out" : "trades (given)",
+	"pay"      : "payments between characters",
+	"market"   : "market sales",
+	"market_fee" : "market fees",
 }
 
 

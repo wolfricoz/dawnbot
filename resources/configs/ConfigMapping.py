@@ -39,6 +39,10 @@ class ConfigMapping(StrEnum) :
 	GEAR_WEAR = "GEAR_WEAR"
 	CARRY_WEIGHT = "CARRY_WEIGHT"
 	AMMO = "AMMO"
+	TRADING = "TRADING"
+	MARKET = "MARKET"
+	MARKET_FEE = "MARKET_FEE"
+	MARKET_DAYS = "MARKET_DAYS"
 
 	# === Combat ===
 	COMBAT_PACING = "COMBAT_PACING"
@@ -107,6 +111,7 @@ channels = [
 	ConfigMapping.LETTER_CHANNEL,
 	ConfigMapping.JOB_BOARD,
 	ConfigMapping.RUMOR_CHANNEL,
+	ConfigMapping.MARKET,
 	ConfigMapping.MODLOG,
 ]
 
@@ -162,6 +167,9 @@ defaults = {
 	ConfigMapping.GEAR_WEAR          : "ENABLED",
 	ConfigMapping.CARRY_WEIGHT       : "off",
 	ConfigMapping.AMMO               : "off",
+	ConfigMapping.TRADING            : "ENABLED",
+	ConfigMapping.MARKET_FEE         : 5,
+	ConfigMapping.MARKET_DAYS        : 14,
 	ConfigMapping.COMBAT_PACING      : "async",
 	ConfigMapping.COMBAT_ASYNC_TIMER : 12,
 	ConfigMapping.COMBAT_LIVE_TIMER  : 3,
@@ -259,6 +267,9 @@ roleplay_settings = {
 	ConfigMapping.GEAR_WEAR          : ("toggle",),
 	ConfigMapping.CARRY_WEIGHT       : ("choice", ["off", "kg", "lb"]),
 	ConfigMapping.AMMO               : ("choice", ["off", "die"]),
+	ConfigMapping.TRADING            : ("toggle",),
+	ConfigMapping.MARKET_FEE         : ("number", 0, 50),
+	ConfigMapping.MARKET_DAYS        : ("number", 1, 90),
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -307,6 +318,10 @@ docs = {
 	ConfigMapping.GEAR_WEAR          : "Whether gear wears down in fights (default on): when a fight ends, the weapon each character held and its armor each have a 1 in 20 chance to drop a step (Good, Worn, Damaged, Broken; 1 in 40 for masterwork). Repair it at the shop (/shop repair) or with a repairing occupation (/downtime repair).",
 	ConfigMapping.CARRY_WEIGHT       : "Whether characters have a carry limit: `off` (the default), `kg` or `lb`. A character carries 11 + 11 x Strength kg (25 + 25 x Strength lb); over that it has 2 AP less in fights and travels slower, and past 150% it can't buy more.",
 	ConfigMapping.AMMO               : "Whether ranged weapons use ammunition: `off` (the default) or `die`: each has an ammunition die (d12 when full) rolled after every fight; a 1 or 2 steps it down, and a weapon that runs out can't be used until it is refilled with /shop refill.",
+	ConfigMapping.TRADING            : "Whether players can trade items and currency between their characters with /trade and /currency pay (default on). A player's own characters never trade with each other.",
+	ConfigMapping.MARKET             : "Optional: the forum where characters sell items at a fixed price with /market sell, one post per item.",
+	ConfigMapping.MARKET_FEE         : "The share of a market sale the market keeps, in percent (default 5). It leaves the economy.",
+	ConfigMapping.MARKET_DAYS        : "Days before an unsold market listing ends and the item goes back to its seller (default 14).",
 	ConfigMapping.LEGENDARY_POINTS   : "How many extra SPECIAL points a character gets when staff make it legendary (default 5). Legendary characters also have doubled stat limits and one extra ability slot.",
 
 	# == combat ==

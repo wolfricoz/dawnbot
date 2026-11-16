@@ -65,7 +65,7 @@ Migrations start at `0023`; the legacy combat drop is renumbered so it stays las
 
 ## 4. Phase 1 as built
 
-Migration `0023_economy_money` (the legacy drop is now `0025_drop_legacy_combat`).
+Migration `0023_economy_money` (the legacy drop is now `0026_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -78,7 +78,7 @@ Migration `0023_economy_money` (the legacy drop is now `0025_drop_legacy_combat`
 
 ## 5. Phase 2 as built
 
-Migration `0024_economy_equipment` (the legacy drop is now `0025_drop_legacy_combat`).
+Migration `0024_economy_equipment` (the legacy drop is now `0026_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -92,3 +92,17 @@ Migration `0024_economy_equipment` (the legacy drop is now `0025_drop_legacy_com
 | Carry weight | `classes/gear/Carry.py`, `CARRY_WEIGHT` (`off`, `kg`, `lb`). Capacity `11 + 11 × Strength` kg (at least 11). Over capacity: −2 AP when joining a fight (`stats.overloaded`) and travel time ×1.5 (`TravelFlow`). `Gear.buy` refuses an item that would pass 150%; grants are never refused. `/gear inventory` shows the load in its footer. The fantasy pack items have weights; `/armory import fantasy refresh:true` fills them into catalogs imported before. |
 | Ammunition | `AMMO` (`off`, `die`); counted shots are not built. A ranged weapon that isn't a focus or thrown uses ammunition (the sling too). The held weapon's die is rolled after each fight (d12 → d10 → d8 → d6 → d4 → empty on a 1 or 2); an empty weapon is left out of fights. `/shop refill` costs 20 per step back to d12 (ledger reason `refill`). |
 | Settings | `GEAR_WEAR`, `CARRY_WEIGHT` and `AMMO` are set with `/config roleplay`, like the roleplay tools' settings (the `/config` group has no room for more commands). |
+
+## 6. Phase 3 as built
+
+Migration `0025_economy_trading` (the legacy drop is now `0026_drop_legacy_combat`).
+
+| Topic | As built |
+|---|---|
+| Data | `trades` (both characters and players, `offers` JSON per side, `accepted`, `state`: open, done, cancelled, expired) and `market_listings` (the item, seller, price, fee, thread, `state`: open, sold, withdrawn, expired, buyer, `expires_at`). A listed item has `character_gear.status = listed`. |
+| Transfers | `TradeTransactions.transfer` moves items and makes ledger payments in one database transaction, locking the rows; any problem (an item gone or equipped, a balance below 0) changes nothing. Items that change hands lose their slot and proficiency, and get `source` `traded` or `market`. `buy_listing` closes the listing in the same transaction. |
+| Rules | `classes/economy/Trading.py`: never between one player's own characters; both approved; equipped items can't be offered; no currency in free mode; the receiver's carry limit (150%) is checked. `TRADING` (toggle, on) turns trades, payments and the market off. |
+| Trade window | `/trade <character> <member> <theirs>` (`modules/Trade.py`, `classes/economy/TradeFlow.py`, `views/economy/TradeView.py`). Buttons: Offer items (a private multi-select of tradable items; the pick replaces the side's items), Offer currency (a modal), Clear my offer, Accept, Cancel. Any change clears both accepts; the swap runs when both accepted, after `Trading.check` passes again. The view isn't kept across restarts: it expires after 10 minutes without a press, and an open trade more than an hour old is expired when either character starts a new one. A character can be in one open trade at a time. Ledger reasons `trade_out` / `trade_in`, noted with the other character. |
+| Payments | `/currency pay <character> <member> <theirs> <amount> [note]` after a confirmation; ledger reason `pay` on both sides; the payee's player gets a DM. |
+| Market | `MARKET` (a forum, `/config singlechannels`), `MARKET_FEE` (5) and `MARKET_DAYS` (14) in `/config roleplay`. `/market sell` lists an item (it leaves the inventory) and posts it; `/market browse`; `/market withdraw` (seller or staff). Each post has Buy and Withdraw buttons that survive restarts (`MarketButton`, registered in `setup_hook`). Buying: the buyer picks a character (not the seller's player), pays the price (`market`), the seller gets the price (`market`) minus the fee (`market_fee`, rounded down) and a DM. Posts are renamed (🟢 open, ✅ sold, ⚪ withdrawn, ⌛ expired) and locked when they end. `tasks/MarketTask.py` ends expired listings every 10 minutes. No market in free mode. |
+| Histories | `/currency history` and `/economy audit` show the note for trades, payments, market sales and fees, repairs and refills; the report labels them. |
