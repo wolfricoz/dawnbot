@@ -2,24 +2,12 @@
 
 2005 effects, 200 fights each in two scenarios (a duel and a 2-vs-2 team fight, everyone in DT 2 armor). A side that only attacks wins 50% of duels and 49% of team fights. Run `python -m classes.combat.Balance` to make a new one; see classes/combat/Balance.py for the method.
 
-19 too strong, 12 too weak, 364 worse than attacking.
+0 too strong, 13 too weak, 363 worse than attacking.
 
 ## Cantrip (1561 effects, median win rate 48% / 50% duel / team)
 
 | Effect | Realm | AP | Duel | Team | Verdict |
 |---|---|---|---|---|---|
-| Life Transfer (`life_transfer`) | magic | 3 | 88% | 82% | too strong |
-| Adrenaline Rush (`adrenaline`) | physical | 3 | 88% | 84% | too strong |
-| Second Wind (`second_wind`) | physical | 2 | 79% | 78% | too strong |
-| Holy Mending (`holy_mending`) | magic | 3 | 76% | 69% | too strong |
-| Healing Word (`healing_word`) | magic | 3 | 74% | 61% | too strong |
-| Thorn Mending (`thorn_mending`) | magic | 3 | 74% | 64% | too strong |
-| Light Mending (`light_mending`) | magic | 3 | 72% | 70% | too strong |
-| Soul Mending (`soul_mending`) | magic | 3 | 70% | 72% | too strong |
-| Life Mending (`life_mending`) | magic | 3 | 71% | 70% | too strong |
-| Water Mending (`water_mending`) | magic | 3 | 66% | 70% | too strong |
-| Healing Draught (`healing_draught`) | physical | 3 | 68% | 66% | too strong |
-| Song Mending (`song_mending`) | magic | 3 | 68% | 68% | too strong |
 | Gust (`gust`) | magic | 4 | 44% | 43% | worse than attacking |
 | Dream Judgement (`dream_judgement`) | magic | 4 | 44% | 43% | worse than attacking |
 | Bone Hex (`bone_hex`) | magic | 3 | 44% | 40% | worse than attacking |
@@ -296,7 +284,7 @@
 | Dream Hex (`dream_hex`) | magic | 3 | 18% | 32% | too weak |
 | Blood Veil (`blood_veil`) | magic | 4 | 32% | 28% | worse than attacking |
 | Lance Feint (`lance_feint`) | physical | 3 | 17% | 32% | too weak |
-| Steam Veil (`steam_veil`) | magic | 4 | 20% | 31% | worse than attacking |
+| Steam Veil (`steam_veil`) | magic | 4 | 20% | 31% | too weak |
 | Hammer Feint (`hammer_feint`) | physical | 3 | 16% | 31% | too weak |
 | Spear Feint (`spear_feint`) | physical | 3 | 16% | 31% | too weak |
 | Feint (`feint`) | physical | 3 | 19% | 30% | too weak |
@@ -305,19 +293,12 @@
 | Storm Speed (`storm_speed`) | magic | 4 | 29% | 30% | worse than attacking |
 | Stand Firm (`stand_firm`) | physical | 3 | 29% | 28% | worse than attacking |
 | Sword Feint (`sword_feint`) | physical | 3 | 20% | 28% | worse than attacking |
-| *1264 others within range* | | | | | |
+| *1276 others within range* | | | | | |
 
-## Weak (375 effects, median win rate 46% / 52% duel / team)
+## Weak (375 effects, median win rate 46% / 51% duel / team)
 
 | Effect | Realm | AP | Duel | Team | Verdict |
 |---|---|---|---|---|---|
-| Lay on Hands (`lay_on_hands`) | physical | 4 | 80% | 70% | too strong |
-| Cure Wounds (`cure_wounds`) | magic | 4 | 76% | 65% | too strong |
-| Light Renewal (`light_renewal`) | magic | 4 | 73% | 65% | too strong |
-| Life Renewal (`life_renewal`) | magic | 4 | 73% | 72% | too strong |
-| Thorn Renewal (`thorn_renewal`) | magic | 4 | 72% | 64% | too strong |
-| Holy Renewal (`holy_renewal`) | magic | 4 | 72% | 62% | too strong |
-| Song Renewal (`song_renewal`) | magic | 4 | 69% | 64% | too strong |
 | Suffocate (`suffocate`) | magic | 4 | 44% | 39% | worse than attacking |
 | Curse (`curse`) | magic | 5 | 44% | 42% | worse than attacking |
 | Crystal Torment (`crystal_torment`) | magic | 5 | 44% | 40% | worse than attacking |
@@ -403,7 +384,7 @@
 | Arcane Torment (`arcane_torment`) | magic | 5 | 34% | 35% | worse than attacking |
 | Water Torment (`water_torment`) | magic | 5 | 34% | 34% | worse than attacking |
 | Rebound (`mirror_ward`) | magic | 5 | 26% | 32% | worse than attacking |
-| *283 others within range* | | | | | |
+| *290 others within range* | | | | | |
 
 ## Normal (69 effects, median win rate 60% / 61% duel / team)
 
