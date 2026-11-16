@@ -167,8 +167,8 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 
 **Usage:** `/config economy <mode>`
 
-> Sets whether gear costs currency: economy (characters buy gear and sell it for 30% of what they paid) or
-> free (all gear costs nothing and selling returns nothing).
+> Sets whether gear costs currency: economy (characters buy gear and sell it for 30% of its catalog price, 20%
+> to 40% by Charisma) or free (all gear costs nothing and selling returns nothing).
 >
 > **Permissions:**
 > - `Manage Server`
@@ -227,7 +227,7 @@ Server settings: XP (roleplay) channels, level roles, characters, currency and t
 **Usage:** `/config roleplay <setting> <value>`
 
 > Sets one of the roleplay tools' settings: in-world time and weather, travel, scenes, languages, letters, jobs,
-> downtime, rumors and omens. Start typing to see them all with their current values; /config view lists them
+> downtime, rumors and omens, plus gear wear, carry weight and ammunition. Start typing to see them all with their current values; /config view lists them
 > too.
 >
 > **Permissions:**

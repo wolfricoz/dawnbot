@@ -127,6 +127,7 @@ class Loadout :
 		"""The snapshot of a character: SPECIAL, level, weapons (with proficiency), armor, shield and abilities."""
 		from classes.characters.Special import Special
 		from classes.economy.Crafting import adjust_combat
+		from classes.gear import Carry, Condition
 		from classes.gear.Gear import ARMOR, CONSUMABLE, Gear, WEAPON
 
 		base = Special.rules(character.guild_id).base
@@ -137,22 +138,30 @@ class Loadout :
 			combat = item.combat if item is not None else {}
 			requirements = item.requirements if item is not None else {}
 			if entry.kind == WEAPON :
-				# Crafted masterwork (+1 to hit) or cursed (-1) gear changes the item's own hit modifier.
-				weapon = adjust_combat(WEAPON, Rules.normalise_weapon(combat), entry.quality)
+				# Crafted masterwork (+1 to hit) or cursed (-1) gear changes the item's own hit modifier; a damaged
+				# weapon has -1 more, and a broken one or one out of ammunition stays out of the fight.
+				weapon = Condition.adjust(WEAPON, adjust_combat(WEAPON, Rules.normalise_weapon(combat), entry.quality),
+				                          Condition.of(entry))
+				if weapon is None or Carry.empty(entry, combat, character.guild_id) :
+					continue
 				if crippled_strength and "two_handed" in weapon["properties"] :
 					continue
 				weapon.update({"key" : f"gear:{entry.id}", "name" : entry.name, "entry_id" : entry.id,
 				               "proficiency" : entry.proficiency or Rules.AWFUL,
 				               "requirement_penalty" : Rules.unmet_penalty(special, requirements),
-				               "equipped" : bool(entry.equipped)})
+				               "equipped" : bool(entry.equipped), "slot" : getattr(entry, "slot", None)})
 				if "shield" in weapon["properties"] and entry.equipped :
 					shield = True
 				weapons.append(weapon)
 			elif entry.kind == CONSUMABLE :
 				items.append(Items.snapshot(entry.id, entry.name, combat))
 			elif entry.kind == ARMOR and entry.equipped :
-				# Crafted masterwork (+1 DT) or cursed (-1 DT) armor.
-				candidate = adjust_combat(ARMOR, Rules.normalise_armor(combat), entry.quality) | {"name" : entry.name}
+				# Crafted masterwork (+1 DT) or cursed (-1 DT) armor; damaged armor has -1 DT, broken armor gives nothing.
+				candidate = Condition.adjust(ARMOR, adjust_combat(ARMOR, Rules.normalise_armor(combat), entry.quality),
+				                             Condition.of(entry))
+				if candidate is None :
+					continue
+				candidate |= {"name" : entry.name, "entry_id" : entry.id}
 				if crippled_strength and candidate["armor_class"] == Rules.HEAVY :
 					continue
 				armor = candidate
@@ -169,15 +178,17 @@ class Loadout :
 		        "level_bonus" : level_bonus, "abilities" : actives, "passives" : passives, "items" : items,
 		        "bad_streak" : int(getattr(character, "bad_streak", 0) or 0),
 		        "crit_min" : Rules.crit_min(luck), "fumble_max" : Rules.fumble_max(luck), "confirm_crits" : luck <= 0,
-		        "crippled" : Rules.crippled(special)}
+		        "crippled" : Rules.crippled(special), "overloaded" : Carry.overloaded(character)}
 
 	# ============================================================
 	@staticmethod
 	def default_weapon(weapons: list[dict]) -> str | None :
-		"""The weapon a combatant starts the fight holding: an equipped one (not a shield), else the first."""
+		"""The weapon a combatant starts the fight holding: the one in its main hand, else an equipped one (not a
+		shield), else the first."""
 		usable = [weapon for weapon in weapons if "shield" not in (weapon.get("properties") or [])]
+		main = [weapon for weapon in usable if weapon.get("slot") == "main_hand"]
 		equipped = [weapon for weapon in usable if weapon.get("equipped")]
-		chosen = (equipped or usable or weapons or [None])[0]
+		chosen = (main or equipped or usable or weapons or [None])[0]
 		return chosen.get("key") if chosen else None
 
 	# ============================================================
@@ -187,6 +198,11 @@ class Loadout :
 		special, base = stats["special"], stats["base"]
 		hp = Rules.hp_max(special, stats["level"], base)
 		ap = Rules.ap_max(special)
+		if stats.get("overloaded") :
+			# Carrying more than it can (CARRY_WEIGHT): 2 AP less.
+			from classes.gear.Carry import OVERLOAD_AP
+
+			ap = max(Rules.AP_MINIMUM, ap - OVERLOAD_AP)
 		return Loadout.apply_passives(Combatant(
 			id=0, side_id=side_id, kind=CHARACTER, name=character.name, stats=stats, character_id=character.id,
 			uid=character.uid, controller=PLAYER, behavior="weakest", hp=hp, hp_max=hp, ap=ap, ap_max=ap,

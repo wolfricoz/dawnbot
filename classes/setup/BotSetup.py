@@ -117,7 +117,7 @@ SETTING_LABELS = {
 		"off"      : "Nobody can create species",
 	},
 	ConfigMapping.ECONOMY            : {
-		"economy" : "Gear costs currency (sells back for 30%)",
+		"economy" : "Gear costs currency (sells back for about 30%)",
 		"free"    : "Gear is free",
 	},
 	ConfigMapping.RETIRE_THREAD      : {

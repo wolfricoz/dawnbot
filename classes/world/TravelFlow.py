@@ -38,7 +38,10 @@ class TravelFlow :
 		if origin is not None and origin.id == target.id :
 			return await reply(interaction, f"{character.name} is already at {target.name}.")
 		route = WorldTransactions().route(origin.id, target.id) if origin is not None else None
-		hours = route.hours if route else 0
+		from classes.gear import Carry
+
+		# An overloaded character (CARRY_WEIGHT) travels half as long again.
+		hours = (route.hours if route else 0) * Carry.travel_factor(character)
 		danger = route.danger if route else target.danger
 		table_id = (route.table_id if route else None) or target.table_id
 		natural, total, encounter = WorldFlow.encounter_roll(character.luck, danger, Special.rules(guild.id).base)

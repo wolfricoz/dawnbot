@@ -54,8 +54,8 @@ class TestRoleplayLedger(ShopTestCase) :
 		ConfigData().add_to_list(GUILD_ID, ConfigMapping.XP_CHANNELS, CHANNEL_ID)
 		self.assertTrue(self.post("Aria: " + "x" * 400))
 		rows = CurrencyTransactions().get_all(self.character.id)
-		# 400 / 30 = 13.
-		self.assertEqual([(row.amount, row.reason, row.actor_uid) for row in rows], [(13, ROLEPLAY, USER_ID)])
+		# 400 / 8 = 50.
+		self.assertEqual([(row.amount, row.reason, row.actor_uid) for row in rows], [(50, ROLEPLAY, USER_ID)])
 
 	def test_posts_outside_roleplay_channels_earn_nothing(self) :
 		ConfigData().add_key(GUILD_ID, ConfigMapping.PROXY_OUTSIDE_RP, "TRUE", overwrite=True)
@@ -99,7 +99,8 @@ class TestOwnedGearHelpers(ShopTestCase) :
 		GearItemTransactions().delete(self.plate.id)
 		Gear.set_status(entry, BROKEN, USER_ID)
 		lines = inventory_lines(self.character, Gear.inventory(self.character.id, include_gone=True))
-		self.assertEqual(lines, ["~~Plate~~ (armor) · broken"])
+		# Broken is a condition: the item stays in the inventory.
+		self.assertEqual(lines, ["**Plate** (armor) · broken"])
 
 	def test_unmet_warning(self) :
 		self.assertIn("Strength 8", unmet_warning(self.character, self.plate))

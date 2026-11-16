@@ -2,7 +2,7 @@
 layout: default
 title: Location
 parent: Commands
-nav_order: 24
+nav_order: 25
 ---
 
 <h1>Location</h1>

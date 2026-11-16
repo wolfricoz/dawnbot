@@ -10,7 +10,8 @@ import re
 
 from classes.characters.Special import STATS
 from classes.combat import Conditions, Items, Rules
-from classes.gear.Gear import ARMOR, CONSUMABLE, KINDS, WEAPON
+from classes.gear import Rarity, Slots
+from classes.gear.Gear import ACCESSORY, ARMOR, CONSUMABLE, KINDS, WEAPON
 from database.database import GearItems
 from database.transactions.GearItemTransactions import GearItemTransactions
 
@@ -29,14 +30,15 @@ WEAPON_COMBAT = {"type" : None, "dice" : "1d6", "attack_stat" : "strength", "dam
                  "range" : Rules.MELEE, "properties" : []}
 ARMOR_COMBAT = dict(Rules.ARMOR_DEFAULTS)
 CONSUMABLE_COMBAT = dict(Items.DEFAULTS)
-COMBAT_DEFAULTS = {WEAPON : WEAPON_COMBAT, ARMOR : ARMOR_COMBAT, CONSUMABLE : CONSUMABLE_COMBAT}
+COMBAT_DEFAULTS = {WEAPON : WEAPON_COMBAT, ARMOR : ARMOR_COMBAT, CONSUMABLE : CONSUMABLE_COMBAT, ACCESSORY : {}}
 KIND_WORDS = {WEAPON : ("weapons", "a weapon"), ARMOR : ("armor", "armor"),
-              CONSUMABLE : ("consumables", "a consumable")}
+              CONSUMABLE : ("consumables", "a consumable"), ACCESSORY : ("accessories", "an accessory")}
 # Weapons may also set their own AP cost.
 # Weapons may also set their own AP cost and their kind (which weapon techniques they allow).
-OPTIONAL_KEYS = {WEAPON : {"ap", "kind"}, ARMOR : set(), CONSUMABLE : set()}
+OPTIONAL_KEYS = {WEAPON : {"ap", "kind"}, ARMOR : set(), CONSUMABLE : set(), ACCESSORY : set()}
 # Keys of the old shape (before the combat round); values in it are converted.
-LEGACY_KEYS = {WEAPON : {"modifier", "hitmodifier"}, ARMOR : {"hp", "ap", "hitchance"}, CONSUMABLE : set()}
+LEGACY_KEYS = {WEAPON : {"modifier", "hitmodifier"}, ARMOR : {"hp", "ap", "hitchance"}, CONSUMABLE : set(),
+               ACCESSORY : set()}
 DICE = Rules.DICE
 HIT_LIMIT = 10
 AC_LIMIT = 10
@@ -136,6 +138,18 @@ class Packs :
 				raise ValueError(f"{field} must be text.")
 			checked[field] = (value.strip() or None) if value is not None else None
 		checked["requirements"] = Packs.validate_requirements(item.get("requirements") or {})
+		if item.get("rarity") is not None :
+			checked["rarity"] = Rarity.parse(item["rarity"])
+		weight = item.get("weight")
+		if weight is not None :
+			if not isinstance(weight, (int, float)) or isinstance(weight, bool) or weight < 0 :
+				raise ValueError(f"weight must be a number of kilograms, 0 or more, not {weight!r}.")
+			checked["weight"] = float(weight)
+		if kind == ACCESSORY :
+			slot = item.get("slot")
+			if slot not in Slots.ACCESSORY_SLOTS :
+				raise ValueError(f"an accessory's slot must be one of {', '.join(Slots.ACCESSORY_SLOTS)}, not {slot!r}.")
+			checked["slot"] = slot
 		combat = item.get("combat") or {}
 		if not isinstance(combat, dict) :
 			raise ValueError("combat must be a JSON object.")
@@ -264,6 +278,8 @@ class Packs :
 	@staticmethod
 	def normalise(kind: str, combat: dict | None) -> dict :
 		"""An item's combat values in the current shape, with old values converted."""
+		if kind == ACCESSORY :
+			return {}
 		if kind == WEAPON :
 			weapon = Rules.normalise_weapon(combat)
 			values = {key : weapon[key] for key in WEAPON_COMBAT}
@@ -287,6 +303,11 @@ class Packs :
 		range (melee or ranged), properties and optionally ap. Armor: armor_class, ac, dt, hit_mod, ability_hit_mod.
 		Consumables: use (heal, cure, boost or none), dice, condition and turns.
 		"""
+		if kind == ACCESSORY :
+			# Accessories have no combat values of their own (enchantments come with magic items).
+			if any(value is not None for value in (changes or {}).values()) :
+				raise ValueError("Accessories have no combat values; leave the combat options out.")
+			return {}
 		defaults = COMBAT_DEFAULTS[kind]
 		combat = Packs.normalise(kind, current) if current else dict(defaults)
 		changes = dict(changes or {})
@@ -420,7 +441,8 @@ class Packs :
 	@staticmethod
 	def refresh_into(guild_id: int, name: str) -> list[GearItems] :
 		"""Rewrites the combat values of the server's items that came from a pack with the pack's current values (for
-		catalogs imported before the combat round). Other fields, and items renamed since, are left alone.
+		catalogs imported before the combat round), and fills in weights the items don't have yet. Other fields, and
+		items renamed since, are left alone.
 
 		@return: the items updated.
 		"""
@@ -432,8 +454,12 @@ class Packs :
 			source = values.get(item.name.lower())
 			if source is None or item.pack != name or source["kind"] != item.kind :
 				continue
-			if item.combat != source["combat"] :
-				updated.append(transactions.update(item.id, combat=source["combat"]))
+			changes = {"combat" : source["combat"]} if item.combat != source["combat"] else {}
+			# Weights came with the economy round; a catalog without them gets the pack's.
+			if source.get("weight") is not None and getattr(item, "weight", None) is None :
+				changes["weight"] = source["weight"]
+			if changes :
+				updated.append(transactions.update(item.id, **changes))
 		return updated
 
 	# ============================================================

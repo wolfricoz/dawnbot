@@ -2,7 +2,7 @@
 layout: default
 title: GM
 parent: Commands
-nav_order: 20
+nav_order: 21
 ---
 
 <h1>GM</h1>
@@ -52,7 +52,20 @@ Game master tools: giving and taking characters' gear, currency, abilities and l
 
 **Usage:** `/gm gear break <member> <character> <item>`
 
-> Marks an item of a member's character as broken. It leaves the inventory but stays in its history.
+> Marks an item of a member's character as broken. It stays in the inventory but does nothing in a fight until
+> it is repaired.
+>
+> **Permissions:**
+> - `Manage Messages`
+
+---
+
+### `gear repair`
+
+**Usage:** `/gm gear repair <member> <character> <item>`
+
+> Repairs an item of a member's character back to good condition, for free. Cursed items keep their curse; lift
+> it with /craft uncurse.
 >
 > **Permissions:**
 > - `Manage Messages`

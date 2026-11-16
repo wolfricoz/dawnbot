@@ -35,6 +35,11 @@ class ConfigMapping(StrEnum) :
 	RETIRE_THREAD = "RETIRE_THREAD"
 	LEGENDARY_POINTS = "LEGENDARY_POINTS"
 
+	# === Economy and equipment ===
+	GEAR_WEAR = "GEAR_WEAR"
+	CARRY_WEIGHT = "CARRY_WEIGHT"
+	AMMO = "AMMO"
+
 	# === Combat ===
 	COMBAT_PACING = "COMBAT_PACING"
 	COMBAT_ASYNC_TIMER = "COMBAT_ASYNC_TIMER"
@@ -137,7 +142,7 @@ toggles = [
 
 defaults = {
 	ConfigMapping.XP_GAIN            : 5,
-	ConfigMapping.CURRENCY_GAIN      : 30,
+	ConfigMapping.CURRENCY_GAIN      : 8,
 	ConfigMapping.CURRENCY_NAME      : "currency",
 	ConfigMapping.CHARACTER_CAP      : 3,
 	ConfigMapping.REAPPROVAL_ON_EDIT : "lore",
@@ -148,11 +153,14 @@ defaults = {
 	ConfigMapping.STAT_MAX           : 10,
 	ConfigMapping.LEVEL_BASE         : 1000,
 	ConfigMapping.POINTS_PER_LEVEL   : 1,
-	ConfigMapping.STARTING_CURRENCY  : 3000,
+	ConfigMapping.STARTING_CURRENCY  : 1500,
 	ConfigMapping.SPECIES_CREATION   : "everyone",
 	ConfigMapping.ECONOMY            : "economy",
 	ConfigMapping.RETIRE_THREAD      : "lock",
 	ConfigMapping.LEGENDARY_POINTS   : 5,
+	ConfigMapping.GEAR_WEAR          : "ENABLED",
+	ConfigMapping.CARRY_WEIGHT       : "off",
+	ConfigMapping.AMMO               : "off",
 	ConfigMapping.COMBAT_PACING      : "async",
 	ConfigMapping.COMBAT_ASYNC_TIMER : 12,
 	ConfigMapping.COMBAT_LIVE_TIMER  : 3,
@@ -179,7 +187,7 @@ defaults = {
 	ConfigMapping.DOWNTIME_RESET     : 0,
 	ConfigMapping.DOWNTIME_ACTIVE_DAYS : 7,
 	ConfigMapping.DOWNTIME_PRIVATE   : "DISABLED",
-	ConfigMapping.WORK_PAY           : 50,
+	ConfigMapping.WORK_PAY           : 125,
 	ConfigMapping.STUDY_DAYS         : 10,
 	ConfigMapping.CAROUSE_COST       : 50,
 	ConfigMapping.RUMOR_MODE         : "board",
@@ -244,6 +252,10 @@ roleplay_settings = {
 	ConfigMapping.RUMOR_DAYS         : ("number", 1, 90),
 	ConfigMapping.OMEN_DAYS          : ("number", 1, 60),
 	ConfigMapping.OMEN_EFFECTS       : ("toggle",),
+	# Economy and equipment (design/economy.md), set the same way.
+	ConfigMapping.GEAR_WEAR          : ("toggle",),
+	ConfigMapping.CARRY_WEIGHT       : ("choice", ["off", "kg", "lb"]),
+	ConfigMapping.AMMO               : ("choice", ["off", "die"]),
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -262,7 +274,7 @@ docs = {
 	# == progression ==
 	ConfigMapping.XP_CHANNELS   : "Text channels and forums where roleplay happens: messages earn XP there, and posts made as a character also earn that character currency. Threads count when their parent channel is listed. Messages shorter than 300 characters are removed there.",
 	ConfigMapping.XP_GAIN       : "How many characters a message needs per point of XP (default 5).",
-	ConfigMapping.CURRENCY_GAIN : "How many characters a post made as a character needs per unit of currency for that character (default 30).",
+	ConfigMapping.CURRENCY_GAIN : "How many characters a post made as a character needs per unit of currency for that character (default 8, so a 300-character post earns about 38).",
 	ConfigMapping.CURRENCY_NAME : "The name shown for the server's currency (default 'currency').",
 	ConfigMapping.ANNOUNCEMENT  : "The channel where level-up announcements are posted.",
 
@@ -281,14 +293,17 @@ docs = {
 	ConfigMapping.STAT_MAX           : "The highest value a SPECIAL stat can have (default 10).",
 	ConfigMapping.LEVEL_BASE         : "How fast characters level: reaching level L takes this number x L(L-1)/2 XP (default 1000, so level 2 at 1000 XP and level 3 at 3000).",
 	ConfigMapping.POINTS_PER_LEVEL   : "How many SPECIAL points a character gets for each level (default 1).",
-	ConfigMapping.STARTING_CURRENCY  : "How much currency a new character starts with (default 3000).",
+	ConfigMapping.STARTING_CURRENCY  : "How much currency a new character starts with (default 1500).",
 	ConfigMapping.PROXY_OUTSIDE_RP   : "Whether members can post as their characters outside the XP channels (default off). Posts there earn no XP and have no minimum length.",
 	ConfigMapping.SPECIES_FORUM      : "The forum (or channel) where approved species are posted. Tags on a species' post can restrict who may pick it; see /tagrule.",
 	ConfigMapping.SPECIES_CREATION   : "Who can create species with /species create: `everyone` (the default), `staff` (Manage Messages) or `off`.",
 	ConfigMapping.GEAR_FORUM         : "Optional: the forum where the gear catalog is posted, one post per item. Tags on an item's post can restrict who may buy it; see /tagrule.",
 	ConfigMapping.RETIRE_THREAD      : "What happens to a retired character's post in the character channel: `lock` (the default; the forum thread is locked and archived, and opened again if the character returns) or `delete`.",
-	ConfigMapping.ECONOMY            : "`economy` (the default): characters buy gear with their currency and sell it for 30% of what they paid. `free`: all gear costs nothing and selling returns nothing.",
+	ConfigMapping.ECONOMY            : "`economy` (the default): characters buy gear with their currency and sell it for 30% of its catalog price (20% to 40% by Charisma, which also lowers buying prices by up to 15%). `free`: all gear costs nothing and selling returns nothing.",
 
+	ConfigMapping.GEAR_WEAR          : "Whether gear wears down in fights (default on): when a fight ends, the weapon each character held and its armor each have a 1 in 20 chance to drop a step (Good, Worn, Damaged, Broken; 1 in 40 for masterwork). Repair it at the shop (/shop repair) or with a repairing occupation (/downtime repair).",
+	ConfigMapping.CARRY_WEIGHT       : "Whether characters have a carry limit: `off` (the default), `kg` or `lb`. A character carries 11 + 11 x Strength kg (25 + 25 x Strength lb); over that it has 2 AP less in fights and travels slower, and past 150% it can't buy more.",
+	ConfigMapping.AMMO               : "Whether ranged weapons use ammunition: `off` (the default) or `die`: each has an ammunition die (d12 when full) rolled after every fight; a 1 or 2 steps it down, and a weapon that runs out can't be used until it is refilled with /shop refill.",
 	ConfigMapping.LEGENDARY_POINTS   : "How many extra SPECIAL points a character gets when staff make it legendary (default 5). Legendary characters also have doubled stat limits and one extra ability slot.",
 
 	# == combat ==
@@ -327,7 +342,7 @@ docs = {
 	ConfigMapping.DOWNTIME_RESET     : "The hour (UTC) when a new downtime day starts (default 0).",
 	ConfigMapping.DOWNTIME_ACTIVE_DAYS : "Downtime is only for characters that posted in the last this many days (default 7; 0 lets every character).",
 	ConfigMapping.DOWNTIME_PRIVATE   : "Whether downtime results are private instead of posted (default off).",
-	ConfigMapping.WORK_PAY           : "What a day of downtime work pays when the occupation sets no pay (default 50).",
+	ConfigMapping.WORK_PAY           : "What a day of downtime work pays when the occupation sets no pay (default 125).",
 	ConfigMapping.STUDY_DAYS         : "Successful study days to learn a language partly, and again to speak it fluently (default 10).",
 	ConfigMapping.CAROUSE_COST       : "What carousing in downtime costs (default 50).",
 	ConfigMapping.RUMOR_MODE         : "`board` (the default): rumors are posted to the rumor channel straight away. `whisper`: characters overhear them with /rumor listen, and one heard 3 times is posted.",

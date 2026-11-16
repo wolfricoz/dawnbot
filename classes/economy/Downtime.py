@@ -2,7 +2,7 @@
 crafting or carousing. Only characters that made a proxied post in the last DOWNTIME_ACTIVE_DAYS days can, so idle
 characters don't earn in the background.
 
-Work rolls the occupation's stat against Average (12) and pays its pay (WORK_PAY by default, 50): a bad failure pays
+Work rolls the occupation's stat against Average (12) and pays its pay (WORK_PAY by default, 125): a bad failure pays
 nothing, a failure half, a success all, a strong success half as much again and a crit double, plus a roll on the
 occupation's table. Without an occupation it is odd jobs: half pay, and the player picks the stat. Study rolls
 Intelligence against Average: success +1, strong +2; STUDY_DAYS points teach a language partly, twice that fluently.

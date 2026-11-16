@@ -12,7 +12,8 @@
 			"effect": "Can be thrown at a target up to ten paces away.",
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"kind": "dagger", 
+			"combat": {
+				"kind": "dagger",
 				"type": "Piercing",
 				"dice": "1d6",
 				"attack_stat": "agility",
@@ -23,7 +24,8 @@
 					"light",
 					"thrown"
 				]
-			}
+			},
+			"weight": 0.5
 		},
 		{
 			"kind": "weapon",
@@ -34,7 +36,8 @@
 			"effect": "Any stone you can pick up will do as ammunition.",
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"kind": "sling", 
+			"combat": {
+				"kind": "sling",
 				"type": "Blunt",
 				"dice": "1d6",
 				"attack_stat": "perception",
@@ -44,7 +47,8 @@
 				"properties": [
 					"light"
 				]
-			}
+			},
+			"weight": 0.2
 		},
 		{
 			"kind": "weapon",
@@ -55,7 +59,8 @@
 			"effect": "+1 AC while you hold it in both hands and do nothing but defend.",
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"kind": "staff", 
+			"combat": {
+				"kind": "staff",
 				"type": "Blunt",
 				"dice": "1d6",
 				"attack_stat": "strength",
@@ -65,7 +70,8 @@
 				"properties": [
 					"two_handed"
 				]
-			}
+			},
+			"weight": 2
 		},
 		{
 			"kind": "weapon",
@@ -76,7 +82,8 @@
 			"effect": "Also works as a tool for chopping wood and clearing brush.",
 			"effect_met": null,
 			"effect_unmet": null,
-			"combat": {"kind": "hatchet", 
+			"combat": {
+				"kind": "hatchet",
 				"type": "Slashing",
 				"dice": "1d8",
 				"attack_stat": "strength",
@@ -86,7 +93,8 @@
 				"properties": [
 					"thrown"
 				]
-			}
+			},
+			"weight": 1
 		},
 		{
 			"kind": "weapon",
@@ -99,7 +107,8 @@
 			"effect": "Reach: you can strike a foe one step away.",
 			"effect_met": "+1 to attack rolls against a foe charging at you.",
 			"effect_unmet": "-1 to attack rolls.",
-			"combat": {"kind": "spear", 
+			"combat": {
+				"kind": "spear",
 				"type": "Piercing",
 				"dice": "1d8",
 				"attack_stat": "strength",
@@ -109,7 +118,8 @@
 				"properties": [
 					"reach"
 				]
-			}
+			},
+			"weight": 2
 		},
 		{
 			"kind": "weapon",
@@ -122,7 +132,8 @@
 			"effect": null,
 			"effect_met": "+1 to attack rolls at short range.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"kind": "bow", 
+			"combat": {
+				"kind": "bow",
 				"type": "Piercing",
 				"dice": "1d8",
 				"attack_stat": "perception",
@@ -132,7 +143,8 @@
 				"properties": [
 					"two_handed"
 				]
-			}
+			},
+			"weight": 1
 		},
 		{
 			"kind": "weapon",
@@ -143,7 +155,8 @@
 				"strength": 3
 			},
 			"effect": "While equipped: +2 AC and -2 to attack with other weapons. It can also bash for 1d4.",
-			"combat": {"kind": "shield", 
+			"combat": {
+				"kind": "shield",
 				"type": "Blunt",
 				"dice": "1d4",
 				"attack_stat": "strength",
@@ -156,7 +169,8 @@
 				]
 			},
 			"effect_met": "Raised quickly enough to turn aside most blows.",
-			"effect_unmet": "Too heavy to bash with well: -1 to hit for each missing point of Strength."
+			"effect_unmet": "Too heavy to bash with well: -1 to hit for each missing point of Strength.",
+			"weight": 4
 		},
 		{
 			"kind": "weapon",
@@ -169,7 +183,8 @@
 			"effect": null,
 			"effect_met": "Your hits ignore 1 point of the target's AC from metal armor.",
 			"effect_unmet": "-1 to attack rolls.",
-			"combat": {"kind": "mace", 
+			"combat": {
+				"kind": "mace",
 				"type": "Blunt",
 				"dice": "1d10",
 				"attack_stat": "strength",
@@ -177,7 +192,8 @@
 				"hit_mod": 0,
 				"range": "melee",
 				"properties": []
-			}
+			},
+			"weight": 2.5
 		},
 		{
 			"kind": "weapon",
@@ -190,7 +206,8 @@
 			"effect": null,
 			"effect_met": "+1 to rolls to parry a melee attack.",
 			"effect_unmet": "-1 to attack rolls.",
-			"combat": {"kind": "sword", 
+			"combat": {
+				"kind": "sword",
 				"type": "Slashing",
 				"dice": "2d6",
 				"attack_stat": "strength",
@@ -198,7 +215,8 @@
 				"hit_mod": 0,
 				"range": "melee",
 				"properties": []
-			}
+			},
+			"weight": 1.5
 		},
 		{
 			"kind": "weapon",
@@ -211,7 +229,8 @@
 			"effect": null,
 			"effect_met": "+2 damage against shields, doors and other wooden things.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"kind": "axe", 
+			"combat": {
+				"kind": "axe",
 				"type": "Slashing",
 				"dice": "1d12",
 				"attack_stat": "strength",
@@ -221,7 +240,8 @@
 				"properties": [
 					"heavy"
 				]
-			}
+			},
+			"weight": 3
 		},
 		{
 			"kind": "weapon",
@@ -234,7 +254,8 @@
 			"effect": "Reloading takes a full turn.",
 			"effect_met": "You can fire it with one hand while the other holds a blade.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"kind": "crossbow", 
+			"combat": {
+				"kind": "crossbow",
 				"type": "Piercing",
 				"dice": "2d4",
 				"attack_stat": "perception",
@@ -244,7 +265,8 @@
 				"properties": [
 					"loading"
 				]
-			}
+			},
+			"weight": 1.5
 		},
 		{
 			"kind": "weapon",
@@ -258,7 +280,8 @@
 			"effect": null,
 			"effect_met": "+1 damage at long range.",
 			"effect_unmet": "-3 to attack rolls, and drawing it takes your whole turn.",
-			"combat": {"kind": "bow", 
+			"combat": {
+				"kind": "bow",
 				"type": "Piercing",
 				"dice": "2d6",
 				"attack_stat": "perception",
@@ -268,7 +291,8 @@
 				"properties": [
 					"two_handed"
 				]
-			}
+			},
+			"weight": 1.5
 		},
 		{
 			"kind": "weapon",
@@ -281,7 +305,8 @@
 			"effect": null,
 			"effect_met": "+2 to attack rolls against a target that has not noticed you.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"kind": "dagger", 
+			"combat": {
+				"kind": "dagger",
 				"type": "Piercing",
 				"dice": "1d8",
 				"attack_stat": "agility",
@@ -292,7 +317,8 @@
 					"light",
 					"keen"
 				]
-			}
+			},
+			"weight": 0.4
 		},
 		{
 			"kind": "weapon",
@@ -305,7 +331,8 @@
 			"effect": "Reloading takes a full turn.",
 			"effect_met": "+1 to attack rolls when you brace it on a wall or rest.",
 			"effect_unmet": "Reloading takes two full turns.",
-			"combat": {"kind": "crossbow", 
+			"combat": {
+				"kind": "crossbow",
 				"type": "Piercing",
 				"dice": "2d8",
 				"attack_stat": "perception",
@@ -316,7 +343,8 @@
 					"loading",
 					"two_handed"
 				]
-			}
+			},
+			"weight": 4
 		},
 		{
 			"kind": "weapon",
@@ -339,7 +367,8 @@
 				"properties": [
 					"focus"
 				]
-			}
+			},
+			"weight": 0.3
 		},
 		{
 			"kind": "weapon",
@@ -352,7 +381,8 @@
 			"effect": null,
 			"effect_met": "Your hits push lighter foes back a step.",
 			"effect_unmet": "-3 to attack rolls, and you act last in the round.",
-			"combat": {"kind": "greatsword", 
+			"combat": {
+				"kind": "greatsword",
 				"type": "Slashing",
 				"dice": "2d8",
 				"attack_stat": "strength",
@@ -362,7 +392,8 @@
 				"properties": [
 					"two_handed"
 				]
-			}
+			},
+			"weight": 3.5
 		},
 		{
 			"kind": "weapon",
@@ -376,7 +407,8 @@
 			"effect": null,
 			"effect_met": "+1 AC while your other hand is empty.",
 			"effect_unmet": "-2 to attack rolls.",
-			"combat": {"kind": "scimitar", 
+			"combat": {
+				"kind": "scimitar",
 				"type": "Slashing",
 				"dice": "2d6",
 				"attack_stat": "agility",
@@ -384,7 +416,8 @@
 				"hit_mod": 1,
 				"range": "melee",
 				"properties": []
-			}
+			},
+			"weight": 1.5
 		},
 		{
 			"kind": "weapon",
@@ -408,7 +441,8 @@
 				"properties": [
 					"focus"
 				]
-			}
+			},
+			"weight": 1
 		},
 		{
 			"kind": "weapon",
@@ -432,7 +466,8 @@
 					"focus",
 					"two_handed"
 				]
-			}
+			},
+			"weight": 1.5
 		},
 		{
 			"kind": "armor",
@@ -449,7 +484,8 @@
 				"dt": 0,
 				"hit_mod": 0,
 				"ability_hit_mod": 0
-			}
+			},
+			"weight": 2
 		},
 		{
 			"kind": "armor",
@@ -466,7 +502,8 @@
 				"dt": 0,
 				"hit_mod": 0,
 				"ability_hit_mod": 0
-			}
+			},
+			"weight": 4
 		},
 		{
 			"kind": "armor",
@@ -485,7 +522,8 @@
 				"dt": 1,
 				"hit_mod": 0,
 				"ability_hit_mod": 0
-			}
+			},
+			"weight": 6
 		},
 		{
 			"kind": "armor",
@@ -504,7 +542,8 @@
 				"dt": 1,
 				"hit_mod": 1,
 				"ability_hit_mod": 0
-			}
+			},
+			"weight": 5
 		},
 		{
 			"kind": "armor",
@@ -523,7 +562,8 @@
 				"dt": 1,
 				"hit_mod": 0,
 				"ability_hit_mod": 0
-			}
+			},
+			"weight": 9
 		},
 		{
 			"kind": "armor",
@@ -542,7 +582,8 @@
 				"dt": 0,
 				"hit_mod": 0,
 				"ability_hit_mod": 1
-			}
+			},
+			"weight": 2
 		},
 		{
 			"kind": "armor",
@@ -561,7 +602,8 @@
 				"dt": 2,
 				"hit_mod": 0,
 				"ability_hit_mod": 0
-			}
+			},
+			"weight": 12
 		},
 		{
 			"kind": "armor",
@@ -581,7 +623,8 @@
 				"dt": 2,
 				"hit_mod": 0,
 				"ability_hit_mod": 0
-			}
+			},
+			"weight": 14
 		},
 		{
 			"kind": "armor",
@@ -600,7 +643,8 @@
 				"dt": 3,
 				"hit_mod": 0,
 				"ability_hit_mod": 0
-			}
+			},
+			"weight": 18
 		},
 		{
 			"kind": "armor",
@@ -620,7 +664,8 @@
 				"dt": 3,
 				"hit_mod": 0,
 				"ability_hit_mod": 0
-			}
+			},
+			"weight": 22
 		},
 		{
 			"kind": "consumable",
@@ -636,7 +681,8 @@
 				"dice": "1d4",
 				"condition": "bleeding",
 				"turns": 2
-			}
+			},
+			"weight": 0.1
 		},
 		{
 			"kind": "consumable",
@@ -652,7 +698,8 @@
 				"dice": "2d4",
 				"condition": null,
 				"turns": 2
-			}
+			},
+			"weight": 0.3
 		},
 		{
 			"kind": "consumable",
@@ -668,7 +715,8 @@
 				"dice": "1d4",
 				"condition": "burning",
 				"turns": 2
-			}
+			},
+			"weight": 0.2
 		},
 		{
 			"kind": "consumable",
@@ -684,7 +732,8 @@
 				"dice": "1d4",
 				"condition": "stunned",
 				"turns": 2
-			}
+			},
+			"weight": 0.1
 		},
 		{
 			"kind": "consumable",
@@ -700,7 +749,8 @@
 				"dice": "1d4",
 				"condition": "inspired",
 				"turns": 2
-			}
+			},
+			"weight": 0.3
 		},
 		{
 			"kind": "consumable",
@@ -716,7 +766,8 @@
 				"dice": "4d4",
 				"condition": null,
 				"turns": 2
-			}
+			},
+			"weight": 0.3
 		},
 		{
 			"kind": "consumable",
@@ -732,7 +783,8 @@
 				"dice": "1d4",
 				"condition": "regenerating",
 				"turns": 3
-			}
+			},
+			"weight": 0.3
 		}
 	],
 	"bestiary": [

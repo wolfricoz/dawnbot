@@ -69,7 +69,7 @@ class TestGearStep(StartingGearTestCase) :
 		text = say("5 5 5 5 5 5 5").text
 		self.assertIn("Pick your starting gear", text)
 		self.assertIn("Left to spend: **1500 currency**", text)
-		self.assertIn("1. **Sword** (weapon) · 100 currency · needs Strength 4", text)
+		self.assertIn("1. **Sword** (weapon, Common) · 100 currency · needs Strength 4", text)
 		self.assertIn("2. **Lance**", text)
 		self.assertIn("unavailable: needs server level 2", text)
 		self.assertNotIn("Relic", text)
@@ -118,7 +118,7 @@ class TestGearStep(StartingGearTestCase) :
 		text = self.to_gear().text
 		self.assertIn("Gear is free", text)
 		self.assertNotIn("Left to spend", text)
-		self.assertIn("**Sword** (weapon) · free", text)
+		self.assertIn("**Sword** (weapon, Common) · free", text)
 		for name in ("plate", "bow", "leather", "sword") :
 			self.assertIn("Added", say(name).text)
 		reply = say("done")

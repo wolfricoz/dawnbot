@@ -63,7 +63,7 @@ The staff channel for bot notices, such as missing permissions.
 How many characters a message needs per point of XP (default 5).
 
 ### CURRENCY_GAIN
-How many characters a post made as a character needs per unit of currency for that character (default 30).
+How many characters a post made as a character needs per unit of currency for that character (default 8, so a 300-character post earns about 38).
 
 ### CURRENCY_NAME
 The name shown for the server's currency (default 'currency').
@@ -96,13 +96,13 @@ How fast characters level: reaching level L takes this number x L(L-1)/2 XP (def
 How many SPECIAL points a character gets for each level (default 1).
 
 ### STARTING_CURRENCY
-How much currency a new character starts with (default 3000).
+How much currency a new character starts with (default 1500).
 
 ### SPECIES_CREATION
 Who can create species with /species create: `everyone` (the default), `staff` (Manage Messages) or `off`.
 
 ### ECONOMY
-`economy` (the default): characters buy gear with their currency and sell it for 30% of what they paid. `free`: all gear costs nothing and selling returns nothing.
+`economy` (the default): characters buy gear with their currency and sell it for 30% of its catalog price (20% to 40% by Charisma, which also lowers buying prices by up to 15%). `free`: all gear costs nothing and selling returns nothing.
 
 ### RETIRE_THREAD
 What happens to a retired character's post in the character channel: `lock` (the default; the forum thread is locked and archived, and opened again if the character returns) or `delete`.

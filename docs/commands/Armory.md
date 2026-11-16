@@ -14,9 +14,9 @@ nav_order: 3
 
 ### `add`
 
-**Usage:** `/armory add <kind> <name> <price> <description> <requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind>`
+**Usage:** `/armory add <kind> <name> <price> <description> <requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind> <rarity> <weight> <worn_slot>`
 
-> Adds a weapon, armor set or consumable to the catalog. `requirements` are SPECIAL minimums written like
+> Adds a weapon, armor set, consumable or accessory to the catalog. `requirements` are SPECIAL minimums written like
 > `strength 8, agility 4` (short names like `str 8` work too); they never stop a character from owning or using
 > the item, but each missing point is -1 to hit, and they decide whether `effect_met` (a bonus) or `effect_unmet`
 > (a penalty) applies. `effect` is something the item always does.
@@ -30,6 +30,13 @@ nav_order: 3
 > automatic), `dice` (healing or a shield) and `condition` (what a cure removes or a boost gives); they cost 2 AP
 > in a fight and are used up. When a gear forum is set, the item is posted there.
 >
+> An accessory needs `worn_slot` (head, neck, back, hands, feet or ring) and has no combat values; `weight` (in
+> kilograms) matters on servers with a carry limit.
+>
+> `rarity` is taken from the price unless you set it (Common up to 1,000, Uncommon up to 1,500, Rare up to 3,500,
+> Very rare above); Legendary items are never sold, only granted. The reply suggests a price for the item's
+> combat values, which you are free to ignore.
+>
 > **Permissions:**
 > - `Manage Server`
 
@@ -37,14 +44,15 @@ nav_order: 3
 
 ### `edit`
 
-**Usage:** `/armory edit <name> <new_name> <price> <description> <requirements> <clear_requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind>`
+**Usage:** `/armory edit <name> <new_name> <price> <description> <requirements> <clear_requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind> <rarity> <weight> <worn_slot>`
 
 > Changes a catalog item; options you leave out keep their value. `requirements` replaces all of the item's
 > requirements, and `clear_requirements` removes them. Type `-` in description or one of the effects to clear
 > it. An item's kind cannot change: remove it and add it again instead.
 >
 > Characters who own the item keep it under the name it had when they got it. The item's post in the gear forum
-> is updated.
+> is updated. Pick `rarity` From the price to let the price decide it again. The reply suggests a price for the
+> item's combat values.
 >
 > **Permissions:**
 > - `Manage Server`

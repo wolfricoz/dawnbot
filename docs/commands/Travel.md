@@ -2,7 +2,7 @@
 layout: default
 title: Travel
 parent: Commands
-nav_order: 39
+nav_order: 40
 ---
 
 <h1>Travel</h1>

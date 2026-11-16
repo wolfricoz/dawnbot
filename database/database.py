@@ -9,7 +9,7 @@ import os
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, JSON, String, \
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Index, Integer, JSON, String, \
 	Text, URL, UniqueConstraint, create_engine, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.pool import NullPool
@@ -216,6 +216,8 @@ class Occupations(Base) :
 	# A faction standing (a tier, see classes/economy/FactionFlow.py) a character needs to take the occupation.
 	faction_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	faction_tier: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# The kinds of gear its characters can repair: weapon, clothing, light, medium, heavy, accessory.
+	repairs: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
 	__table_args__ = (
 		Index('uq_occupation_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -386,7 +388,7 @@ class Autoproxy(Base) :
 # will use (weapons: dice, modifier, hitmodifier; armor: hp, ap, ac, hitchance). tag_ids are the tags on its post in the
 # gear forum, kept in step from thread updates; they decide who may buy it.
 class GearItems(Timestamps, Base) :
-	"""A weapon or armor set in a server's catalog."""
+	"""A weapon, armor set, consumable or material in a server's catalog."""
 	__tablename__ = "gear_items"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
@@ -410,6 +412,12 @@ class GearItems(Timestamps, Base) :
 	faction_tier: Mapped[str | None] = mapped_column(String(16), nullable=True)
 	# What salvaging it gives: {material name: amount}.
 	salvage: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	# common, uncommon, rare, very_rare or legendary; empty takes it from the price (classes/gear/Rarity.py).
+	rarity: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# In kilograms; empty weighs nothing (classes/gear/Carry.py).
+	weight: Mapped[float | None] = mapped_column(Float, nullable=True)
+	# Where an accessory is worn: head, neck, back, hands, feet or ring (classes/gear/Slots.py).
+	slot: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
 	__table_args__ = (
 		Index('uq_gear_item_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -427,7 +435,7 @@ class CharacterGear(Base) :
 	name: Mapped[str] = mapped_column(String(100))
 	kind: Mapped[str] = mapped_column(String(16))
 	equipped: Mapped[bool] = mapped_column(Boolean, default=False)
-	# owned, lost, broken or sold
+	# owned, lost, sold or used (broken is a condition)
 	status: Mapped[str] = mapped_column(String(16), default="owned")
 	# creation, shop or granted
 	source: Mapped[str] = mapped_column(String(16))
@@ -439,6 +447,12 @@ class CharacterGear(Base) :
 	quantity: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 	# masterwork or cursed (crafted), or empty.
 	quality: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# Where it is equipped (main_hand, off_hand, readied, body, head, neck, back, hands, feet, ring_1, ring_2).
+	slot: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# good, worn, damaged or broken (classes/gear/Condition.py).
+	condition: Mapped[str] = mapped_column(String(16), default="good", server_default="good")
+	# A ranged weapon's ammunition die (d12 to d4, or empty when it ran out); unset is full.
+	ammo_die: Mapped[str | None] = mapped_column(String(8), nullable=True)
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
 	                                             onupdate=func.now())

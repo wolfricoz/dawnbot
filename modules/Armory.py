@@ -10,7 +10,8 @@ from classes.characters.CharacterFlow import CharacterFlow
 from classes.characters.Special import STATS
 from classes.combat import Conditions, Items, Rules
 from classes.combat.DamageTypes import DamageTypes
-from classes.gear.Gear import ARMOR, CONSUMABLE, Gear, WEAPON
+from classes.gear import Pricing, Rarity, Slots
+from classes.gear.Gear import ACCESSORY, ARMOR, CONSUMABLE, Gear, WEAPON
 from classes.gear.GearCard import GearCard
 from classes.gear.GearPost import GearPost
 from classes.gear.Legacy import Legacy
@@ -28,7 +29,8 @@ CLEAR = "-"
 TEXT_LIMIT = 1000
 
 KIND_CHOICES = [Choice(name="Weapon", value=WEAPON), Choice(name="Armor", value=ARMOR),
-                Choice(name="Consumable", value=CONSUMABLE)]
+                Choice(name="Consumable", value=CONSUMABLE), Choice(name="Accessory", value=ACCESSORY)]
+WORN_SLOT_CHOICES = [Choice(name=Slots.label(slot).capitalize(), value=slot) for slot in Slots.ACCESSORY_SLOTS]
 USE_CHOICES = [Choice(name="Heal (revives a downed ally)", value=Items.HEAL),
                Choice(name="Cure a condition", value=Items.CURE), Choice(name="Boost an ally", value=Items.BOOST),
                Choice(name="Nothing automatic (the GM settles it)", value=Items.NONE)]
@@ -38,7 +40,12 @@ STAT_CHOICES = [Choice(name=stat.capitalize(), value=stat) for stat in STATS]
 DAMAGE_STAT_CHOICES = [Choice(name="None", value="none")] + STAT_CHOICES
 RANGE_CHOICES = [Choice(name=value.capitalize(), value=value) for value in Rules.RANGES]
 ARMOR_CLASS_CHOICES = [Choice(name=value.capitalize(), value=value) for value in Rules.ARMOR_CLASSES]
+RARITY_CHOICES = [Choice(name="From the price", value="auto")] + [Choice(name=Rarity.label(value), value=value)
+                                                                  for value in Rarity.RARITIES]
 OPTION_HELP = {
+	"rarity"          : "Leave out (or From the price) to take it from the price; Legendary items are never sold",
+	"weight"          : "In kilograms, for servers with a carry limit (CARRY_WEIGHT)",
+	"worn_slot"       : "Accessory: where it is worn (head, neck, back, hands, feet or ring)",
 	"requirements"    : "SPECIAL minimums, like: strength 8, agility 4",
 	"dice"            : "Weapon damage dice, like 1d8 or 2d6",
 	"damage_type"     : "Weapon: its damage type (see /damagetype list), or none",
@@ -179,7 +186,8 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(use=USE_CHOICES, condition=ITEM_CONDITION_CHOICES)
 	@app_commands.choices(kind=KIND_CHOICES, attack_stat=STAT_CHOICES, damage_stat=DAMAGE_STAT_CHOICES,
-	                      range=RANGE_CHOICES, armor_class=ARMOR_CLASS_CHOICES)
+	                      range=RANGE_CHOICES, armor_class=ARMOR_CLASS_CHOICES, rarity=RARITY_CHOICES,
+	                      worn_slot=WORN_SLOT_CHOICES)
 	@app_commands.autocomplete(damage_type=_types, weapon_kind=_weapon_kinds)
 	@app_commands.describe(**OPTION_HELP)
 	async def add(self, interaction: discord.Interaction, kind: Choice[str], name: app_commands.Range[str, 1, 100],
@@ -194,9 +202,11 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	              properties: app_commands.Range[str, 1, 200] = None, ap_cost: app_commands.Range[int, 1, 10] = None,
 	              armor_class: Choice[str] = None, ac: app_commands.Range[int, 0, 10] = None,
 	              dt: app_commands.Range[int, 0, 10] = None, ability_hit_mod: app_commands.Range[int, -10, 10] = None,
-	              use: Choice[str] = None, condition: Choice[str] = None, weapon_kind: str = None) :
+	              use: Choice[str] = None, condition: Choice[str] = None, weapon_kind: str = None,
+	              rarity: Choice[str] = None, weight: app_commands.Range[float, 0, 1000] = None,
+	              worn_slot: Choice[str] = None) :
 		"""
-		Adds a weapon, armor set or consumable to the catalog. `requirements` are SPECIAL minimums written like
+		Adds a weapon, armor set, consumable or accessory to the catalog. `requirements` are SPECIAL minimums written like
 		`strength 8, agility 4` (short names like `str 8` work too); they never stop a character from owning or using
 		the item, but each missing point is -1 to hit, and they decide whether `effect_met` (a bonus) or `effect_unmet`
 		(a penalty) applies. `effect` is something the item always does.
@@ -210,10 +220,19 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 		automatic), `dice` (healing or a shield) and `condition` (what a cure removes or a boost gives); they cost 2 AP
 		in a fight and are used up. When a gear forum is set, the item is posted there.
 
+		An accessory needs `worn_slot` (head, neck, back, hands, feet or ring) and has no combat values; `weight` (in
+		kilograms) matters on servers with a carry limit.
+
+		`rarity` is taken from the price unless you set it (Common up to 1,000, Uncommon up to 1,500, Rare up to 3,500,
+		Very rare above); Legendary items are never sold, only granted. The reply suggests a price for the item's
+		combat values, which you are free to ignore.
+
 		**Permissions:**
 		- `Manage Server`
 		"""
 		await interaction.response.defer(ephemeral=True)
+		if kind.value == ACCESSORY and worn_slot is None :
+			return await interaction.followup.send("An accessory needs a `worn_slot`.")
 		try :
 			needs = Packs.parse_requirements(requirements)
 			changes = self.combat_changes(dice, damage_type, attack_stat, damage_stat, hit_mod, range, properties,
@@ -224,19 +243,24 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 			return await interaction.followup.send(str(e))
 		item = GearItemTransactions().add(interaction.guild_id, kind.value, name.strip(), price=price,
 		                                  description=description, requirements=needs, effect=effect,
-		                                  effect_met=effect_met, effect_unmet=effect_unmet, combat=combat)
+		                                  effect_met=effect_met, effect_unmet=effect_unmet, combat=combat,
+		                                  rarity=Rarity.parse(rarity.value) if rarity else None, weight=weight,
+		                                  slot=worn_slot.value if worn_slot and kind.value == ACCESSORY else None)
 		if item is None :
 			return await interaction.followup.send(f"The catalog already has an item called {name}.")
 		logging.info(f"{interaction.user.name} added gear item {item.name} in {interaction.guild.name}")
 		note = await self._post(item)
-		await interaction.followup.send(f"Added the {kind.value} **{item.name}**.{note}")
+		hint = Pricing.suggestion_text(item.kind, item.combat, item.requirements, item.price, interaction.guild_id)
+		await interaction.followup.send(f"Added the {kind.value} **{item.name}** "
+		                                f"({Rarity.label(Rarity.of(item))}).{note}{hint}")
 
 	# ============================================================
 	@app_commands.command(name="edit")
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.autocomplete(name=_names)
 	@app_commands.choices(attack_stat=STAT_CHOICES, damage_stat=DAMAGE_STAT_CHOICES, range=RANGE_CHOICES,
-	                      armor_class=ARMOR_CLASS_CHOICES, use=USE_CHOICES, condition=ITEM_CONDITION_CHOICES)
+	                      armor_class=ARMOR_CLASS_CHOICES, use=USE_CHOICES, condition=ITEM_CONDITION_CHOICES,
+	                      rarity=RARITY_CHOICES, worn_slot=WORN_SLOT_CHOICES)
 	@app_commands.autocomplete(damage_type=_types, weapon_kind=_weapon_kinds)
 	@app_commands.describe(**OPTION_HELP)
 	async def edit(self, interaction: discord.Interaction, name: str, new_name: app_commands.Range[str, 1, 100] = None,
@@ -253,14 +277,16 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	               armor_class: Choice[str] = None, ac: app_commands.Range[int, 0, 10] = None,
 	               dt: app_commands.Range[int, 0, 10] = None,
 	               ability_hit_mod: app_commands.Range[int, -10, 10] = None, use: Choice[str] = None,
-	               condition: Choice[str] = None, weapon_kind: str = None) :
+	               condition: Choice[str] = None, weapon_kind: str = None, rarity: Choice[str] = None,
+	               weight: app_commands.Range[float, 0, 1000] = None, worn_slot: Choice[str] = None) :
 		"""
 		Changes a catalog item; options you leave out keep their value. `requirements` replaces all of the item's
 		requirements, and `clear_requirements` removes them. Type `-` in description or one of the effects to clear
 		it. An item's kind cannot change: remove it and add it again instead.
 
 		Characters who own the item keep it under the name it had when they got it. The item's post in the gear forum
-		is updated.
+		is updated. Pick `rarity` From the price to let the price decide it again. The reply suggests a price for the
+		item's combat values.
 
 		**Permissions:**
 		- `Manage Server`
@@ -277,6 +303,14 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 			updates["name"] = new_name.strip()
 		if price is not None :
 			updates["price"] = price
+		if rarity is not None :
+			updates["rarity"] = Rarity.parse(rarity.value)
+		if weight is not None :
+			updates["weight"] = weight or None
+		if worn_slot is not None :
+			if item.kind != ACCESSORY :
+				return await interaction.followup.send("Only accessories have a worn slot.")
+			updates["slot"] = worn_slot.value
 		for field, value in (("description", description), ("effect", effect), ("effect_met", effect_met),
 		                     ("effect_unmet", effect_unmet)) :
 			change, text = self.text_update(value)
@@ -299,11 +333,13 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 			return await interaction.followup.send(str(e))
 		if not updates :
 			return await interaction.followup.send("Nothing to change: fill in at least one option.")
-		GearItemTransactions().update(item.id, **updates)
+		updated = GearItemTransactions().update(item.id, **updates)
 		logging.info(f"{interaction.user.name} edited gear item {item.name} in {interaction.guild.name}: "
 		             f"{', '.join(updates)}")
 		note = await self._post(item)
-		await interaction.followup.send(f"Updated **{updates.get('name', item.name)}**.{note}")
+		hint = Pricing.suggestion_text(updated.kind, updated.combat, updated.requirements, updated.price,
+		                               interaction.guild_id)
+		await interaction.followup.send(f"Updated **{updated.name}** ({Rarity.label(Rarity.of(updated))}).{note}{hint}")
 
 	# ============================================================
 	@app_commands.command(name="remove")
@@ -343,7 +379,8 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 			return await interaction.followup.send("The catalog is empty." if kind is None else
 			                                       f"The catalog has no {Packs.KIND_WORDS[kind][0]}.")
 		embeds = []
-		for section, title in ((WEAPON, "Weapons"), (ARMOR, "Armor"), (CONSUMABLE, "Consumables")) :
+		for section, title in ((WEAPON, "Weapons"), (ARMOR, "Armor"), (CONSUMABLE, "Consumables"),
+		                       (ACCESSORY, "Accessories")) :
 			lines = []
 			for entry in entries :
 				if entry.item.kind != section :

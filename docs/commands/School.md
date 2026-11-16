@@ -2,7 +2,7 @@
 layout: default
 title: School
 parent: Commands
-nav_order: 30
+nav_order: 31
 ---
 
 <h1>School</h1>

@@ -210,7 +210,7 @@ class TestCrafting(EconomyCase) :
 		self.assertEqual(CharacterGearTransactions().get(entry.id).status, Crafting.SALVAGED)
 		armor = self.item("Plate", "armor", 1000)
 		cursed = Crafting.give(self.character, armor, 1, Crafting.CURSED)[0]
-		self.assertEqual(Gear.sell_value(cursed, GUILD_ID), 0)
+		self.assertEqual(Gear.sell_value(cursed), 0)
 		Gear.equip(cursed)
 		cursed = CharacterGearTransactions().get(cursed.id)
 		self.assertIsNone(Gear.unequip(cursed))
@@ -219,7 +219,7 @@ class TestCrafting(EconomyCase) :
 		lifted = Crafting.uncurse(cursed)
 		self.assertEqual((lifted.name, lifted.quality), ("Plate", None))
 		masterwork = Crafting.give(self.character, self.sword, 1, Crafting.MASTERWORK)[0]
-		self.assertEqual(Gear.sell_value(masterwork, GUILD_ID), int(250 * 0.3 * 1.5))
+		self.assertEqual(Gear.sell_value(masterwork), int(250 * 0.3 * 1.5))
 
 	def test_quality_reaches_fights(self) :
 		from classes.combat.Loadout import Loadout

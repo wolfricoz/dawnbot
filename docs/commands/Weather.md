@@ -2,7 +2,7 @@
 layout: default
 title: Weather
 parent: Commands
-nav_order: 41
+nav_order: 42
 ---
 
 <h1>Weather</h1>

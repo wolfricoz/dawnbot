@@ -78,7 +78,7 @@ class TestProgression(DatabaseTestCase) :
 
 	def test_gains_follow_config(self) :
 		self.assertEqual(Progression.xp_for(GUILD_ID, "x" * 400), 80)
-		self.assertEqual(Progression.currency_for(GUILD_ID, "x" * 600), 20)
+		self.assertEqual(Progression.currency_for(GUILD_ID, "x" * 600), 75)
 		self.assertEqual(Progression.xp_for(GUILD_ID, "x" * 50), 0)
 		ConfigData().add_key(GUILD_ID, ConfigMapping.XP_GAIN, 10, overwrite=True)
 		self.assertEqual(Progression.xp_for(GUILD_ID, "x" * 400), 40)
