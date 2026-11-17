@@ -196,7 +196,7 @@ class BestiaryFlow :
 			if entry.get("preset", "standard") not in PRESETS :
 				raise ValueError(f"{name}, bestiary entry {entry['name']}: preset must be one of "
 				                 f"{', '.join(PRESETS)}.")
-			unknown = set(entry) - PACK_KEYS - {"name", "preset"}
+			unknown = set(entry) - PACK_KEYS - {"name", "preset", "loot"}
 			if unknown :
 				raise ValueError(f"{name}, bestiary entry {entry['name']}: unknown keys {', '.join(sorted(unknown))}.")
 			checked.append(entry)
@@ -233,8 +233,16 @@ class BestiaryFlow :
 			record = transactions.add(guild_id, entry["name"].strip(), creator_uid=creator_uid, **values)
 			if record is None :
 				skipped.append(entry["name"])
-			else :
-				added.append(record)
+				continue
+			if entry.get("loot") :
+				# Loot items the catalog doesn't have are left out (classes/economy/Loot.py).
+				from database.transactions.GearItemTransactions import GearItemTransactions
+
+				loot = dict(entry["loot"])
+				loot["items"] = [drop for drop in loot.get("items") or []
+				                 if GearItemTransactions().find(guild_id, drop.get("name", "")) is not None]
+				record = transactions.update(record.id, loot=loot) or record
+			added.append(record)
 		return added, skipped, problems
 
 	# ============================================================

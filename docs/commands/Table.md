@@ -2,7 +2,7 @@
 layout: default
 title: Table
 parent: Commands
-nav_order: 36
+nav_order: 40
 ---
 
 <h1>Table</h1>

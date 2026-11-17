@@ -2,7 +2,7 @@
 layout: default
 title: Time
 parent: Commands
-nav_order: 39
+nav_order: 43
 ---
 
 <h1>Time</h1>

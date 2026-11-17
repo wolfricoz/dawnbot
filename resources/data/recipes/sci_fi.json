@@ -1,0 +1,277 @@
+{
+	"name": "sci_fi",
+	"title": "Sci-fi",
+	"materials": [
+		{
+			"name": "Alloy Plate",
+			"price": 20,
+			"description": "Light, strong plating cut from old hulls."
+		},
+		{
+			"name": "Wiring",
+			"price": 10,
+			"description": "Spools of shielded wire."
+		},
+		{
+			"name": "Power Cell",
+			"price": 40,
+			"description": "A rechargeable energy cell."
+		},
+		{
+			"name": "Microchip",
+			"price": 45,
+			"description": "A control chip, salvaged or printed."
+		},
+		{
+			"name": "Polymer Resin",
+			"price": 15,
+			"description": "Printable resin for grips, casings and frames."
+		},
+		{
+			"name": "Synth Fiber",
+			"price": 18,
+			"description": "Woven synthetic fibre that turns blades."
+		},
+		{
+			"name": "Medical Nanites",
+			"price": 35,
+			"description": "A vial of dormant medical machines."
+		},
+		{
+			"name": "Coolant",
+			"price": 12,
+			"description": "A canister of supercooled fluid."
+		},
+		{
+			"name": "Fabricator Kit",
+			"price": 150,
+			"description": "A portable fabricator and tool set. Needed for most builds; not used up."
+		},
+		{
+			"name": "Med-Bay Kit",
+			"price": 150,
+			"description": "A compact medical synthesiser. Needed for medicine; not used up."
+		}
+	],
+	"recipes": [
+		{
+			"name": "Wound Sealant",
+			"result": "Wound Sealant",
+			"amount": 2,
+			"ingredients": {
+				"Polymer Resin": 1
+			},
+			"stat": "agility",
+			"dc": 8
+		},
+		{
+			"name": "Burn Foam",
+			"result": "Burn Foam",
+			"ingredients": {
+				"Coolant": 1,
+				"Polymer Resin": 1
+			},
+			"tool": "Med-Bay Kit",
+			"stat": "intelligence",
+			"dc": 11
+		},
+		{
+			"name": "Med-Spray",
+			"result": "Med-Spray",
+			"ingredients": {
+				"Medical Nanites": 1,
+				"Polymer Resin": 1
+			},
+			"tool": "Med-Bay Kit",
+			"stat": "intelligence",
+			"dc": 12
+		},
+		{
+			"name": "Nanite Injection",
+			"result": "Nanite Injection",
+			"ingredients": {
+				"Medical Nanites": 3
+			},
+			"tool": "Med-Bay Kit",
+			"stat": "intelligence",
+			"dc": 15
+		},
+		{
+			"name": "Shock Baton",
+			"result": "Shock Baton",
+			"ingredients": {
+				"Alloy Plate": 1,
+				"Wiring": 2,
+				"Power Cell": 1
+			},
+			"tool": "Fabricator Kit",
+			"stat": "intelligence",
+			"dc": 12
+		},
+		{
+			"name": "Mono-Edge Knife",
+			"result": "Mono-Edge Knife",
+			"ingredients": {
+				"Alloy Plate": 2
+			},
+			"tool": "Fabricator Kit",
+			"stat": "agility",
+			"dc": 13
+		},
+		{
+			"name": "Flechette Pistol",
+			"result": "Flechette Pistol",
+			"ingredients": {
+				"Alloy Plate": 2,
+				"Polymer Resin": 2
+			},
+			"tool": "Fabricator Kit",
+			"stat": "intelligence",
+			"dc": 13,
+			"days": 1
+		},
+		{
+			"name": "Beam Pistol",
+			"result": "Beam Pistol",
+			"ingredients": {
+				"Microchip": 1,
+				"Power Cell": 1,
+				"Alloy Plate": 1
+			},
+			"tool": "Fabricator Kit",
+			"stat": "intelligence",
+			"dc": 15,
+			"days": 2
+		},
+		{
+			"name": "Mesh Weave",
+			"result": "Mesh Weave",
+			"ingredients": {
+				"Synth Fiber": 4
+			},
+			"tool": "Fabricator Kit",
+			"stat": "agility",
+			"dc": 12,
+			"days": 1
+		},
+		{
+			"name": "Environment Suit",
+			"result": "Environment Suit",
+			"ingredients": {
+				"Synth Fiber": 4,
+				"Polymer Resin": 3,
+				"Power Cell": 1
+			},
+			"tool": "Fabricator Kit",
+			"stat": "intelligence",
+			"dc": 15,
+			"days": 2
+		}
+	],
+	"salvage": {
+		"Mono-Edge Knife": {
+			"Alloy Plate": 1
+		},
+		"Shock Baton": {
+			"Wiring": 1,
+			"Power Cell": 1
+		},
+		"Oscillating Cleaver": {
+			"Alloy Plate": 2,
+			"Power Cell": 1
+		},
+		"Kinetic Hammer": {
+			"Alloy Plate": 3,
+			"Power Cell": 1
+		},
+		"Fusion Torch": {
+			"Power Cell": 1,
+			"Wiring": 1
+		},
+		"Deflector Buckler": {
+			"Microchip": 1,
+			"Power Cell": 1
+		},
+		"Flechette Pistol": {
+			"Alloy Plate": 1,
+			"Polymer Resin": 1
+		},
+		"Beam Pistol": {
+			"Microchip": 1,
+			"Power Cell": 1
+		},
+		"Sonic Disruptor": {
+			"Microchip": 1,
+			"Wiring": 1
+		},
+		"Shard Scattergun": {
+			"Alloy Plate": 2
+		},
+		"Coil Carbine": {
+			"Alloy Plate": 2,
+			"Wiring": 2
+		},
+		"Beam Rifle": {
+			"Microchip": 1,
+			"Power Cell": 2
+		},
+		"Ion Lance": {
+			"Microchip": 1,
+			"Power Cell": 2,
+			"Wiring": 2
+		},
+		"Cryo Projector": {
+			"Coolant": 3,
+			"Alloy Plate": 1
+		},
+		"Plasma Repeater": {
+			"Power Cell": 3,
+			"Microchip": 1
+		},
+		"Rail Rifle": {
+			"Alloy Plate": 3,
+			"Wiring": 3
+		},
+		"Gravity Spike": {
+			"Microchip": 1,
+			"Alloy Plate": 1
+		},
+		"Flight Suit": {
+			"Synth Fiber": 1
+		},
+		"Mesh Weave": {
+			"Synth Fiber": 2
+		},
+		"Prismatic Coat": {
+			"Synth Fiber": 2
+		},
+		"Environment Suit": {
+			"Synth Fiber": 2,
+			"Polymer Resin": 1
+		},
+		"Security Armor": {
+			"Alloy Plate": 3
+		},
+		"Ballistic Hardsuit": {
+			"Alloy Plate": 3,
+			"Synth Fiber": 2
+		},
+		"Assault Hardsuit": {
+			"Alloy Plate": 4,
+			"Synth Fiber": 2
+		},
+		"Exo-Armor": {
+			"Alloy Plate": 5,
+			"Power Cell": 1,
+			"Microchip": 1
+		},
+		"Siege Plate": {
+			"Alloy Plate": 6,
+			"Power Cell": 1
+		},
+		"Thruster Pack": {
+			"Power Cell": 1,
+			"Alloy Plate": 1
+		}
+	}
+}

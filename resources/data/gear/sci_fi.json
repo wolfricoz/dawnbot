@@ -1,0 +1,1237 @@
+{
+	"name": "sci_fi",
+	"title": "Sci-fi",
+	"starting_currency": 1500,
+	"currency_name": "credits",
+	"items": [
+		{
+			"kind": "weapon",
+			"name": "Mono-Edge Knife",
+			"description": "A blade honed to a single molecule along its edge. Mind your fingers.",
+			"price": 120,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Slashing",
+				"dice": "1d6",
+				"attack_stat": "agility",
+				"damage_stat": "agility",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"light",
+					"keen"
+				],
+				"kind": "dagger"
+			},
+			"weight": 0.3
+		},
+		{
+			"kind": "weapon",
+			"name": "Shock Baton",
+			"description": "A security baton that bites with a crackling charge.",
+			"price": 150,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Lightning",
+				"dice": "1d6",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"light"
+				],
+				"kind": "club"
+			},
+			"weight": 0.8
+		},
+		{
+			"kind": "weapon",
+			"name": "Oscillating Cleaver",
+			"description": "A broad blade that hums as it shakes itself through armor.",
+			"price": 380,
+			"requirements": {
+				"strength": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Slashing",
+				"dice": "1d10",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [],
+				"kind": "sword"
+			},
+			"weight": 2
+		},
+		{
+			"kind": "weapon",
+			"name": "Kinetic Hammer",
+			"description": "A two-handed hammer whose head releases stored force on impact.",
+			"price": 1300,
+			"requirements": {
+				"strength": 7
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "2d8",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"two_handed",
+					"heavy"
+				],
+				"kind": "hammer"
+			},
+			"weight": 8
+		},
+		{
+			"kind": "weapon",
+			"name": "Fusion Torch",
+			"description": "A hull-cutting torch with the safety interlock removed.",
+			"price": 260,
+			"requirements": {},
+			"effect": "Cuts through doors and hull plating given a few minutes.",
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Fire",
+				"dice": "1d8",
+				"attack_stat": "agility",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": []
+			},
+			"weight": 2
+		},
+		{
+			"kind": "weapon",
+			"name": "Deflector Buckler",
+			"description": "A wrist emitter that throws up a shimmering disc of force.",
+			"price": 700,
+			"requirements": {
+				"agility": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "1d4",
+				"attack_stat": "agility",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"shield",
+					"light"
+				],
+				"kind": "shield"
+			},
+			"weight": 1
+		},
+		{
+			"kind": "weapon",
+			"name": "Flechette Pistol",
+			"description": "Fires bursts of needle-thin darts. Cheap, quiet and nasty.",
+			"price": 250,
+			"requirements": {
+				"agility": 3
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "1d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"light"
+				],
+				"kind": "pistol"
+			},
+			"weight": 0.7
+		},
+		{
+			"kind": "weapon",
+			"name": "Beam Pistol",
+			"description": "A sidearm that throws a focused beam of light hot enough to burn through cloth.",
+			"price": 480,
+			"requirements": {
+				"agility": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Fire",
+				"dice": "2d4",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [],
+				"kind": "pistol"
+			},
+			"weight": 0.8
+		},
+		{
+			"kind": "weapon",
+			"name": "Sonic Disruptor",
+			"description": "A dish-mouthed pistol whose pulse rattles bones and eardrums.",
+			"price": 600,
+			"requirements": {
+				"intelligence": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Sonic",
+				"dice": "2d4",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [],
+				"kind": "pistol"
+			},
+			"weight": 1
+		},
+		{
+			"kind": "weapon",
+			"name": "Shard Scattergun",
+			"description": "Spits a fan of crystalline shards at close range.",
+			"price": 650,
+			"requirements": {
+				"strength": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				],
+				"kind": "scattergun"
+			},
+			"weight": 3
+		},
+		{
+			"kind": "weapon",
+			"name": "Coil Carbine",
+			"description": "Magnetic coils hurl slugs at a speed no powder ever reached.",
+			"price": 900,
+			"requirements": {
+				"perception": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				],
+				"kind": "rifle"
+			},
+			"weight": 3.5
+		},
+		{
+			"kind": "weapon",
+			"name": "Beam Rifle",
+			"description": "A long-barrelled beam weapon with a cooling shroud.",
+			"price": 1200,
+			"requirements": {
+				"perception": 5,
+				"agility": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Fire",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				],
+				"kind": "rifle"
+			},
+			"weight": 3.5
+		},
+		{
+			"kind": "weapon",
+			"name": "Ion Lance",
+			"description": "A shoulder-braced emitter that throws a crawling arc of lightning.",
+			"price": 1450,
+			"requirements": {
+				"intelligence": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Lightning",
+				"dice": "2d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				]
+			},
+			"weight": 5
+		},
+		{
+			"kind": "weapon",
+			"name": "Cryo Projector",
+			"description": "Sprays a supercooled mist that freezes on contact.",
+			"price": 1500,
+			"requirements": {
+				"strength": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Frost",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"heavy"
+				]
+			},
+			"weight": 7
+		},
+		{
+			"kind": "weapon",
+			"name": "Plasma Repeater",
+			"description": "A heavy support weapon that cycles bolts of plasma from a back-mounted cell.",
+			"price": 2600,
+			"requirements": {
+				"strength": 7
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Fire",
+				"dice": "2d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"heavy"
+				]
+			},
+			"weight": 12
+		},
+		{
+			"kind": "weapon",
+			"name": "Rail Rifle",
+			"description": "A rifle as long as its owner, firing a slug that crosses a hangar before you hear it.",
+			"price": 3400,
+			"requirements": {
+				"perception": 7,
+				"strength": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d10",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"keen",
+					"loading"
+				],
+				"kind": "rifle"
+			},
+			"weight": 8
+		},
+		{
+			"kind": "weapon",
+			"name": "Gravity Spike",
+			"description": "A thrown spike that drags its target down with a burst of local gravity.",
+			"price": 2200,
+			"requirements": {
+				"agility": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "2d6",
+				"attack_stat": "agility",
+				"damage_stat": "strength",
+				"hit_mod": 1,
+				"range": "melee",
+				"properties": [
+					"thrown"
+				],
+				"kind": "javelin"
+			},
+			"weight": 1
+		},
+		{
+			"kind": "armor",
+			"name": "Ship Fatigues",
+			"description": "Practical coveralls with a dozen pockets and a name tape.",
+			"price": 50,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "clothing",
+				"ac": 0,
+				"dt": 0,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 1
+		},
+		{
+			"kind": "armor",
+			"name": "Flight Suit",
+			"description": "A pressure-rated suit for pilots; it seals at the collar in an emergency.",
+			"price": 300,
+			"requirements": {},
+			"effect": "Seals against vacuum for a few minutes with a helmet.",
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "clothing",
+				"ac": 0,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 2
+		},
+		{
+			"kind": "armor",
+			"name": "Mesh Weave",
+			"description": "Undergarments woven with flexible armored fibre.",
+			"price": 400,
+			"requirements": {
+				"strength": 3
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 2
+		},
+		{
+			"kind": "armor",
+			"name": "Prismatic Coat",
+			"description": "A long coat whose mirrored weave scatters beams.",
+			"price": 700,
+			"requirements": {
+				"agility": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 1
+			},
+			"weight": 2.5
+		},
+		{
+			"kind": "armor",
+			"name": "Environment Suit",
+			"description": "A sealed survival suit with its own air for an hour.",
+			"price": 900,
+			"requirements": {
+				"endurance": 4
+			},
+			"effect": "Keeps out vacuum, gas and cold for an hour.",
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 5
+		},
+		{
+			"kind": "armor",
+			"name": "Security Armor",
+			"description": "Station security plates over a padded undersuit.",
+			"price": 1100,
+			"requirements": {
+				"strength": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "medium",
+				"ac": 2,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 8
+		},
+		{
+			"kind": "armor",
+			"name": "Ballistic Hardsuit",
+			"description": "A full sealed hardsuit rated for boarding actions.",
+			"price": 1500,
+			"requirements": {
+				"strength": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "medium",
+				"ac": 2,
+				"dt": 2,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 11
+		},
+		{
+			"kind": "armor",
+			"name": "Assault Hardsuit",
+			"description": "Military hardsuit with layered composite plates and a combat visor.",
+			"price": 2300,
+			"requirements": {
+				"strength": 6,
+				"endurance": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "medium",
+				"ac": 3,
+				"dt": 2,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 13
+		},
+		{
+			"kind": "armor",
+			"name": "Exo-Armor",
+			"description": "A powered frame that carries its own plating and most of its weight.",
+			"price": 2900,
+			"requirements": {
+				"strength": 7
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "heavy",
+				"ac": 3,
+				"dt": 3,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 18
+		},
+		{
+			"kind": "armor",
+			"name": "Siege Plate",
+			"description": "Walking armor built for holding a corridor against everything.",
+			"price": 3500,
+			"requirements": {
+				"strength": 8,
+				"endurance": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "heavy",
+				"ac": 4,
+				"dt": 3,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 26
+		},
+		{
+			"kind": "consumable",
+			"name": "Wound Sealant",
+			"description": "A spray that foams into a seal over a wound.",
+			"price": 25,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "bleeding",
+				"turns": 2
+			},
+			"weight": 0.1
+		},
+		{
+			"kind": "consumable",
+			"name": "Burn Foam",
+			"description": "Cooling foam for plasma and laser burns.",
+			"price": 30,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "burning",
+				"turns": 2
+			},
+			"weight": 0.2
+		},
+		{
+			"kind": "consumable",
+			"name": "Neural Reset",
+			"description": "A temple patch that snaps a stunned mind back online.",
+			"price": 50,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "stunned",
+				"turns": 2
+			},
+			"weight": 0.05
+		},
+		{
+			"kind": "consumable",
+			"name": "Med-Spray",
+			"description": "A pressurised canister of painkiller and skin glue.",
+			"price": 60,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "2d4",
+				"condition": null,
+				"turns": 2
+			},
+			"weight": 0.3
+		},
+		{
+			"kind": "consumable",
+			"name": "Focus Chip",
+			"description": "A disposable implant that sharpens reflexes for a minute or two.",
+			"price": 130,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "inspired",
+				"turns": 2
+			},
+			"weight": 0.05
+		},
+		{
+			"kind": "consumable",
+			"name": "Shield Booster",
+			"description": "Clips to a belt and throws a brief personal barrier.",
+			"price": 170,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "2d4",
+				"condition": "shielded",
+				"turns": 2
+			},
+			"weight": 0.3
+		},
+		{
+			"kind": "consumable",
+			"name": "Nanite Injection",
+			"description": "A swarm of medical machines that rebuild tissue from the inside.",
+			"price": 220,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "4d4",
+				"condition": null,
+				"turns": 2
+			},
+			"weight": 0.1
+		},
+		{
+			"kind": "consumable",
+			"name": "Regen Gel",
+			"description": "A pack of living gel that keeps knitting a wound shut.",
+			"price": 280,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "regenerating",
+				"turns": 3
+			},
+			"weight": 0.2
+		},
+		{
+			"kind": "accessory",
+			"name": "Data Visor",
+			"description": "A clear visor that paints readouts across what you see.",
+			"price": 220,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "head",
+			"weight": 0.2
+		},
+		{
+			"kind": "accessory",
+			"name": "Comm Pendant",
+			"description": "A short-range communicator worn on a chain.",
+			"price": 90,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "neck",
+			"weight": 0.05
+		},
+		{
+			"kind": "accessory",
+			"name": "Grip Gloves",
+			"description": "Gloves with micro-suction pads for climbing hulls.",
+			"price": 120,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "hands",
+			"weight": 0.2
+		},
+		{
+			"kind": "accessory",
+			"name": "Mag Boots",
+			"description": "Boots that lock to metal decks when the gravity fails.",
+			"price": 260,
+			"requirements": {},
+			"effect": "Keep you on your feet on a metal surface in zero gravity.",
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "feet",
+			"weight": 1.5
+		},
+		{
+			"kind": "accessory",
+			"name": "ID Ring",
+			"description": "A signet ring that holds your identity and credit link.",
+			"price": 60,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "ring",
+			"weight": 0.02
+		},
+		{
+			"kind": "accessory",
+			"name": "Thruster Pack",
+			"description": "A compact backpack thruster for short hops and zero-gravity work.",
+			"price": 900,
+			"requirements": {},
+			"effect": "Short powered jumps, and moving freely in zero gravity (the GM sets the limits).",
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "back",
+			"weight": 6
+		}
+	],
+	"bestiary": [
+		{
+			"name": "Hull Vermin",
+			"preset": "minion",
+			"description": "Scuttling pests that live in a ship's ducts.",
+			"attack_name": "Bite",
+			"damage_type": "Piercing",
+			"behavior": "aggressive",
+			"reward_xp": 5,
+			"reward_currency": 0
+		},
+		{
+			"name": "Pirate Boarder",
+			"preset": "standard",
+			"description": "First through the airlock, and loud about it.",
+			"special": {
+				"strength": 6,
+				"perception": 5,
+				"endurance": 6,
+				"charisma": 3,
+				"intelligence": 4,
+				"agility": 5,
+				"luck": 4
+			},
+			"level": 1,
+			"weapons": [
+				"Shock Baton",
+				"Flechette Pistol"
+			],
+			"armor": "Mesh Weave",
+			"behavior": "aggressive",
+			"reward_xp": 20,
+			"reward_currency": 30,
+			"loot": {
+				"currency": "2d10",
+				"items": [
+					{
+						"name": "Flechette Pistol",
+						"chance": 25,
+						"amount": 1
+					},
+					{
+						"name": "Wound Sealant",
+						"chance": 40,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Pirate Gunner",
+			"preset": "standard",
+			"description": "Hangs back by the bulkhead and shoots.",
+			"special": {
+				"strength": 4,
+				"perception": 7,
+				"endurance": 5,
+				"charisma": 3,
+				"intelligence": 5,
+				"agility": 6,
+				"luck": 5
+			},
+			"level": 2,
+			"weapons": [
+				"Coil Carbine"
+			],
+			"armor": "Mesh Weave",
+			"behavior": "cautious",
+			"reward_xp": 25,
+			"reward_currency": 35,
+			"loot": {
+				"currency": "2d10",
+				"items": [
+					{
+						"name": "Power Cell",
+						"chance": 50,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Patrol Automaton",
+			"preset": "standard",
+			"description": "A security machine walking the same route it has walked for a century.",
+			"attack_name": "Stun Ray",
+			"damage_type": "Lightning",
+			"behavior": "aggressive",
+			"reward_xp": 25,
+			"reward_currency": 0,
+			"loot": {
+				"currency": "0",
+				"items": [
+					{
+						"name": "Microchip",
+						"chance": 60,
+						"amount": 1
+					},
+					{
+						"name": "Wiring",
+						"chance": 60,
+						"amount": 2
+					}
+				]
+			}
+		},
+		{
+			"name": "Corporate Enforcer",
+			"preset": "elite",
+			"description": "A company problem-solver in a very good hardsuit.",
+			"special": {
+				"strength": 6,
+				"perception": 7,
+				"endurance": 6,
+				"charisma": 5,
+				"intelligence": 6,
+				"agility": 6,
+				"luck": 5
+			},
+			"level": 4,
+			"weapons": [
+				"Beam Rifle"
+			],
+			"armor": "Ballistic Hardsuit",
+			"behavior": "cautious",
+			"reward_xp": 60,
+			"reward_currency": 120,
+			"loot": {
+				"currency": "5d10",
+				"items": [
+					{
+						"name": "Beam Rifle",
+						"chance": 20,
+						"amount": 1
+					},
+					{
+						"name": "Nanite Injection",
+						"chance": 40,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Pirate Captain",
+			"preset": "elite",
+			"description": "Has a price on their head in four systems and is proud of it.",
+			"special": {
+				"strength": 7,
+				"perception": 6,
+				"endurance": 6,
+				"charisma": 8,
+				"intelligence": 5,
+				"agility": 6,
+				"luck": 7
+			},
+			"level": 5,
+			"weapons": [
+				"Oscillating Cleaver",
+				"Beam Pistol"
+			],
+			"armor": "Security Armor",
+			"behavior": "vengeful",
+			"reward_xp": 80,
+			"reward_currency": 250,
+			"loot": {
+				"currency": "8d10",
+				"items": [
+					{
+						"name": "Oscillating Cleaver",
+						"chance": 30,
+						"amount": 1
+					},
+					{
+						"name": "Shield Booster",
+						"chance": 50,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Void Leviathan",
+			"preset": "boss",
+			"description": "A creature the size of a frigate that drifts between asteroids and swallows ships whole.",
+			"attack_name": "Crushing Coil",
+			"damage_type": "Blunt",
+			"behavior": "vengeful",
+			"reward_xp": 200,
+			"reward_currency": 0,
+			"loot": {
+				"currency": "0",
+				"items": [
+					{
+						"name": "Regen Gel",
+						"chance": 50,
+						"amount": 2
+					}
+				]
+			}
+		}
+	],
+	"merchants": [
+		{
+			"name": "Dockside Salvage",
+			"description": "A cluttered stall on the docking ring; everything was something else once.",
+			"markup": 1.0,
+			"buys": [
+				"weapon",
+				"armor",
+				"material"
+			],
+			"pays": 1.0,
+			"services": [
+				"repair"
+			],
+			"haggle_dc": 12,
+			"restock": "weekly",
+			"stock": [
+				{
+					"name": "Mono-Edge Knife"
+				},
+				{
+					"name": "Shock Baton"
+				},
+				{
+					"name": "Fusion Torch"
+				},
+				{
+					"name": "Flechette Pistol",
+					"quantity": 3
+				},
+				{
+					"name": "Ship Fatigues"
+				},
+				{
+					"name": "Mesh Weave"
+				},
+				{
+					"name": "Alloy Plate"
+				},
+				{
+					"name": "Wiring"
+				},
+				{
+					"name": "Power Cell"
+				},
+				{
+					"name": "Oscillating Cleaver",
+					"quantity": 1,
+					"chance": 40
+				},
+				{
+					"name": "Security Armor",
+					"quantity": 1,
+					"chance": 40
+				}
+			]
+		},
+		{
+			"name": "Station Infirmary",
+			"description": "White walls, quiet machines and a medic on every shift.",
+			"markup": 1.2,
+			"buys": [
+				"consumable"
+			],
+			"pays": 1.0,
+			"services": [
+				"healing"
+			],
+			"restock": "daily",
+			"stock": [
+				{
+					"name": "Wound Sealant"
+				},
+				{
+					"name": "Burn Foam"
+				},
+				{
+					"name": "Neural Reset"
+				},
+				{
+					"name": "Med-Spray"
+				},
+				{
+					"name": "Nanite Injection",
+					"quantity": 3
+				},
+				{
+					"name": "Medical Nanites"
+				},
+				{
+					"name": "Regen Gel",
+					"quantity": 1,
+					"chance": 30
+				}
+			]
+		},
+		{
+			"name": "Licensed Arms Dealer",
+			"description": "A permit on the wall, a range in the back, and a back room for the good stuff.",
+			"markup": 1.3,
+			"buys": [
+				"weapon",
+				"armor",
+				"accessory"
+			],
+			"pays": 1.0,
+			"services": [
+				"training",
+				"identify"
+			],
+			"haggle_dc": 15,
+			"restock": "weekly",
+			"stock": [
+				{
+					"name": "Beam Pistol",
+					"quantity": 2
+				},
+				{
+					"name": "Sonic Disruptor",
+					"quantity": 1
+				},
+				{
+					"name": "Shard Scattergun",
+					"quantity": 1
+				},
+				{
+					"name": "Coil Carbine",
+					"quantity": 1
+				},
+				{
+					"name": "Data Visor"
+				},
+				{
+					"name": "Grip Gloves"
+				},
+				{
+					"name": "Mag Boots"
+				},
+				{
+					"name": "Ballistic Hardsuit",
+					"quantity": 1,
+					"chance": 50
+				},
+				{
+					"name": "Beam Rifle",
+					"quantity": 1,
+					"chance": 30
+				},
+				{
+					"name": "Rail Rifle",
+					"quantity": 1,
+					"chance": 10
+				}
+			]
+		},
+		{
+			"name": "Crew Bunkhouse",
+			"description": "Stacked sleeping pods for spacers between contracts.",
+			"markup": 1.0,
+			"buys": [],
+			"pays": 1.0,
+			"services": [
+				"lodging"
+			],
+			"lodging_price": 140,
+			"restock": "manual",
+			"stock": [
+				{
+					"name": "Focus Chip"
+				}
+			]
+		}
+	],
+	"kits": {
+		"Pilot": [
+			"Flight Suit",
+			"Flechette Pistol",
+			"Comm Pendant"
+		],
+		"Engineer": [
+			"Fusion Torch",
+			"Ship Fatigues",
+			"Grip Gloves"
+		],
+		"Medic": [
+			"Med-Spray",
+			"Wound Sealant",
+			"Ship Fatigues",
+			"Shock Baton"
+		],
+		"Marine": [
+			"Coil Carbine",
+			"Mesh Weave"
+		],
+		"Smuggler": [
+			"Beam Pistol",
+			"Ship Fatigues",
+			"ID Ring"
+		],
+		"Scientist": [
+			"Data Visor",
+			"Ship Fatigues",
+			"Shock Baton"
+		]
+	}
+}

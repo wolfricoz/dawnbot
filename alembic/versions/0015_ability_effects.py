@@ -6,7 +6,7 @@ the nearest catalog effects, and drops effect, condition, area, secondary and pa
 are spelled out here so the migration does not depend on the catalog changing later. A downgrade brings the old columns
 back empty (abilities keep their effects column's data only until the downgrade).
 
-Comes before 0026_drop_legacy_combat, which waits until the old tables have been imported.
+Comes before 0029_drop_legacy_combat, which waits until the old tables have been imported.
 
 Revision ID: 0015_ability_effects
 Revises: 0014_bad_streak

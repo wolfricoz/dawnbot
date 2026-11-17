@@ -196,7 +196,9 @@ class RumorFlow :
 			return await reply(interaction, f"{character.name} already listened for rumors today.")
 		FlavorTransactions().mark_listen(interaction.guild_id, character.id, day)
 		location = WorldFlow.where_is(interaction.guild, character.id)
-		outcome, heard = RumorFlow.overhear(character, 0, location)
+		from classes.economy import Lifestyle
+
+		outcome, heard = RumorFlow.overhear(character, Lifestyle.rumor_bonus(character), location)
 		await RumorFlow.spread(interaction.client)
 		lines = [f"👂 {character.name} keeps an ear out ({Checks.OUTCOME_LABELS[outcome]})."]
 		lines += [f"• *{text}*" for text in heard] or ["Nothing worth repeating today."]

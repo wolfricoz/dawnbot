@@ -1,0 +1,249 @@
+{
+	"name": "modern",
+	"title": "Modern",
+	"materials": [
+		{
+			"name": "Metal Parts",
+			"price": 15,
+			"description": "Bolts, brackets and offcuts from a hardware store."
+		},
+		{
+			"name": "Duct Tape",
+			"price": 8,
+			"description": "Holds the world together."
+		},
+		{
+			"name": "Fabric",
+			"price": 10,
+			"description": "A bolt of heavy cloth."
+		},
+		{
+			"name": "Leather",
+			"price": 20,
+			"description": "A tanned hide, ready to cut."
+		},
+		{
+			"name": "Aramid Sheet",
+			"price": 60,
+			"description": "Tough synthetic fibre sheeting that stops blades and small rounds."
+		},
+		{
+			"name": "Medical Supplies",
+			"price": 25,
+			"description": "Gauze, saline, antiseptic and gloves."
+		},
+		{
+			"name": "Electronics",
+			"price": 40,
+			"description": "A bag of circuit boards, wires and batteries."
+		},
+		{
+			"name": "Polymer Stock",
+			"price": 30,
+			"description": "Molded plastic parts for grips and frames."
+		},
+		{
+			"name": "Toolbox",
+			"price": 120,
+			"description": "A full set of hand tools. Needed for most builds; not used up."
+		},
+		{
+			"name": "Sewing Kit",
+			"price": 50,
+			"description": "Needles, heavy thread and an awl. Needed for clothing and armor; not used up."
+		}
+	],
+	"recipes": [
+		{
+			"name": "Bandage Roll",
+			"result": "Bandage Roll",
+			"amount": 2,
+			"ingredients": {
+				"Medical Supplies": 1
+			},
+			"stat": "agility",
+			"dc": 8
+		},
+		{
+			"name": "First Aid Kit",
+			"result": "First Aid Kit",
+			"ingredients": {
+				"Medical Supplies": 2
+			},
+			"stat": "intelligence",
+			"dc": 10
+		},
+		{
+			"name": "Burn Dressing",
+			"result": "Burn Dressing",
+			"ingredients": {
+				"Medical Supplies": 1,
+				"Fabric": 1
+			},
+			"stat": "intelligence",
+			"dc": 11
+		},
+		{
+			"name": "Trauma Pack",
+			"result": "Trauma Pack",
+			"ingredients": {
+				"Medical Supplies": 4,
+				"Fabric": 1
+			},
+			"stat": "intelligence",
+			"dc": 15
+		},
+		{
+			"name": "Telescopic Baton",
+			"result": "Telescopic Baton",
+			"ingredients": {
+				"Metal Parts": 2
+			},
+			"tool": "Toolbox",
+			"stat": "agility",
+			"dc": 12
+		},
+		{
+			"name": "Tactical Knife",
+			"result": "Tactical Knife",
+			"ingredients": {
+				"Metal Parts": 2,
+				"Polymer Stock": 1
+			},
+			"tool": "Toolbox",
+			"stat": "agility",
+			"dc": 13
+		},
+		{
+			"name": "Stun Gun",
+			"result": "Stun Gun",
+			"ingredients": {
+				"Electronics": 2,
+				"Polymer Stock": 1
+			},
+			"tool": "Toolbox",
+			"stat": "intelligence",
+			"dc": 13
+		},
+		{
+			"name": "Leather Jacket",
+			"result": "Leather Jacket",
+			"ingredients": {
+				"Leather": 3
+			},
+			"tool": "Sewing Kit",
+			"stat": "agility",
+			"dc": 11,
+			"days": 1
+		},
+		{
+			"name": "Concealable Vest",
+			"result": "Concealable Vest",
+			"ingredients": {
+				"Aramid Sheet": 3,
+				"Fabric": 2
+			},
+			"tool": "Sewing Kit",
+			"stat": "agility",
+			"dc": 15,
+			"days": 2
+		},
+		{
+			"name": "Compound Bow",
+			"result": "Compound Bow",
+			"ingredients": {
+				"Polymer Stock": 2,
+				"Metal Parts": 2
+			},
+			"tool": "Toolbox",
+			"stat": "intelligence",
+			"dc": 14,
+			"days": 2
+		}
+	],
+	"salvage": {
+		"Pocket Knife": {
+			"Metal Parts": 1
+		},
+		"Crowbar": {
+			"Metal Parts": 2
+		},
+		"Telescopic Baton": {
+			"Metal Parts": 2
+		},
+		"Tactical Knife": {
+			"Metal Parts": 1,
+			"Polymer Stock": 1
+		},
+		"Camp Hatchet": {
+			"Metal Parts": 1
+		},
+		"Ballistic Shield": {
+			"Polymer Stock": 3,
+			"Metal Parts": 1
+		},
+		"Stun Gun": {
+			"Electronics": 1
+		},
+		"Compact Pistol": {
+			"Metal Parts": 1,
+			"Polymer Stock": 1
+		},
+		"Service Pistol": {
+			"Metal Parts": 2,
+			"Polymer Stock": 1
+		},
+		"Heavy Revolver": {
+			"Metal Parts": 3
+		},
+		"Compound Bow": {
+			"Polymer Stock": 1,
+			"Metal Parts": 1
+		},
+		"Pump Shotgun": {
+			"Metal Parts": 3
+		},
+		"Hunting Rifle": {
+			"Metal Parts": 3
+		},
+		"Submachine Gun": {
+			"Metal Parts": 3,
+			"Polymer Stock": 1
+		},
+		"Patrol Carbine": {
+			"Metal Parts": 3,
+			"Polymer Stock": 1
+		},
+		"Precision Rifle": {
+			"Metal Parts": 4,
+			"Polymer Stock": 1
+		},
+		"Leather Jacket": {
+			"Leather": 2
+		},
+		"Motorcycle Leathers": {
+			"Leather": 2,
+			"Fabric": 1
+		},
+		"Concealable Vest": {
+			"Aramid Sheet": 1,
+			"Fabric": 1
+		},
+		"Tactical Vest": {
+			"Aramid Sheet": 2,
+			"Fabric": 1
+		},
+		"Plate Carrier": {
+			"Aramid Sheet": 2,
+			"Polymer Stock": 2
+		},
+		"Assault Armor": {
+			"Aramid Sheet": 3,
+			"Polymer Stock": 2
+		},
+		"Bomb Disposal Suit": {
+			"Aramid Sheet": 5,
+			"Fabric": 3
+		}
+	}
+}

@@ -129,6 +129,12 @@ def after_fight(fight, rng: random.Random | None = None) -> list[str] :
 			for entry, condition in wear(fight_items(combatant), rng) :
 				lines.append(f"🔧 {character.name}'s **{entry.name}** is now {label(condition).lower()}.")
 		lines += [f"🏹 {character.name}: {line}" for line in Carry.use_ammo(fight.guild_id, combatant, rng)]
+		# Daily charges of magic items used in this fight are spent (classes/gear/Magic.py).
+		from classes.gear import Magic
+
+		for key, used in (getattr(combatant, "ability_uses", None) or {}).items() :
+			if str(key).startswith("item:") and str(key)[5:].isdigit() :
+				Magic.spend_charges(int(str(key)[5:]), int(used or 0))
 	return lines
 
 

@@ -65,7 +65,7 @@ Migrations start at `0023`; the legacy combat drop is renumbered so it stays las
 
 ## 4. Phase 1 as built
 
-Migration `0023_economy_money` (the legacy drop is now `0026_drop_legacy_combat`).
+Migration `0023_economy_money` (the legacy drop is now `0029_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -78,7 +78,7 @@ Migration `0023_economy_money` (the legacy drop is now `0026_drop_legacy_combat`
 
 ## 5. Phase 2 as built
 
-Migration `0024_economy_equipment` (the legacy drop is now `0026_drop_legacy_combat`).
+Migration `0024_economy_equipment` (the legacy drop is now `0029_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -95,7 +95,7 @@ Migration `0024_economy_equipment` (the legacy drop is now `0026_drop_legacy_com
 
 ## 6. Phase 3 as built
 
-Migration `0025_economy_trading` (the legacy drop is now `0026_drop_legacy_combat`).
+Migration `0025_economy_trading` (the legacy drop is now `0029_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -106,3 +106,87 @@ Migration `0025_economy_trading` (the legacy drop is now `0026_drop_legacy_comba
 | Payments | `/currency pay <character> <member> <theirs> <amount> [note]` after a confirmation; ledger reason `pay` on both sides; the payee's player gets a DM. |
 | Market | `MARKET` (a forum, `/config singlechannels`), `MARKET_FEE` (5) and `MARKET_DAYS` (14) in `/config roleplay`. `/market sell` lists an item (it leaves the inventory) and posts it; `/market browse`; `/market withdraw` (seller or staff). Each post has Buy and Withdraw buttons that survive restarts (`MarketButton`, registered in `setup_hook`). Buying: the buyer picks a character (not the seller's player), pays the price (`market`), the seller gets the price (`market`) minus the fee (`market_fee`, rounded down) and a DM. Posts are renamed (🟢 open, ✅ sold, ⚪ withdrawn, ⌛ expired) and locked when they end. `tasks/MarketTask.py` ends expired listings every 10 minutes. No market in free mode. |
 | Histories | `/currency history` and `/economy audit` show the note for trades, payments, market sales and fees, repairs and refills; the report labels them. |
+
+## 7. Phase 4 as built
+
+Migration `0026_economy_merchants` (the legacy drop is now `0029_drop_legacy_combat`).
+
+| Topic | As built |
+|---|---|
+| Data | `merchants` (name, description, avatar, `location_ids`, faction, `markup`, `buys` kinds, `pays`, `services`, `lodging_price`, `haggle_dc`, `restock`, `last_restock`, `cycle`), `merchant_stock` (item, `quantity` (empty unlimited), `chance` %, own `price`, `in_stock`, `available`), `merchant_haggles` (per character, item and restock cycle: discount, or a refusal), `lodgings` (character, location, merchant, `paid_until`), and `character_gear.stash_location_id` (status `stashed`). |
+| Rules | `classes/economy/Merchants.py`. A merchant without locations trades anywhere, otherwise only in channels of its locations. Price: (line price or catalog price) × markup × Charisma × faction (the merchant's faction, else the item's) × haggle discount, at least 65% of price × markup; free mode 0. Buying runs in one transaction (`MerchantTransactions.buy`: stock count, currency, ledger `buy` noted "item from merchant", materials stack, `source = merchant`) after lock, faction and carry checks. Selling: `Gear.sell_value` × `pays`, only kinds the merchant buys. Legendary items can't be stocked. |
+| Restocks | `daily`, `weekly` (default) or `manual`. A restock sets every line to its quantity, rolls rotating lines against their chance, and starts a new cycle (haggles and refusals are per cycle). `tasks/MerchantTask.py` checks every 15 minutes; `/merchant restock` does it now. Stock added or changed with `/merchant stock` is in stock straight away. |
+| Haggling | `/merchant haggle`: Charisma against `haggle_dc`, once per item per cycle: success 10% off that item, strong success or crit 20%, failure nothing, bad failure or fumble a refusal until the next restock. Posted publicly. |
+| Services | `repair` (`/merchant repair`: the shop repair price × markup, ledger `repair`) and `lodging` (`/merchant lodge [weeks]`: `lodging_price` per week, added to time already paid, ledger `lodging`). Healing, training and enchanting come with phases 5 and 6. Merchants are shown as embeds with their name and avatar, not through webhooks; travelling merchants are moved by hand with `/merchant place`. |
+| Stashes | `/stash put` (needs a paid room at this location; not equipped items), `/stash take` (only needs being at the location, even after the rent ran out), `/stash list`. Stashed items leave the inventory, don't weigh anything and stay out of fights. |
+| Shop mode | `SHOP_MODE` in `/config roleplay`: `global` (default), `both` (`/shop` lists and sells only Common and Uncommon items), `merchants` (`/shop browse`, `/shop buy`, `/shop repair` and `/gear sell` point to the merchants). Starting gear in the interview always comes from the catalog. `/shop refill` works in every mode. |
+| Commands | `/merchant browse | buy | sell | haggle | repair | lodge` for players; `/merchant add | edit | remove | place | stock | restock` for staff and the GM role. |
+
+## 8. Phase 5 as built
+
+Migration `0027_economy_magic` (the legacy drop is now `0029_drop_legacy_combat`).
+
+| Topic | As built |
+|---|---|
+| Data | `gear_items.enchantments` (`activation`, `effects`, `charges`, `recharge`, `bonus`, `item_bonus`, `damage_type`), `unidentified_name`, `crafted_only`; `character_gear.attuned`, `charges_left`, `charges_day`, `extra_charges`, `identified`; `bestiary.loot`; `recipes.enchanting`; tables `enchant_designs` and `fight_loot`. |
+| Enchantments | `classes/gear/Magic.py`. One enchantment per item: active (effect catalog) or passive (passive catalog), plus an optional +1 (`bonus`: +1 to hit for weapons, +1 DT for armor; with masterwork at most +2). Budgets by rarity as decided; effect tiers are each effect's minimum tier, and the catalogs top out at Normal, so Very rare means one effect of any tier or two up to Normal. Common items can't be enchanted. `/armory enchant` (Manage Server) sets or clears it; cards show it. |
+| Fights | `Loadout.character_stats` adds a working item's active enchantment as an ability (id `item:<entry id>`, the item's tier by rarity, `fixed_bonus` = Uncommon 3 / Rare 4 / Very rare 5 / Legendary `item_bonus` or 6, `uses` = its charges) and passive entries with no AP cost. `Resolver.ability_mod` uses `fixed_bonus` instead of the stat everywhere abilities add a stat (attack, DC, damage, healing); a crippled stat doesn't give an item disadvantage. Daily charges used in a fight are counted when it ends (`Condition.after_fight`). |
+| Attunement | An enchantment works only when the item is attuned and identified, and armor and accessories also worn. `ATTUNEMENT_SLOTS` (3, `/config roleplay`), legendary characters +1. `/gear attune` spends the day's downtime; `/gm gear attune` is free; `/gear unattune` (cursed items hold on). Attuning identifies. |
+| Identification | `IDENTIFY` (toggle, off). Enchanted loot arrives unidentified (shown by `unidentified_name`, does nothing). Identify by attuning, `/gear identify` (downtime, Intelligence against 12 / 14 / 16 / 18 by rarity) or a merchant's `identify` service (10% of the catalog price, at least 10, × markup; ledger `service`). |
+| Designs | `/enchant design` (follows `ABILITY_CREATION`): a weapon, armor or accessory from the catalog, Uncommon to Very rare, one or two effects. Posted to `CHARACTER_REVIEW` with Approve / Deny buttons that survive restarts (`EnchantButton`); the player gets a DM. Approval (`classes/economy/Enchanting.py`) adds a crafted-only catalog item (base values + enchantment, price = base + 1,250 / 2,500 / 9,000) and an enchanting recipe (the base item; DC 12 / 15 / 18; 0 / 2 / 5 days). `/enchant designs` lists them. |
+| Crafting | An enchanting recipe needs a spellcaster (a character knowing a spell) or the recipe's occupation. A crit on an enchanted item adds a charge (weapons and armor are also masterwork); a bad failure curses enchanted accessories too. Crafted-only items are never bought (`Gear.lock_reason`). |
+| Loot | `/bestiary loot <entry> [currency] [items] [clear]` (`3d10`, `Healing Draught 50%, Hedge Knife 10% x2`). After a fight the GM presses **Loot** on the GM panel: `classes/economy/Loot.py` rolls each defeated bestiary enemy's loot once per fight and posts it with **Claim** and **Settle (GM)** buttons (`LootButton`). Winning players claim items; on Settle, a single claimant gets the item, contested items go to the GM's pick (`LOOT_MODE` `gm`, default) or the highest d20 (`claim`, ties reroll); unclaimed items are left behind; currency splits evenly among the winners (ledger `loot`). `reward_currency` stays as the GM's suggested reward. |
+
+## 9. Phase 6 as built
+
+Migration `0028_economy_spending` (the legacy drop is now `0029_drop_legacy_combat`). Property stays for later.
+
+| Topic | As built |
+|---|---|
+| Data | `occupations.kit` (catalog item ids) and `occupations.trains`; `characters.lifestyle` and `lifestyle_paid_until`; the `trainings` table (character, weapon entry, target tier, days done and needed, paid, trainer, state). |
+| Healers | `classes/economy/Spending.py`. Injury lines may start with `[serious]` or `[grave]` (minor otherwise); the GM panel's injury form has a "How bad?" field. A merchant with the `healing` service: `/merchant heal` removes one injury for 350 / 1,000 / 3,500 × markup × Charisma (ledger `healing`); the Injuries field goes away with its last line. |
+| Starter kits | `STARTER_KITS` (toggle, on). `/downtime occupation kit:` sets an occupation's kit (catalog names, `none` clears). A new character gets it when its interview is submitted, with the starting gear, as `source = kit`; kit items sell for nothing (`Pricing.sell_value`). |
+| Training | One step per training: Awful → Poor 500 / 1 day, Poor → Average 1,500 / 2, Average → Good 5,000 / 5, Good → Excellent 14,000 / 10. Paid up front with `/merchant train` (service `training`; × markup × Charisma; ledger `training`) or in `/downtime train ... member: trainer:` to another player's character whose occupation `trains` (paid to that character in one transfer; never between one player's own characters). Every `/downtime train` spends the day; the last day sets the proficiency through `Proficiency.set_weapon(staff=True)`. One open training per weapon; the two-at-Good-or-Excellent limit is checked when it starts. |
+| Lifestyle | `classes/economy/Lifestyle.py`, `LIFESTYLE` (toggle, off). Weekly costs as decided; no choice means Modest. `/lifestyle set` pays the first week; `/lifestyle view`. `tasks/LifestyleTask.py` charges every approved character whose week is due (hourly check), dropping to the best tier it can afford. Destitute −2 and Poor −1 to haggling; Comfortable and up restore Worn gear each week; Wealthy and Aristocratic +2 to haggling and to `/rumor listen`. Ledger `lifestyle`. |
+
+## 10. Post-apocalyptic pack as built
+
+`resources/data/gear/post_apocalyptic.json` and `resources/data/recipes/post_apocalyptic.json`. All names and items are
+original; a test checks a list of names from existing games stays out.
+
+| Topic | As built |
+|---|---|
+| Pack format | Gear packs may now carry `currency_name` (a suggestion), `kits` ({occupation name: [item names]}), `merchants` (templates: the `merchants` fields plus `stock` [{name, quantity, chance, price}]) and bestiary entries with `loot`. `/armory import` gives the kits to occupations of the same name that have none (`Packs.apply_kits`) and suggests the currency name; `/merchant import <pack>` (GMs) adds the merchants without locations, stocking what the catalog has (`Packs.import_merchants`); `/bestiary import` keeps loot items the catalog has. |
+| Gear | 17 weapons (melee scrap weapons, pipe and service pistols, scatterguns, rifles, a crossbow, an arc caster and a flame projector; guns are ranged without a damage stat and use ammunition when `AMMO` is on), 10 armors (clothing to heavy), 8 consumables, 5 accessories. Every item has a weight. Prices run Common to Rare (up to 3,400); ranged weapons are priced above the fantasy-fitted price hint on purpose. Suggested currency: scrip. |
+| Recipes | 11 materials (two of them tools: Toolkit, Chem Lab), 12 recipes (medicine, scrap weapons, pipe pistol, crossbow, armor, the arc caster) and salvage lists for 25 items. |
+| Bestiary | 7 entries from minion to boss (rats, hounds, raiders, a security drone, a warlord, an irradiated behemoth), with loot. |
+| Merchants | A salvage yard (repairs, buys weapons, armor and materials), a clinic (healing, buys consumables) and a caravan quartermaster (rooms, training, rotating rare stock). |
+| Kits | Scavenger, Mechanic, Medic, Guard, Trader, Hunter. |
+
+## 11. Modern pack as built
+
+`resources/data/gear/modern.json` and `resources/data/recipes/modern.json`, original content with no brand or product
+names (a test checks a list of them stays out).
+
+| Topic | As built |
+|---|---|
+| Gear | 17 weapons (pocket and tactical knives, bat, crowbar, baton, hatchet, a stun gun, pistols, a revolver, a compound bow, shotgun, rifles, a submachine gun, a carbine, a precision rifle, a ballistic shield), 8 armors (street clothes to a bomb disposal suit), 7 consumables and 6 accessories, all weighted. Common to Rare (up to 3,300). The stun gun is melee Lightning with a non-lethal note for the GM. Suggested currency: dollars. |
+| Recipes | 10 materials (Toolbox and Sewing Kit are tools), 10 recipes (medical supplies, baton, knife, stun gun, leather jacket, concealable vest, compound bow), salvage for 23 items. |
+| Bestiary | 7 entries: a stray dog, a street thug, a gang enforcer, a crooked guard, a contract killer, a crime boss and an escaped lab specimen (boss), with loot. |
+| Merchants | A pawn shop (repairs; buys weapons, armor, accessories), an urgent care clinic (healing), an outdoor and range supply store (training, repairs) and a roadside motel (rooms). |
+| Kits | Police Officer, Paramedic, Mechanic, Security Guard, Student, Hunter. |
+
+## 12. Sci-fi pack as built
+
+`resources/data/gear/sci_fi.json` and `resources/data/recipes/sci_fi.json`, original content with no names from existing
+franchises (a test checks a list of them stays out).
+
+| Topic | As built |
+|---|---|
+| Gear | 17 weapons (mono-edge knife, shock baton, oscillating cleaver, kinetic hammer, fusion torch, deflector buckler, flechette, beam and sonic pistols, shard scattergun, coil carbine, beam rifle, ion lance, cryo projector, plasma repeater, rail rifle, gravity spike), 10 armors (ship fatigues to siege plate), 8 consumables and 6 accessories (one a thruster pack), all weighted. Common to Rare (up to 3,500). Energy weapons use Fire, Lightning, Frost and Sonic; guns are ranged without a damage stat and use ammunition when `AMMO` is on. Suggested currency: credits. |
+| Recipes | 10 materials (Fabricator Kit and Med-Bay Kit are tools), 10 recipes (medicine, shock baton, knife, flechette and beam pistols, mesh weave, environment suit), salvage for 27 items. |
+| Bestiary | 7 entries: hull vermin, a pirate boarder and gunner, a patrol automaton, a corporate enforcer, a pirate captain and a void leviathan (boss), with loot. |
+| Merchants | Dockside salvage (repairs), a station infirmary (healing), a licensed arms dealer (training, identify, rotating rare stock) and a crew bunkhouse (rooms). |
+| Kits | Pilot, Engineer, Medic, Marine, Smuggler, Scientist. |
+
+All three genre packs from the proposal are in. Property stays for later.

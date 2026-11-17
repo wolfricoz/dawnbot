@@ -218,6 +218,10 @@ class Occupations(Base) :
 	faction_tier: Mapped[str | None] = mapped_column(String(16), nullable=True)
 	# The kinds of gear its characters can repair: weapon, clothing, light, medium, heavy, accessory.
 	repairs: Mapped[list | None] = mapped_column(JSON, nullable=True)
+	# The starter kit a new character with it gets: [catalog item ids] (design/economy.md, phase 6).
+	kit: Mapped[list | None] = mapped_column(JSON, nullable=True)
+	# Its characters can train other players' characters in weapons (/downtime train).
+	trains: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
 	__table_args__ = (
 		Index('uq_occupation_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -306,6 +310,9 @@ class Characters(Timestamps, Base) :
 	speaking_language_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	# The last omen drawn: {"card", "deck", "effect" (boon, bane or none), "used", "drawn_at"}.
 	omen: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	# The lifestyle the character lives (classes/economy/Lifestyle.py) and until when it is paid; used with LIFESTYLE.
+	lifestyle: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	lifestyle_paid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 	__table_args__ = (
 		Index('uq_character_uid_guild_name', 'uid', 'guild_id', text('lower(name)'), unique=True),
@@ -418,6 +425,13 @@ class GearItems(Timestamps, Base) :
 	weight: Mapped[float | None] = mapped_column(Float, nullable=True)
 	# Where an accessory is worn: head, neck, back, hands, feet or ring (classes/gear/Slots.py).
 	slot: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# A magic item's enchantment (classes/gear/Magic.py): {"activation", "effects": [{"key"}], "charges", "recharge",
+	# "bonus", "item_bonus", "damage_type"}; empty for a plain item.
+	enchantments: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	# What an unidentified copy is called ("a humming silver ring").
+	unidentified_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+	# Only made by crafting (a player's approved enchanted design): never sold by a shop or merchant.
+	crafted_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
 	__table_args__ = (
 		Index('uq_gear_item_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -453,6 +467,15 @@ class CharacterGear(Base) :
 	condition: Mapped[str] = mapped_column(String(16), default="good", server_default="good")
 	# A ranged weapon's ammunition die (d12 to d4, or empty when it ran out); unset is full.
 	ammo_die: Mapped[str | None] = mapped_column(String(8), nullable=True)
+	# The location whose stash holds it, while status is "stashed" (classes/economy/Merchants.py).
+	stash_location_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	# Magic items (classes/gear/Magic.py): attuned items work; charges left today (for daily charges) and the day they
+	# were counted; extra charges from a crafting crit; identified is False for loot that dropped unidentified.
+	attuned: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+	charges_left: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	charges_day: Mapped[str | None] = mapped_column(String(10), nullable=True)
+	extra_charges: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+	identified: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
 	                                             onupdate=func.now())
@@ -626,6 +649,8 @@ class Bestiary(Base) :
 	ability_ids: Mapped[list] = mapped_column(JSON, default=list)
 	reward_xp: Mapped[int] = mapped_column(Integer, default=0)
 	reward_currency: Mapped[int] = mapped_column(Integer, default=0)
+	# What it drops (classes/economy/Loot.py): {"currency": "3d10", "items": [{"name", "chance", "amount"}]}.
+	loot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 	# When special is set ({stat: value}), HP, AC, AP and Sequence are derived like a character's, at this level,
 	# and it fights with the catalog weapons and armor below instead of its own attack.
 	special: Mapped[dict | None] = mapped_column(JSON, nullable=True)
@@ -1273,6 +1298,8 @@ class Recipes(Base) :
 	mishap_table_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("roll_tables.id", ondelete="SET NULL"),
 	                                                    nullable=True)
 	pack: Mapped[str | None] = mapped_column(String(50), nullable=True)
+	# An enchanting recipe: only spellcasters, or characters with the recipe's occupation, can make it.
+	enchanting: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
 	__table_args__ = (
 		Index('uq_recipe_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -1437,6 +1464,129 @@ class MarketListings(Base) :
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 	finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# location_ids: where it trades (locations.id). buys: the gear kinds it buys (empty buys nothing). services: repair,
+# lodging (later also healing, training, enchanting). restock is daily, weekly or manual; cycle counts restocks, so
+# haggles last until the next one (design/economy.md, phase 4).
+class Merchants(Base) :
+	"""An NPC shop at one or more locations."""
+	__tablename__ = "merchants"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+	location_ids: Mapped[list] = mapped_column(JSON, default=list)
+	faction_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	markup: Mapped[float] = mapped_column(Float, default=1.0)
+	buys: Mapped[list] = mapped_column(JSON, default=list)
+	pays: Mapped[float] = mapped_column(Float, default=1.0)
+	services: Mapped[list] = mapped_column(JSON, default=list)
+	lodging_price: Mapped[int] = mapped_column(Integer, default=0)
+	haggle_dc: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	restock: Mapped[str] = mapped_column(String(16), default="weekly")
+	last_restock: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+	cycle: Mapped[int] = mapped_column(Integer, default=0)
+
+	__table_args__ = (
+		Index('uq_merchant_guild_name', 'guild_id', text('lower(name)'), unique=True),
+	)
+
+
+# quantity: how many a restock brings (empty is unlimited). chance: the percent chance it is there after a restock
+# (100 always). in_stock: how many are left now (empty is unlimited); available: whether it is there this cycle.
+class MerchantStock(Base) :
+	"""An item a merchant sells."""
+	__tablename__ = "merchant_stock"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	merchant_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("merchants.id", ondelete="CASCADE"), index=True)
+	gear_item_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("gear_items.id", ondelete="CASCADE"))
+	quantity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	chance: Mapped[int] = mapped_column(Integer, default=100)
+	price: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	in_stock: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	available: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+# One per character, merchant, item and restock cycle: the discount won (percent), or refused (a bad failure: the
+# merchant won't deal with the character until the next restock; gear_item_id is then empty).
+class MerchantHaggles(Base) :
+	"""A character's haggle with a merchant."""
+	__tablename__ = "merchant_haggles"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	merchant_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("merchants.id", ondelete="CASCADE"), index=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"))
+	gear_item_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	cycle: Mapped[int] = mapped_column(Integer)
+	discount: Mapped[int] = mapped_column(Integer, default=0)
+	refused: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Lodgings(Base) :
+	"""A room a character rents at a location: it opens the stash there."""
+	__tablename__ = "lodgings"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	location_id: Mapped[int] = mapped_column(BigInteger)
+	merchant_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	paid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+# enchantments as on gear_items. state is pending, approved or denied; approval makes result_item_id (a crafted-only
+# catalog item) and recipe_id (its enchanting recipe).
+class EnchantDesigns(Base) :
+	"""A player's design for an enchanted item, waiting for staff review."""
+	__tablename__ = "enchant_designs"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	creator_uid: Mapped[int] = mapped_column(BigInteger)
+	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	base_item_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("gear_items.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	rarity: Mapped[str] = mapped_column(String(16))
+	enchantments: Mapped[dict] = mapped_column(JSON, default=dict)
+	state: Mapped[str] = mapped_column(String(16), default="pending")
+	review_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	result_item_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	recipe_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# items: [{"item_id", "name", "amount", "claims": [character ids], "winner": character id}]. state is open or settled.
+class FightLoot(Base) :
+	"""What the defeated enemies of a fight dropped, waiting to be shared."""
+	__tablename__ = "fight_loot"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	fight_id: Mapped[int] = mapped_column(BigInteger)
+	channel_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	currency: Mapped[int] = mapped_column(Integer, default=0)
+	items: Mapped[list] = mapped_column(JSON, default=list)
+	mode: Mapped[str] = mapped_column(String(16), default="gm")
+	state: Mapped[str] = mapped_column(String(16), default="open")
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# A character learning to handle a weapon better: paid up front, then days_needed days of downtime raise the
+# weapon's proficiency to target (classes/economy/Training.py). state is open, done or cancelled.
+class Trainings(Base) :
+	"""Weapon training in progress."""
+	__tablename__ = "trainings"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	entry_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("character_gear.id", ondelete="CASCADE"))
+	target: Mapped[str] = mapped_column(String(16))
+	days_done: Mapped[int] = mapped_column(Integer, default=0)
+	days_needed: Mapped[int] = mapped_column(Integer)
+	paid: Mapped[int] = mapped_column(BigInteger, default=0)
+	trainer: Mapped[str | None] = mapped_column(String(100), nullable=True)
+	state: Mapped[str] = mapped_column(String(16), default="open")
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # ============================================================

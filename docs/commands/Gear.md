@@ -2,7 +2,7 @@
 layout: default
 title: Gear
 parent: Commands
-nav_order: 19
+nav_order: 20
 ---
 
 <h1>Gear</h1>
@@ -52,6 +52,34 @@ broken. The rules live in classes/gear/Gear.py.
 > Sells an item for a share of its catalog price: 30% at average Charisma, from 20% to 40% depending on your
 > character's Charisma. Masterwork sells for half as much again and cursed gear for nothing. Nothing is paid in
 > free mode. You are asked to confirm first.
+
+---
+
+### `attune`
+
+**Usage:** `/gear attune <character> <item>`
+
+> Spends the character's downtime for the day attuning to a magic item, so its enchantment works (armor and
+> accessories also have to be worn). A character can be attuned to 3 items (ATTUNEMENT_SLOTS), a legendary one
+> to one more. Attuning also identifies an unidentified item. A GM can attune it on the spot instead.
+
+---
+
+### `unattune`
+
+**Usage:** `/gear unattune <character> <item>`
+
+> Ends your character's attunement to a magic item, freeing the slot. A cursed item won't let go until a GM
+> lifts the curse.
+
+---
+
+### `identify`
+
+**Usage:** `/gear identify <character> <item>`
+
+> Spends the character's downtime for the day studying an unidentified item: Intelligence against 10 plus 2 per
+> rarity step (12 for Uncommon, 14 Rare, 16 Very rare, 18 Legendary). A success reveals what it is.
 
 ---
 

@@ -11,7 +11,7 @@ from classes.characters.Death import Death
 from classes.combat.Legendary import Legendary
 from classes.kernel.ConfigData import ConfigData
 from classes.combat.Proficiency import Proficiency
-from classes.gear import Condition
+from classes.gear import Condition, Magic
 from classes.gear.Gear import Gear
 from database.database import CharacterGear, Characters, GearItems
 from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST
@@ -178,6 +178,29 @@ class GM(commands.GroupCog, name="GM", group_name="gm") :
 		- `Manage Messages`
 		"""
 		await self._mark(interaction, member, character, item, BROKEN)
+
+	# ============================================================
+	@gear.command(name="attune")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(character=_characters, item=_owned)
+	async def gear_attune(self, interaction: discord.Interaction, member: discord.Member, character: str, item: str) :
+		"""
+		Attunes a member's character to a magic item on the spot, without a day of downtime (a short pause in a
+		scene). The attunement limit still applies.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		record, entry = await self._entry(interaction, member, character, item)
+		if entry is None :
+			return
+		problem = Magic.attune_problem(record, entry, GearItemTransactions().get(entry.gear_item_id))
+		if problem :
+			return await interaction.followup.send(problem, ephemeral=True)
+		Magic.attune(entry)
+		logging.info(f"GM {interaction.user.name} attuned gear {entry.id} of character {record.id}")
+		await interaction.followup.send(f"{record.name} is attuned to **{entry.name}**.", ephemeral=True)
 
 	# ============================================================
 	@gear.command(name="repair")

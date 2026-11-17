@@ -3,7 +3,7 @@
 Status: proposal, 15 November 2026; Rico answered the open questions the same day (section 16). **All six phases are
 built** on branch `feature/combat`: phase A (migration `0016_checks_tables`, section 20) and phases B to F (migrations
 `0017_world` to `0021_rumors_omens`, section 21), and the pieces first left out (migration `0022_roleplay_extras`,
-section 22). `0026_drop_legacy_combat` was renumbered so it stays last. The doc
+section 22). `0029_drop_legacy_combat` was renumbered so it stays last. The doc
 covers the 15 tools picked from the idea list: languages, scenes and post order, the chronicle, calendar and weather,
 locations and travel, rumors, GM checks, secret rolls, roll tables, the job board, faction reputation, downtime,
 crafting, letters and omens. Not picked: idle-channel prompts, the memorial wall and the relationship web.

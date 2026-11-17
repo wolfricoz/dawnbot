@@ -75,6 +75,13 @@ class Resolver :
 		return ability.get("aim") or FX.ENEMY
 
 	# ============================================================
+	def ability_mod(self, actor: Combatant, ability: dict) -> int :
+		"""The stat modifier an ability adds, or a magic item's own bonus."""
+		if ability.get("fixed_bonus") is not None :
+			return int(ability["fixed_bonus"])
+		return self.mod(actor, ability.get("stat") or "intelligence")
+
+	# ============================================================
 	def ability_uses_left(self, actor: Combatant, ability: dict) -> int | None :
 		limit = ability.get("uses", FX.uses(ability["tier"]))
 		if limit is None :
@@ -266,7 +273,7 @@ class Resolver :
 	def ability_dc(self, actor: Combatant, ability: dict) -> int :
 		precise = FX.PRECISE_BONUS if FX.PRECISE in (ability.get("modifiers") or []) else 0
 		focused = 2 if C.has(actor.conditions, C.FOCUSED) else 0
-		return 10 + self.mod(actor, ability.get("stat") or "intelligence") + FX.dc_bonus(ability["tier"]) + precise \
+		return 10 + self.ability_mod(actor, ability) + FX.dc_bonus(ability["tier"]) + precise \
 		       + focused + P.total(actor.passives, P.DC, P.DC_BONUS)
 
 	# ============================================================
@@ -295,7 +302,10 @@ class Resolver :
 		and unmet requirements (the stat is still the ability's)."""
 		stat = ability.get("stat") or "intelligence"
 		magic = bool(ability.get("magic"))
-		bonuses = [Rules.Bonus(Rules.STAT_SHORT.get(stat, stat), self.mod(actor, stat)),
+		# A magic item's effect rolls with the item's own bonus instead of a stat (classes/gear/Magic.py).
+		stat_bonus = Rules.Bonus("item", int(ability["fixed_bonus"])) if ability.get("fixed_bonus") is not None else \
+			Rules.Bonus(Rules.STAT_SHORT.get(stat, stat), self.mod(actor, stat))
+		bonuses = [stat_bonus,
 		           Rules.Bonus("armor", int((actor.stats.get("armor") or {}).get("ability_hit_mod") or 0))]
 		if accuracy :
 			bonuses.append(Rules.Bonus("accuracy", accuracy))
@@ -311,7 +321,8 @@ class Resolver :
 		passive_hit, _ = self.passive_roll(actor, None, magic, False)
 		if passive_hit :
 			bonuses.append(Rules.Bonus("passives", passive_hit))
-		disadvantage = self.crippled(actor, stat) or C.has(actor.conditions, C.CURSED)
+		disadvantage = (ability.get("fixed_bonus") is None and self.crippled(actor, stat)) or \
+		               C.has(actor.conditions, C.CURSED)
 		crit_from = int(actor.stats.get("crit_min", 20)) - crit - P.total(actor.passives, P.CRIT, P.CRIT_WIDEN)
 		return self.fortune(actor, lambda : Rules.roll_attack(
 			bonuses, self.effective_ac(target), crit_from, int(actor.stats.get("fumble_max", 1)),
@@ -322,7 +333,7 @@ class Resolver :
 	def ability_damage_bonus(self, actor: Combatant, ability: dict, type_name: str | None) -> int :
 		magic = bool(ability.get("magic"))
 		_, passive_damage = self.passive_roll(actor, type_name, magic, False)
-		return self.mod(actor, ability.get("stat") or "intelligence") + passive_damage + self.damage_conditions(actor)
+		return self.ability_mod(actor, ability) + passive_damage + self.damage_conditions(actor)
 
 	# ============================================================
 	def deal(self, actor: Combatant, target: Combatant, amount: int, type_name: str | None, magic: bool) -> int :
@@ -480,7 +491,7 @@ class Resolver :
 	# ============================================================
 	def heal_amount(self, actor: Combatant, ability: dict, effect: dict) -> tuple[int, str] :
 		dice = self.effect_dice(ability, effect)
-		bonus = self.mod(actor, ability.get("stat") or "intelligence") + P.total(actor.passives, P.HEAL_POWER,
+		bonus = self.ability_mod(actor, ability) + P.total(actor.passives, P.HEAL_POWER,
 		                                                                         P.HEAL_BONUS)
 		amount, rolls = Rules.roll_dice(dice, bonus, rng=self.rng)
 		return max(1, amount), f"{dice} {rolls} {bonus:+d}"
@@ -562,7 +573,7 @@ class Resolver :
 		dice = self.effect_dice(ability, effect)
 		turns = self.effect_turns(ability, effect) + 1
 		C.add(actor.conditions, C.COMPANION, turns=turns, dice=dice, type=self.type_of(ability, effect),
-		      bonus=self.mod(actor, ability.get("stat") or "intelligence"), label=effect["name"])
+		      bonus=self.ability_mod(actor, ability), label=effect["name"])
 		self.track(actor, C.COMPANION)
 		self.say(f"→ {effect['name']}: a companion joins {actor.name} for {turns} turns ({dice}).")
 		return True

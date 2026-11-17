@@ -15,6 +15,7 @@ from classes.characters.CharacterFlow import CharacterFlow
 from classes.combat import Rules
 from classes.combat.AutoComplete import AutoComplete
 from classes.combat.Proficiency import Proficiency
+from classes.economy import Merchants
 from classes.gear import Carry, Condition, Pricing
 from classes.gear.Gear import ACCESSORY, ARMOR, CONSUMABLE, Gear, ShopItem, WEAPON
 from classes.gear.GearCard import GearCard
@@ -102,7 +103,12 @@ class Shop(commands.GroupCog, name="Shop", group_name="shop") :
 		"""
 		await interaction.response.defer(ephemeral=True)
 		guild_id = interaction.guild_id
-		items = Gear.shop_items(guild_id, Access.of(interaction.user), kind.value if kind else None)
+		closed = Merchants.global_shop_problem(guild_id)
+		if closed :
+			return await interaction.followup.send(closed, ephemeral=True)
+		items = [shop_item for shop_item in Gear.shop_items(guild_id, Access.of(interaction.user),
+		                                                    kind.value if kind else None)
+		         if Merchants.global_shop_sells(shop_item.item)]
 		if not items :
 			return await interaction.followup.send("The shop has nothing for sale yet.", ephemeral=True)
 		lines = [GearCard.line(shop_item.item, shop_item.locked) for shop_item in items]
@@ -220,6 +226,9 @@ class Shop(commands.GroupCog, name="Shop", group_name="shop") :
 		instead.
 		"""
 		await interaction.response.defer(ephemeral=True)
+		closed = Merchants.global_shop_problem(interaction.guild_id, "repair gear")
+		if closed :
+			return await interaction.followup.send(closed, ephemeral=True)
 		record, entry, catalog_item = await self._own_entry(interaction, character, item)
 		if entry is None :
 			return

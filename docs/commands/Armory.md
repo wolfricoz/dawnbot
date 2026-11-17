@@ -59,6 +59,22 @@ nav_order: 3
 
 ---
 
+### `enchant`
+
+**Usage:** `/armory enchant <name> <activation> <effect> <second_effect> <third_effect> <charges> <recharge> <bonus> <item_bonus> <damage_type> <unidentified_name> <clear>`
+
+> Makes a catalog item a magic item, built from the same effects as abilities: `active` effects are used in a
+> fight for AP like an ability (with `charges` that come back after each fight or each day), `passive` ones are
+> always on. `bonus` adds +1 to hit (weapons) or +1 DT (armor). The item's rarity sets the budget: Uncommon one
+> effect up to Weak; Rare one up to Normal or two up to Weak; Very rare one up to Strong or two up to Normal;
+> Legendary up to three of any tier. Its effects roll with the item's own bonus (Uncommon +3, Rare +4, Very rare
+> +5, Legendary `item_bonus`). A magic item only works for an attuned character.
+>
+> **Permissions:**
+> - `Manage Server`
+
+---
+
 ### `remove`
 
 **Usage:** `/armory remove <name>`
@@ -93,9 +109,12 @@ nav_order: 3
 
 **Usage:** `/armory import <pack> <refresh>`
 
-> Copies a ready-made genre pack (like Fantasy) into the catalog. Items whose name the catalog already has are
-> skipped, so importing again only adds what is missing and never overwrites your changes. When a gear forum is
-> set, every new item is posted there. You can edit or remove imported items like any other.
+> Copies a ready-made genre pack (like Fantasy or Post-apocalyptic) into the catalog. Items whose name the
+> catalog already has are skipped, so importing again only adds what is missing and never overwrites your
+> changes. When a gear forum is set, every new item is posted there. You can edit or remove imported items like
+> any other. Occupations named like the pack's get its starter kits when they have none; the reply suggests the
+> pack's currency name. Import its recipes with /craft recipe import, its bestiary with /bestiary import and its
+> merchants with /merchant import.
 >
 > With `refresh`, items that came from the pack instead get the pack's current combat values (for catalogs
 > imported before the combat rework); nothing else about them changes.

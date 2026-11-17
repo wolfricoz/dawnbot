@@ -40,13 +40,26 @@ Once a day: work, study, craft, carouse or repair gear.
 
 ---
 
+### `train`
+
+**Usage:** `/downtime train <character> <weapon> <member> <trainer>`
+
+> Spends the character's downtime for the day training with a weapon. Training is paid first, to a merchant
+> (/merchant train) or here to another player's character whose occupation trains (`member` and `trainer`):
+> Awful to Poor 500, Poor to Average 1,500, Average to Good 5,000, Good to Excellent 14,000. It then takes 1,
+> 2, 5 or 10 days; the last one raises the weapon's proficiency.
+
+---
+
 ### `occupation`
 
-**Usage:** `/downtime occupation <occupation> <pay> <stat> <table> <seer> <repairs>`
+**Usage:** `/downtime occupation <occupation> <pay> <stat> <table> <seer> <repairs> <kit> <trains>`
 
 > Sets an occupation's downtime work: its pay, the stat it rolls and a roll table for a crit. `seer` lets its
 > characters read omens for others (/omen read). `repairs` lists the gear its characters can repair with
 > /downtime repair, like `weapon, medium, heavy` for a blacksmith (armor goes by its class); `none` clears it.
+> `kit` is the starter kit a new character with the occupation gets (STARTER_KITS); `trains` lets its
+> characters train other players' characters in weapons for pay.
 >
 > **Permissions:**
 > - `Manage Messages`, or the GM role

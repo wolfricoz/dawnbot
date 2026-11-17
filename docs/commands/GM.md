@@ -2,7 +2,7 @@
 layout: default
 title: GM
 parent: Commands
-nav_order: 21
+nav_order: 22
 ---
 
 <h1>GM</h1>
@@ -54,6 +54,18 @@ Game master tools: giving and taking characters' gear, currency, abilities and l
 
 > Marks an item of a member's character as broken. It stays in the inventory but does nothing in a fight until
 > it is repaired.
+>
+> **Permissions:**
+> - `Manage Messages`
+
+---
+
+### `gear attune`
+
+**Usage:** `/gm gear attune <member> <character> <item>`
+
+> Attunes a member's character to a magic item on the spot, without a day of downtime (a short pause in a
+> scene). The attunement limit still applies.
 >
 > **Permissions:**
 > - `Manage Messages`

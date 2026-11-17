@@ -68,6 +68,7 @@ class GMPanel(discord.ui.View) :
 		self.add_item(GMButton("death", "Death / spare", 4, disabled=not running or not fight.lethal))
 		self.add_item(GMButton("rewards", "Rewards", 4, discord.ButtonStyle.success, disabled=not ended))
 		self.add_item(GMButton("aftermath", "Injuries / broken gear", 4, disabled=state == SETUP))
+		self.add_item(GMButton("loot", "Loot", 4, discord.ButtonStyle.success, disabled=not ended))
 
 	# ============================================================
 	async def interaction_check(self, interaction: discord.Interaction) -> bool :
@@ -463,6 +464,14 @@ class GMPanel(discord.ui.View) :
 			      max_length=300)], typed))
 
 	# ============================================================
+	async def do_loot(self, interaction: discord.Interaction, fight: Fight) -> None :
+		"""Rolls what the defeated bestiary enemies dropped and posts it for the winners to claim."""
+		from views.economy.LootButtons import post
+
+		await interaction.response.defer(ephemeral=True)
+		await post(interaction, fight)
+
+	# ============================================================
 	async def do_aftermath(self, interaction: discord.Interaction, fight: Fight) -> None :
 		"""Picks a character in the fight, then adds an injury to its sheet or marks one of its items broken."""
 		from classes.gear.Gear import Gear
@@ -479,12 +488,15 @@ class GMPanel(discord.ui.View) :
 				if values[0] == "injury" :
 					async def written(form_interaction: discord.Interaction, fields: list[str]) :
 						await form_interaction.response.defer(ephemeral=True)
+						severity = (fields[1] or "").strip().lower() if len(fields) > 1 else ""
 						await CombatFlow.add_injury(form_interaction.client, form_interaction, self.fight_id,
-						                            character_id, fields[0])
+						                            character_id, fields[0],
+						                            severity if severity in ("serious", "grave") else None)
 
 					return await choice_interaction.response.send_modal(Form("Injury", [
 						Field("What happened to them?", "A deep cut across the left arm", long=True,
-						      max_length=300)], written))
+						      max_length=300),
+						Field("How bad? minor, serious or grave", "minor", required=False, max_length=10)], written))
 
 				async def broken(item_interaction: discord.Interaction, picked: list[str]) :
 					await item_interaction.response.defer(ephemeral=True)

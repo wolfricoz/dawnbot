@@ -97,6 +97,8 @@ class Gear :
 		"""Why the member may not buy the item, or None. Event, staff-only and legendary items are never bought."""
 		if Rarity.of(item) == Rarity.LEGENDARY :
 			return "is legendary and only given out by staff"
+		if getattr(item, "crafted_only", False) :
+			return "is only made by crafting"
 		requirements = Access.for_gear(item)
 		if Access.hidden(requirements) or any(requirement.kind == "staff_only" for requirement in requirements) :
 			return "is only given out by staff"
@@ -158,6 +160,11 @@ class Gear :
 		"""
 		if item.guild_id != character.guild_id :
 			return None, "That item is not sold on this server."
+		if source == SHOP :
+			from classes.economy import Merchants
+
+			if not Merchants.global_shop_sells(item) :
+				return None, f"{item.name} is sold by merchants, not the catalog shop (/merchant browse)."
 		# Reputation tags on the item's post read this character's standing.
 		access = access.for_character(character.id)
 		locked = Gear.lock_reason(item, access)

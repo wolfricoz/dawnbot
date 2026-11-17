@@ -36,6 +36,8 @@ from views.letters.LetterButtons import LetterButton
 from views.scenes.SceneButtons import ChronicleButton, SceneButton
 from views.combat.BoardButtons import CombatButton
 from views.economy.JobButtons import JobButton
+from views.economy.EnchantButtons import EnchantButton
+from views.economy.LootButtons import LootButton
 from views.economy.MarketButtons import MarketButton
 from views.tables.TableButtons import TableRollButton
 
@@ -171,7 +173,7 @@ async def setup_hook() :
 	bot.add_view(AbilityReviewButtons())
 	bot.add_dynamic_items(RoleplayChannelButton, StatSelect, StatButton, CombatButton, CheckButton, TableRollButton,
 	                      SceneButton, ChronicleButton, UnderstandButton, LetterButton,
-	                      JobButton, MarketButton)
+	                      JobButton, MarketButton, EnchantButton, LootButton)
 
 	directories = ["modules", "listeners", "tasks"]
 	loaded = []
