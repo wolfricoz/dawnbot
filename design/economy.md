@@ -176,4 +176,17 @@ names (a test checks a list of them stays out).
 | Merchants | A pawn shop (repairs; buys weapons, armor, accessories), an urgent care clinic (healing), an outdoor and range supply store (training, repairs) and a roadside motel (rooms). |
 | Kits | Police Officer, Paramedic, Mechanic, Security Guard, Student, Hunter. |
 
-Still to come: the sci-fi pack, and property.
+## 12. Sci-fi pack as built
+
+`resources/data/gear/sci_fi.json` and `resources/data/recipes/sci_fi.json`, original content with no names from existing
+franchises (a test checks a list of them stays out).
+
+| Topic | As built |
+|---|---|
+| Gear | 17 weapons (mono-edge knife, shock baton, oscillating cleaver, kinetic hammer, fusion torch, deflector buckler, flechette, beam and sonic pistols, shard scattergun, coil carbine, beam rifle, ion lance, cryo projector, plasma repeater, rail rifle, gravity spike), 10 armors (ship fatigues to siege plate), 8 consumables and 6 accessories (one a thruster pack), all weighted. Common to Rare (up to 3,500). Energy weapons use Fire, Lightning, Frost and Sonic; guns are ranged without a damage stat and use ammunition when `AMMO` is on. Suggested currency: credits. |
+| Recipes | 10 materials (Fabricator Kit and Med-Bay Kit are tools), 10 recipes (medicine, shock baton, knife, flechette and beam pistols, mesh weave, environment suit), salvage for 27 items. |
+| Bestiary | 7 entries: hull vermin, a pirate boarder and gunner, a patrol automaton, a corporate enforcer, a pirate captain and a void leviathan (boss), with loot. |
+| Merchants | Dockside salvage (repairs), a station infirmary (healing), a licensed arms dealer (training, identify, rotating rare stock) and a crew bunkhouse (rooms). |
+| Kits | Pilot, Engineer, Medic, Marine, Smuggler, Scientist. |
+
+All three genre packs from the proposal are in. Property stays for later.
