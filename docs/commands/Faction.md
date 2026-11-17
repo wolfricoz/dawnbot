@@ -2,7 +2,7 @@
 layout: default
 title: Faction
 parent: Commands
-nav_order: 17
+nav_order: 18
 ---
 
 <h1>Faction</h1>

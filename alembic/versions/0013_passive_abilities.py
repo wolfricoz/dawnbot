@@ -1,6 +1,6 @@
 """passive abilities: an ability is active (used on a turn) or passive (always on, with its parts in passive)
 
-Comes before 0027_drop_legacy_combat, which waits until the old tables have been imported.
+Comes before 0028_drop_legacy_combat, which waits until the old tables have been imported.
 
 Revision ID: 0013_passive_abilities
 Revises: 0012_bestiary_special

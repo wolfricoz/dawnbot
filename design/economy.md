@@ -65,7 +65,7 @@ Migrations start at `0023`; the legacy combat drop is renumbered so it stays las
 
 ## 4. Phase 1 as built
 
-Migration `0023_economy_money` (the legacy drop is now `0027_drop_legacy_combat`).
+Migration `0023_economy_money` (the legacy drop is now `0028_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -78,7 +78,7 @@ Migration `0023_economy_money` (the legacy drop is now `0027_drop_legacy_combat`
 
 ## 5. Phase 2 as built
 
-Migration `0024_economy_equipment` (the legacy drop is now `0027_drop_legacy_combat`).
+Migration `0024_economy_equipment` (the legacy drop is now `0028_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -95,7 +95,7 @@ Migration `0024_economy_equipment` (the legacy drop is now `0027_drop_legacy_com
 
 ## 6. Phase 3 as built
 
-Migration `0025_economy_trading` (the legacy drop is now `0027_drop_legacy_combat`).
+Migration `0025_economy_trading` (the legacy drop is now `0028_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -109,7 +109,7 @@ Migration `0025_economy_trading` (the legacy drop is now `0027_drop_legacy_comba
 
 ## 7. Phase 4 as built
 
-Migration `0026_economy_merchants` (the legacy drop is now `0027_drop_legacy_combat`).
+Migration `0026_economy_merchants` (the legacy drop is now `0028_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -121,3 +121,18 @@ Migration `0026_economy_merchants` (the legacy drop is now `0027_drop_legacy_com
 | Stashes | `/stash put` (needs a paid room at this location; not equipped items), `/stash take` (only needs being at the location, even after the rent ran out), `/stash list`. Stashed items leave the inventory, don't weigh anything and stay out of fights. |
 | Shop mode | `SHOP_MODE` in `/config roleplay`: `global` (default), `both` (`/shop` lists and sells only Common and Uncommon items), `merchants` (`/shop browse`, `/shop buy`, `/shop repair` and `/gear sell` point to the merchants). Starting gear in the interview always comes from the catalog. `/shop refill` works in every mode. |
 | Commands | `/merchant browse | buy | sell | haggle | repair | lodge` for players; `/merchant add | edit | remove | place | stock | restock` for staff and the GM role. |
+
+## 8. Phase 5 as built
+
+Migration `0027_economy_magic` (the legacy drop is now `0028_drop_legacy_combat`).
+
+| Topic | As built |
+|---|---|
+| Data | `gear_items.enchantments` (`activation`, `effects`, `charges`, `recharge`, `bonus`, `item_bonus`, `damage_type`), `unidentified_name`, `crafted_only`; `character_gear.attuned`, `charges_left`, `charges_day`, `extra_charges`, `identified`; `bestiary.loot`; `recipes.enchanting`; tables `enchant_designs` and `fight_loot`. |
+| Enchantments | `classes/gear/Magic.py`. One enchantment per item: active (effect catalog) or passive (passive catalog), plus an optional +1 (`bonus`: +1 to hit for weapons, +1 DT for armor; with masterwork at most +2). Budgets by rarity as decided; effect tiers are each effect's minimum tier, and the catalogs top out at Normal, so Very rare means one effect of any tier or two up to Normal. Common items can't be enchanted. `/armory enchant` (Manage Server) sets or clears it; cards show it. |
+| Fights | `Loadout.character_stats` adds a working item's active enchantment as an ability (id `item:<entry id>`, the item's tier by rarity, `fixed_bonus` = Uncommon 3 / Rare 4 / Very rare 5 / Legendary `item_bonus` or 6, `uses` = its charges) and passive entries with no AP cost. `Resolver.ability_mod` uses `fixed_bonus` instead of the stat everywhere abilities add a stat (attack, DC, damage, healing); a crippled stat doesn't give an item disadvantage. Daily charges used in a fight are counted when it ends (`Condition.after_fight`). |
+| Attunement | An enchantment works only when the item is attuned and identified, and armor and accessories also worn. `ATTUNEMENT_SLOTS` (3, `/config roleplay`), legendary characters +1. `/gear attune` spends the day's downtime; `/gm gear attune` is free; `/gear unattune` (cursed items hold on). Attuning identifies. |
+| Identification | `IDENTIFY` (toggle, off). Enchanted loot arrives unidentified (shown by `unidentified_name`, does nothing). Identify by attuning, `/gear identify` (downtime, Intelligence against 12 / 14 / 16 / 18 by rarity) or a merchant's `identify` service (10% of the catalog price, at least 10, × markup; ledger `service`). |
+| Designs | `/enchant design` (follows `ABILITY_CREATION`): a weapon, armor or accessory from the catalog, Uncommon to Very rare, one or two effects. Posted to `CHARACTER_REVIEW` with Approve / Deny buttons that survive restarts (`EnchantButton`); the player gets a DM. Approval (`classes/economy/Enchanting.py`) adds a crafted-only catalog item (base values + enchantment, price = base + 1,250 / 2,500 / 9,000) and an enchanting recipe (the base item; DC 12 / 15 / 18; 0 / 2 / 5 days). `/enchant designs` lists them. |
+| Crafting | An enchanting recipe needs a spellcaster (a character knowing a spell) or the recipe's occupation. A crit on an enchanted item adds a charge (weapons and armor are also masterwork); a bad failure curses enchanted accessories too. Crafted-only items are never bought (`Gear.lock_reason`). |
+| Loot | `/bestiary loot <entry> [currency] [items] [clear]` (`3d10`, `Healing Draught 50%, Hedge Knife 10% x2`). After a fight the GM presses **Loot** on the GM panel: `classes/economy/Loot.py` rolls each defeated bestiary enemy's loot once per fight and posts it with **Claim** and **Settle (GM)** buttons (`LootButton`). Winning players claim items; on Settle, a single claimant gets the item, contested items go to the GM's pick (`LOOT_MODE` `gm`, default) or the highest d20 (`claim`, ties reroll); unclaimed items are left behind; currency splits evenly among the winners (ledger `loot`). `reward_currency` stays as the GM's suggested reward. |

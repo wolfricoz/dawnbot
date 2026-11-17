@@ -127,16 +127,23 @@ class Loadout :
 		"""The snapshot of a character: SPECIAL, level, weapons (with proficiency), armor, shield and abilities."""
 		from classes.characters.Special import Special
 		from classes.economy.Crafting import adjust_combat
-		from classes.gear import Carry, Condition
+		from classes.gear import Carry, Condition, Magic
 		from classes.gear.Gear import ARMOR, CONSUMABLE, Gear, WEAPON
 
 		base = Special.rules(character.guild_id).base
 		special = {stat : int(getattr(character, stat) or 0) for stat in Rules.STATS}
 		crippled_strength = special["strength"] <= 0
 		weapons, shield, armor, items = [], False, None, []
+		item_abilities, item_passives = [], []
 		for entry, item in Gear.inventory(character.id) :
 			combat = item.combat if item is not None else {}
 			requirements = item.requirements if item is not None else {}
+			if item is not None and Magic.working(entry, item) :
+				# An attuned magic item's enchantment: an extra ability or passive, and maybe +1 (classes/gear/Magic.py).
+				ability = Magic.fight_ability(entry, item)
+				if ability is not None :
+					item_abilities.append(ability)
+				item_passives += Magic.fight_passives(entry, item)
 			if entry.kind == WEAPON :
 				# Crafted masterwork (+1 to hit) or cursed (-1) gear changes the item's own hit modifier; a damaged
 				# weapon has -1 more, and a broken one or one out of ammunition stays out of the fight.
@@ -144,6 +151,7 @@ class Loadout :
 				                          Condition.of(entry))
 				if weapon is None or Carry.empty(entry, combat, character.guild_id) :
 					continue
+				weapon["hit_mod"] = int(weapon.get("hit_mod") or 0) + Magic.plus(entry, item)
 				if crippled_strength and "two_handed" in weapon["properties"] :
 					continue
 				weapon.update({"key" : f"gear:{entry.id}", "name" : entry.name, "entry_id" : entry.id,
@@ -161,13 +169,16 @@ class Loadout :
 				                             Condition.of(entry))
 				if candidate is None :
 					continue
-				candidate |= {"name" : entry.name, "entry_id" : entry.id}
+				candidate |= {"name" : entry.name, "entry_id" : entry.id,
+				              "dt" : int(candidate.get("dt") or 0) + Magic.plus(entry, item)}
 				if crippled_strength and candidate["armor_class"] == Rules.HEAVY :
 					continue
 				armor = candidate
 		weapons.append(dict(Rules.UNARMED))
 		armor = armor or (dict(Rules.ARMOR_DEFAULTS) | {"name" : "No armor"})
 		actives, passives = Loadout.split(Loadout.abilities(character.id))
+		actives += item_abilities
+		passives += item_passives
 		level_bonus = Rules.level_bonus(character.level) if ConfigData().get_toggle(
 			character.guild_id, ConfigMapping.COMBAT_LEVEL_BONUS) else 0
 		luck = special["luck"]

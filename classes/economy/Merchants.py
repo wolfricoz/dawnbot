@@ -37,7 +37,10 @@ MERCHANTS = "merchants"
 SHOP_MODES = [GLOBAL, MERCHANTS, BOTH]
 REPAIR = "repair"
 LODGING = "lodging"
-SERVICES = [REPAIR, LODGING]
+IDENTIFY = "identify"
+SERVICES = [REPAIR, LODGING, IDENTIFY]
+# What identifying an item costs: this share of its catalog price (at least 10), times the markup.
+IDENTIFY_SHARE = 0.1
 DAILY = "daily"
 WEEKLY = "weekly"
 MANUAL = "manual"
@@ -124,6 +127,13 @@ def sell_value(merchant: Merchants, entry: CharacterGear) -> int :
 # ============================================================
 def repair_price(merchant: Merchants, entry: CharacterGear, item: GearItems | None, character: Characters) -> int :
 	return round(Condition.shop_price(entry, item, character) * (merchant.markup or 1.0))
+
+
+# ============================================================
+def identify_price(merchant: Merchants, item: GearItems | None) -> int :
+	if not Pricing.economy(merchant.guild_id) :
+		return 0
+	return max(10, round((item.price if item is not None else 0) * IDENTIFY_SHARE * (merchant.markup or 1.0)))
 
 
 # == stock ==

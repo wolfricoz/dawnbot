@@ -1,7 +1,7 @@
 """How a catalog item is shown: one line in a list, or a full embed."""
 import discord
 
-from classes.gear import Carry, Rarity
+from classes.gear import Carry, Magic, Rarity
 from classes.gear.Gear import Gear, KIND_LABELS
 from classes.kernel.ConfigData import ConfigData
 from database.database import GearItems
@@ -52,6 +52,9 @@ class GearCard :
 		requirements = GearCard.requirements_text(item)
 		if requirements :
 			embed.add_field(name="Requirements", value=requirements)
+		enchantment = Magic.describe(item)
+		if enchantment :
+			embed.add_field(name="Enchantment", value=enchantment[:FIELD_LIMIT], inline=False)
 		if item.effect :
 			embed.add_field(name="Effect", value=item.effect[:FIELD_LIMIT], inline=False)
 		if item.effect_met :

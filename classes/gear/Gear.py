@@ -97,6 +97,8 @@ class Gear :
 		"""Why the member may not buy the item, or None. Event, staff-only and legendary items are never bought."""
 		if Rarity.of(item) == Rarity.LEGENDARY :
 			return "is legendary and only given out by staff"
+		if getattr(item, "crafted_only", False) :
+			return "is only made by crafting"
 		requirements = Access.for_gear(item)
 		if Access.hidden(requirements) or any(requirement.kind == "staff_only" for requirement in requirements) :
 			return "is only given out by staff"

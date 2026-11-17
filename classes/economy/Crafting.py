@@ -123,6 +123,13 @@ def missing(character_id: int, recipe: Recipes) -> list[str] :
 def lock_reason(character: Characters, recipe: Recipes) -> str | None :
 	if character.level < (recipe.min_level or 1) :
 		return f"needs level {recipe.min_level}"
+	if getattr(recipe, "enchanting", False) :
+		# Enchanting: spellcasters, or characters with the recipe's occupation (classes/economy/Enchanting.py).
+		from classes.economy.Enchanting import spellcaster
+
+		if not spellcaster(character.id) and not (recipe.occupation_id and
+		                                          character.occupation_id == recipe.occupation_id) :
+			return "needs a spellcaster (or the recipe's occupation) to enchant"
 	if recipe.occupation_required and recipe.occupation_id and character.occupation_id != recipe.occupation_id :
 		from database.transactions.OccupationTransactions import OccupationTransactions
 
@@ -208,7 +215,10 @@ def make(character: Characters, recipe: Recipes, actor_uid: int | None = None,
 	lines = [f"🎲 {result.breakdown()} against DC {recipe.dc}: **{outcome}**"]
 	if first is not None :
 		lines.append(f"-# {Fortune.note(str(first.total))}")
-	quality_item = item.kind in QUALITY_ITEMS
+	from classes.gear import Magic
+
+	magic = Magic.enchanted(item)
+	quality_item = item.kind in QUALITY_ITEMS or magic
 	amount = recipe.result_amount or 1
 	if outcome == SUCCESS :
 		consume_all(character.id, recipe.ingredients)
@@ -217,8 +227,13 @@ def make(character: Characters, recipe: Recipes, actor_uid: int | None = None,
 	elif outcome == CRIT :
 		consume_all(character.id, recipe.ingredients)
 		if quality_item :
-			give(character, item, amount, MASTERWORK, actor_uid)
-			lines.append(f"✨ Made a **Masterwork {item.name}**!")
+			# Accessories have no masterwork; an enchanted item gets an extra charge instead (or as well).
+			made = give(character, item, amount, MASTERWORK if item.kind in QUALITY_ITEMS else None, actor_uid)
+			if magic and Magic.of(item).get("charges") :
+				for entry in made :
+					CharacterGearTransactions().update(entry.id, extra_charges=(entry.extra_charges or 0) + 1)
+				lines.append("✨ The enchantment took especially well: one extra charge.")
+			lines.append(f"✨ Made a **{'Masterwork ' if item.kind in QUALITY_ITEMS else ''}{item.name}**!")
 		else :
 			give(character, item, amount + 1, actor_uid=actor_uid)
 			lines.append(f"✨ Made **{item.name}** ×{amount + 1}: one extra!")

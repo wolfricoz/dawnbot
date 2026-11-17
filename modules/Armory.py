@@ -10,7 +10,7 @@ from classes.characters.CharacterFlow import CharacterFlow
 from classes.characters.Special import STATS
 from classes.combat import Conditions, Items, Rules
 from classes.combat.DamageTypes import DamageTypes
-from classes.gear import Pricing, Rarity, Slots
+from classes.gear import Magic, Pricing, Rarity, Slots
 from classes.gear.Gear import ACCESSORY, ARMOR, CONSUMABLE, Gear, WEAPON
 from classes.gear.GearCard import GearCard
 from classes.gear.GearPost import GearPost
@@ -340,6 +340,64 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 		hint = Pricing.suggestion_text(updated.kind, updated.combat, updated.requirements, updated.price,
 		                               interaction.guild_id)
 		await interaction.followup.send(f"Updated **{updated.name}** ({Rarity.label(Rarity.of(updated))}).{note}{hint}")
+
+	# ============================================================
+	async def _enchant_effects(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		from classes.combat import EffectCatalog, PassiveCatalog
+		from modules.Ability import effect_choice
+
+		activation = getattr(interaction.namespace, "activation", None) or Magic.ACTIVE
+		catalog = PassiveCatalog if activation == Magic.PASSIVE else EffectCatalog
+		return [effect_choice(effect) for effect in catalog.search(current, None)[:25]]
+
+	# ============================================================
+	@app_commands.command(name="enchant")
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@app_commands.autocomplete(name=_names, effect=_enchant_effects, second_effect=_enchant_effects,
+	                           third_effect=_enchant_effects, damage_type=_types)
+	@app_commands.choices(activation=[Choice(name="Active (used as an action)", value=Magic.ACTIVE),
+	                                  Choice(name="Passive (always on)", value=Magic.PASSIVE)],
+	                      recharge=[Choice(name="After each fight", value=Magic.FIGHT),
+	                                Choice(name="Each day", value=Magic.DAY)])
+	@app_commands.describe(bonus="+1 to hit (weapon) or +1 DT (armor)", charges="Active: uses (empty: the tier's usual)",
+	                       item_bonus="Legendary: the bonus its effects roll with (default 6)",
+	                       unidentified_name="What an unidentified copy is called", clear="Make it a plain item again")
+	async def enchant(self, interaction: discord.Interaction, name: str, activation: Choice[str] = None,
+	                  effect: str = None, second_effect: str = None, third_effect: str = None,
+	                  charges: app_commands.Range[int, 1, 10] = None, recharge: Choice[str] = None,
+	                  bonus: bool = False, item_bonus: app_commands.Range[int, 0, 10] = None,
+	                  damage_type: str = None, unidentified_name: app_commands.Range[str, 1, 100] = None,
+	                  clear: bool = False) :
+		"""
+		Makes a catalog item a magic item, built from the same effects as abilities: `active` effects are used in a
+		fight for AP like an ability (with `charges` that come back after each fight or each day), `passive` ones are
+		always on. `bonus` adds +1 to hit (weapons) or +1 DT (armor). The item's rarity sets the budget: Uncommon one
+		effect up to Weak; Rare one up to Normal or two up to Weak; Very rare one up to Strong or two up to Normal;
+		Legendary up to three of any tier. Its effects roll with the item's own bonus (Uncommon +3, Rare +4, Very rare
+		+5, Legendary `item_bonus`). A magic item only works for an attuned character.
+
+		**Permissions:**
+		- `Manage Server`
+		"""
+		await interaction.response.defer(ephemeral=True)
+		item = GearItemTransactions().find(interaction.guild_id, name)
+		if item is None :
+			return await interaction.followup.send(f"The catalog has no item called {name}.")
+		if clear :
+			GearItemTransactions().update(item.id, enchantments=None, unidentified_name=None)
+			await self._post(item)
+			return await interaction.followup.send(f"**{item.name}** is a plain item again.")
+		data, problem = Magic.build(activation.value if activation else Magic.ACTIVE,
+		                            [effect, second_effect, third_effect], charges,
+		                            recharge.value if recharge else None, bonus, item_bonus, damage_type)
+		problem = problem or Magic.check(Rarity.of(item), data)
+		if problem :
+			return await interaction.followup.send(problem)
+		updated = GearItemTransactions().update(item.id, enchantments=data,
+		                                        unidentified_name=unidentified_name or item.unidentified_name)
+		note = await self._post(updated)
+		await interaction.followup.send(f"✨ **{item.name}** ({Rarity.label(Rarity.of(item))}): "
+		                                f"{Magic.describe(updated)}.{note}")
 
 	# ============================================================
 	@app_commands.command(name="remove")

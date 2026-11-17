@@ -207,6 +207,46 @@ class Bestiary(commands.GroupCog, name="Bestiary", group_name="bestiary") :
 		await reply(interaction, f"Removed **{entry.name}** from the bestiary.")
 
 	# ============================================================
+	@app_commands.command(name="loot")
+	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.autocomplete(name=_names)
+	@app_commands.describe(currency="Currency it drops: dice like 3d10, or a number",
+	                       items="Catalog items with a chance and amount, like: Healing Draught 50%, Hedge Knife 10% x2",
+	                       clear="Make it drop nothing")
+	async def loot(self, interaction: discord.Interaction, name: str, currency: app_commands.Range[str, 1, 20] = None,
+	               items: app_commands.Range[str, 1, 500] = None, clear: bool = False) :
+		"""
+		Sets what an entry drops when it is defeated: currency (dice or a number) and catalog items, each with a
+		chance (100% when left out) and an amount. After a fight, the GM presses Loot on the GM panel to roll it,
+		winners claim items, and the GM settles who gets what. Options you leave out keep their value.
+
+		**Permissions:**
+		- `Manage Messages`
+		"""
+		from classes.combat import Rules
+		from classes.economy import Loot
+
+		entry = BestiaryTransactions().find(interaction.guild_id, name)
+		if entry is None :
+			return await reply(interaction, f"The bestiary has no {name}.")
+		loot = {} if clear else dict(getattr(entry, "loot", None) or {})
+		if currency is not None :
+			text = currency.strip()
+			if not text.isdigit() :
+				try :
+					Rules.parse_dice(text)
+				except ValueError as e :
+					return await reply(interaction, str(e))
+			loot["currency"] = text
+		if items is not None :
+			parsed, problem = Loot.parse(interaction.guild_id, items)
+			if problem :
+				return await reply(interaction, problem)
+			loot["items"] = parsed
+		BestiaryTransactions().update(entry.id, loot=loot or None)
+		await reply(interaction, f"**{entry.name}** drops: {Loot.describe(loot)}.")
+
+	# ============================================================
 	@app_commands.command(name="list")
 	async def list_entries(self, interaction: discord.Interaction) :
 		"""

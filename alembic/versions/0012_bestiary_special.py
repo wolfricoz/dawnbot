@@ -1,6 +1,6 @@
 """bestiary entries built from SPECIAL, with catalog weapons and armor
 
-Comes before 0027_drop_legacy_combat, so the old npcs, monsters, armors and weapons can be imported
+Comes before 0028_drop_legacy_combat, so the old npcs, monsters, armors and weapons can be imported
 (/bestiary import legacy, /armory import legacy) before they are dropped.
 
 Revision ID: 0012_bestiary_special

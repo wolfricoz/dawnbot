@@ -418,6 +418,13 @@ class GearItems(Timestamps, Base) :
 	weight: Mapped[float | None] = mapped_column(Float, nullable=True)
 	# Where an accessory is worn: head, neck, back, hands, feet or ring (classes/gear/Slots.py).
 	slot: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	# A magic item's enchantment (classes/gear/Magic.py): {"activation", "effects": [{"key"}], "charges", "recharge",
+	# "bonus", "item_bonus", "damage_type"}; empty for a plain item.
+	enchantments: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	# What an unidentified copy is called ("a humming silver ring").
+	unidentified_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+	# Only made by crafting (a player's approved enchanted design): never sold by a shop or merchant.
+	crafted_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
 	__table_args__ = (
 		Index('uq_gear_item_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -455,6 +462,13 @@ class CharacterGear(Base) :
 	ammo_die: Mapped[str | None] = mapped_column(String(8), nullable=True)
 	# The location whose stash holds it, while status is "stashed" (classes/economy/Merchants.py).
 	stash_location_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	# Magic items (classes/gear/Magic.py): attuned items work; charges left today (for daily charges) and the day they
+	# were counted; extra charges from a crafting crit; identified is False for loot that dropped unidentified.
+	attuned: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+	charges_left: Mapped[int | None] = mapped_column(Integer, nullable=True)
+	charges_day: Mapped[str | None] = mapped_column(String(10), nullable=True)
+	extra_charges: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+	identified: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
 	                                             onupdate=func.now())
@@ -628,6 +642,8 @@ class Bestiary(Base) :
 	ability_ids: Mapped[list] = mapped_column(JSON, default=list)
 	reward_xp: Mapped[int] = mapped_column(Integer, default=0)
 	reward_currency: Mapped[int] = mapped_column(Integer, default=0)
+	# What it drops (classes/economy/Loot.py): {"currency": "3d10", "items": [{"name", "chance", "amount"}]}.
+	loot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 	# When special is set ({stat: value}), HP, AC, AP and Sequence are derived like a character's, at this level,
 	# and it fights with the catalog weapons and armor below instead of its own attack.
 	special: Mapped[dict | None] = mapped_column(JSON, nullable=True)
@@ -1275,6 +1291,8 @@ class Recipes(Base) :
 	mishap_table_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("roll_tables.id", ondelete="SET NULL"),
 	                                                    nullable=True)
 	pack: Mapped[str | None] = mapped_column(String(50), nullable=True)
+	# An enchanting recipe: only spellcasters, or characters with the recipe's occupation, can make it.
+	enchanting: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
 	__table_args__ = (
 		Index('uq_recipe_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -1506,6 +1524,45 @@ class Lodgings(Base) :
 	location_id: Mapped[int] = mapped_column(BigInteger)
 	merchant_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	paid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+# enchantments as on gear_items. state is pending, approved or denied; approval makes result_item_id (a crafted-only
+# catalog item) and recipe_id (its enchanting recipe).
+class EnchantDesigns(Base) :
+	"""A player's design for an enchanted item, waiting for staff review."""
+	__tablename__ = "enchant_designs"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	creator_uid: Mapped[int] = mapped_column(BigInteger)
+	character_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	base_item_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("gear_items.id", ondelete="SET NULL"),
+	                                                 nullable=True)
+	name: Mapped[str] = mapped_column(String(100))
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	rarity: Mapped[str] = mapped_column(String(16))
+	enchantments: Mapped[dict] = mapped_column(JSON, default=dict)
+	state: Mapped[str] = mapped_column(String(16), default="pending")
+	review_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	result_item_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	recipe_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# items: [{"item_id", "name", "amount", "claims": [character ids], "winner": character id}]. state is open or settled.
+class FightLoot(Base) :
+	"""What the defeated enemies of a fight dropped, waiting to be shared."""
+	__tablename__ = "fight_loot"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	guild_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	fight_id: Mapped[int] = mapped_column(BigInteger)
+	channel_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+	currency: Mapped[int] = mapped_column(Integer, default=0)
+	items: Mapped[list] = mapped_column(JSON, default=list)
+	mode: Mapped[str] = mapped_column(String(16), default="gm")
+	state: Mapped[str] = mapped_column(String(16), default="open")
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # ============================================================

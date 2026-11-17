@@ -6,7 +6,8 @@ from database.transactions.DatabaseTransactions import DatabaseTransactions
 # Columns add() and update() accept as keyword arguments.
 FIELDS = ["kind", "name", "description", "price", "requirements", "effect_met", "effect_unmet", "effect", "combat",
           "tag_ids", "forum_thread_id", "forum_message_id", "pack", "faction_id", "faction_tier", "salvage",
-          "rarity", "weight", "slot"]
+          "rarity", "weight", "slot", "enchantments",
+          "unidentified_name", "crafted_only"]
 
 
 class GearItemTransactions(DatabaseTransactions) :

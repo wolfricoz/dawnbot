@@ -12,7 +12,7 @@ from classes.characters.ForumPost import ForumPost
 from classes.combat import Rules
 from classes.combat.AutoComplete import AutoComplete
 from classes.combat.Proficiency import Proficiency
-from classes.gear import Carry, Condition, Pricing, Slots
+from classes.gear import Carry, Condition, Magic, Pricing, Slots
 from classes.gear.Gear import ARMOR, Gear as GearRules
 from database.database import CharacterGear, Characters, GearItems
 from database.transactions.CharacterGearTransactions import BROKEN, CharacterGearTransactions, LOST, OWNED
@@ -93,7 +93,9 @@ def inventory_lines(character: Characters, inventory: list[tuple[CharacterGear, 
 	                              if pair[0].slot in Slots.SLOTS else len(Slots.SLOTS)))
 	lines = []
 	for entry, item in owned :
-		parts = [f"**{entry.name}** ({entry.kind})"]
+		parts = [f"**{Magic.shown_name(entry, item)}** ({entry.kind})"]
+		if entry.attuned :
+			parts.append("✨ attuned")
 		if entry.kind == "weapon" :
 			parts.append(Proficiency.label(entry))
 		if entry.equipped :
@@ -297,6 +299,99 @@ class Gear(commands.GroupCog, name="Gear", group_name="gear") :
 		await interaction.followup.send(f"**{entry.name}** is now {status}. {where}",
 		                                ephemeral=True)
 		await refresh_post(self.bot, record.id)
+
+	# ============================================================
+	async def _downtime(self, interaction: discord.Interaction, character: str, item: str) :
+		"""The member's character (free for downtime today) and its item, or Nones after telling them why."""
+		from classes.economy.DowntimeFlow import DowntimeFlow
+
+		record = CharacterTransactions().get(interaction.user.id, interaction.guild_id, character)
+		problem = DowntimeFlow.problem(record)
+		if problem :
+			await CharacterFlow.respond(interaction, problem)
+			return None, None, None
+		entry = find_entry(CharacterGearTransactions().get_all(record.id), item)
+		if entry is None :
+			await CharacterFlow.respond(interaction, f"{record.name} doesn't own {item}.")
+			return None, None, None
+		return record, entry, GearItemTransactions().get(entry.gear_item_id)
+
+	# ============================================================
+	@staticmethod
+	def _spend_day(record: Characters, activity: str, outcome: str, entry: CharacterGear) -> None :
+		from classes.economy.DowntimeFlow import DowntimeFlow
+		from database.transactions.EconomyTransactions import EconomyTransactions
+
+		EconomyTransactions().add_downtime(record.id, DowntimeFlow.day(record.guild_id), activity, outcome,
+		                                   {"entry_id" : entry.id})
+
+	# ============================================================
+	@app_commands.command(name="attune")
+	@app_commands.autocomplete(character=AutoComplete().approved_character, item=_owned_items)
+	async def attune(self, interaction: discord.Interaction, character: str, item: str) :
+		"""
+		Spends the character's downtime for the day attuning to a magic item, so its enchantment works (armor and
+		accessories also have to be worn). A character can be attuned to 3 items (ATTUNEMENT_SLOTS), a legendary one
+		to one more. Attuning also identifies an unidentified item. A GM can attune it on the spot instead.
+		"""
+		record, entry, catalog_item = await self._downtime(interaction, character, item)
+		if entry is None :
+			return
+		problem = Magic.attune_problem(record, entry, catalog_item)
+		if problem :
+			return await CharacterFlow.respond(interaction, problem)
+		Magic.attune(entry)
+		self._spend_day(record, "attune", "success", entry)
+		text = f"✨ {record.name} spends the day attuning to **{catalog_item.name}**. {Magic.describe(catalog_item)}"
+		await interaction.response.send_message(text[:2000])
+		await refresh_post(self.bot, record.id)
+
+	# ============================================================
+	@app_commands.command(name="unattune")
+	@app_commands.autocomplete(character=AutoComplete().approved_character, item=_owned_items)
+	async def unattune(self, interaction: discord.Interaction, character: str, item: str) :
+		"""
+		Ends your character's attunement to a magic item, freeing the slot. A cursed item won't let go until a GM
+		lifts the curse.
+		"""
+		record, entry, _ = await self._own_entry(interaction, character, item)
+		if entry is None :
+			return
+		if not entry.attuned :
+			return await CharacterFlow.respond(interaction, f"{record.name} isn't attuned to {entry.name}.")
+		if Magic.unattune(entry) is None :
+			return await CharacterFlow.respond(interaction, f"The cursed {entry.name} won't let go; a GM has to lift "
+			                                                f"the curse first.")
+		await CharacterFlow.respond(interaction, f"{record.name} is no longer attuned to **{entry.name}**.")
+
+	# ============================================================
+	@app_commands.command(name="identify")
+	@app_commands.autocomplete(character=AutoComplete().approved_character, item=_owned_items)
+	async def identify(self, interaction: discord.Interaction, character: str, item: str) :
+		"""
+		Spends the character's downtime for the day studying an unidentified item: Intelligence against 10 plus 2 per
+		rarity step (12 for Uncommon, 14 Rare, 16 Very rare, 18 Legendary). A success reveals what it is.
+		"""
+		from classes.characters.Special import Special
+		from classes.checks import Checks
+
+		record, entry, catalog_item = await self._downtime(interaction, character, item)
+		if entry is None :
+			return
+		if entry.identified or catalog_item is None :
+			return await CharacterFlow.respond(interaction, f"{record.name} already knows what {entry.name} is.")
+		dc = Magic.identify_dc(catalog_item)
+		result = Checks.roll(Checks.stats_of(record), "intelligence", dc, base=Special.rules(record.guild_id).base)
+		self._spend_day(record, "identify", result.outcome, entry)
+		lines = [f"🔍 {record.name} studies **{Magic.shown_name(entry, catalog_item)}**: {result.breakdown()} on "
+		         f"Intelligence against {dc} · {Checks.OUTCOME_LABELS[result.outcome]}"]
+		if result.success :
+			Magic.identify(entry)
+			cursed = " It's cursed!" if entry.quality == "cursed" else ""
+			lines.append(f"It's **{entry.name}**. {Magic.describe(catalog_item)}{cursed}")
+		else :
+			lines.append("Its secrets stay hidden for now.")
+		await interaction.response.send_message("\n".join(lines)[:2000])
 
 	# ============================================================
 	@app_commands.command(name="lose")

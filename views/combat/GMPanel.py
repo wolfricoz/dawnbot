@@ -68,6 +68,7 @@ class GMPanel(discord.ui.View) :
 		self.add_item(GMButton("death", "Death / spare", 4, disabled=not running or not fight.lethal))
 		self.add_item(GMButton("rewards", "Rewards", 4, discord.ButtonStyle.success, disabled=not ended))
 		self.add_item(GMButton("aftermath", "Injuries / broken gear", 4, disabled=state == SETUP))
+		self.add_item(GMButton("loot", "Loot", 4, discord.ButtonStyle.success, disabled=not ended))
 
 	# ============================================================
 	async def interaction_check(self, interaction: discord.Interaction) -> bool :
@@ -461,6 +462,14 @@ class GMPanel(discord.ui.View) :
 			Field("XP", str(xp), str(xp), max_length=7), Field("Currency", str(currency), str(currency), max_length=9),
 			Field("Gear (catalog items, separated by commas)", "Healing Draught, Hedge Knife", required=False,
 			      max_length=300)], typed))
+
+	# ============================================================
+	async def do_loot(self, interaction: discord.Interaction, fight: Fight) -> None :
+		"""Rolls what the defeated bestiary enemies dropped and posts it for the winners to claim."""
+		from views.economy.LootButtons import post
+
+		await interaction.response.defer(ephemeral=True)
+		await post(interaction, fight)
 
 	# ============================================================
 	async def do_aftermath(self, interaction: discord.Interaction, fight: Fight) -> None :

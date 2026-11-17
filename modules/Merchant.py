@@ -261,6 +261,39 @@ class Merchant(commands.GroupCog, name="Merchant", group_name="merchant") :
 		await reply(interaction, f"{record.name} repaired {owner.name}'s **{entry.name}**{paid}.")
 
 	# ============================================================
+	@app_commands.command(name="identify", description="Has a merchant here identify an item")
+	@app_commands.autocomplete(character=AutoComplete().approved_character, merchant=_merchants, item=_owned)
+	async def identify(self, interaction: discord.Interaction, character: str, merchant: str, item: str) :
+		"""
+		Has a merchant with an identify service tell your character what an unidentified item is, for 10% of its
+		catalog price (at least 10) times the merchant's markup.
+		"""
+		from classes.gear import Magic
+
+		record = await self._here(interaction, merchant)
+		owner = await self._character(interaction, character) if record else None
+		if owner is None :
+			return
+		if Rules.IDENTIFY not in (record.services or []) :
+			return await reply(interaction, f"{record.name} doesn't identify items.")
+		entry = find_entry(CharacterGearTransactions().get_all(owner.id), item)
+		if entry is None :
+			return await reply(interaction, f"{owner.name} doesn't own {item}.")
+		if entry.identified :
+			return await reply(interaction, f"{owner.name} already knows what {entry.name} is.")
+		catalog_item = GearItemTransactions().get(entry.gear_item_id)
+		cost = Rules.identify_price(record, catalog_item)
+		if cost :
+			_, problem = Gear.change_currency(owner, -cost, "service", interaction.user.id,
+			                                  note=f"Identify at {record.name}")
+			if problem :
+				return await reply(interaction, problem)
+		Magic.identify(entry)
+		cursed = " It's cursed!" if entry.quality == "cursed" else ""
+		await reply(interaction, f"{record.name} looks it over: it's **{entry.name}**. "
+		                         f"{Magic.describe(catalog_item)}{cursed}")
+
+	# ============================================================
 	@app_commands.command(name="lodge", description="Rents a room from a merchant here")
 	@app_commands.autocomplete(character=AutoComplete().approved_character, merchant=_merchants)
 	async def lodge(self, interaction: discord.Interaction, character: str, merchant: str,
@@ -291,7 +324,7 @@ class Merchant(commands.GroupCog, name="Merchant", group_name="merchant") :
 	@app_commands.describe(markup="Times the catalog price (1 is the catalog price)",
 	                       buys="Gear kinds it buys: weapon, armor, consumable, accessory, material (or none)",
 	                       pays="Times the usual sale value it pays (1 is usual)",
-	                       services="repair, lodging (or none)", lodging_price="What a room costs per week",
+	                       services="repair, lodging, identify (or none)", lodging_price="What a room costs per week",
 	                       haggle_dc="Charisma DC to haggle (leave out: no haggling)",
 	                       here="Trade at this channel's location", faction="Its faction (prices follow standing)")
 	async def add(self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100],
@@ -350,7 +383,7 @@ class Merchant(commands.GroupCog, name="Merchant", group_name="merchant") :
 	@gm_only()
 	@app_commands.autocomplete(merchant=_merchants)
 	@app_commands.choices(restock=RESTOCK_CHOICES)
-	@app_commands.describe(buys="Gear kinds it buys, or none", services="repair, lodging, or none",
+	@app_commands.describe(buys="Gear kinds it buys, or none", services="repair, lodging, identify, or none",
 	                       haggle_dc="Charisma DC to haggle (0: no haggling)", faction="Its faction, or - for none")
 	async def edit(self, interaction: discord.Interaction, merchant: str, name: app_commands.Range[str, 1, 100] = None,
 	               description: app_commands.Range[str, 1, 1000] = None, avatar_url: str = None,

@@ -59,6 +59,22 @@ nav_order: 3
 
 ---
 
+### `enchant`
+
+**Usage:** `/armory enchant <name> <activation> <effect> <second_effect> <third_effect> <charges> <recharge> <bonus> <item_bonus> <damage_type> <unidentified_name> <clear>`
+
+> Makes a catalog item a magic item, built from the same effects as abilities: `active` effects are used in a
+> fight for AP like an ability (with `charges` that come back after each fight or each day), `passive` ones are
+> always on. `bonus` adds +1 to hit (weapons) or +1 DT (armor). The item's rarity sets the budget: Uncommon one
+> effect up to Weak; Rare one up to Normal or two up to Weak; Very rare one up to Strong or two up to Normal;
+> Legendary up to three of any tier. Its effects roll with the item's own bonus (Uncommon +3, Rare +4, Very rare
+> +5, Legendary `item_bonus`). A magic item only works for an attuned character.
+>
+> **Permissions:**
+> - `Manage Server`
+
+---
+
 ### `remove`
 
 **Usage:** `/armory remove <name>`

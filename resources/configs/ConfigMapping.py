@@ -44,6 +44,9 @@ class ConfigMapping(StrEnum) :
 	MARKET_FEE = "MARKET_FEE"
 	MARKET_DAYS = "MARKET_DAYS"
 	SHOP_MODE = "SHOP_MODE"
+	ATTUNEMENT_SLOTS = "ATTUNEMENT_SLOTS"
+	IDENTIFY = "IDENTIFY"
+	LOOT_MODE = "LOOT_MODE"
 
 	# === Combat ===
 	COMBAT_PACING = "COMBAT_PACING"
@@ -172,6 +175,9 @@ defaults = {
 	ConfigMapping.MARKET_FEE         : 5,
 	ConfigMapping.MARKET_DAYS        : 14,
 	ConfigMapping.SHOP_MODE          : "global",
+	ConfigMapping.ATTUNEMENT_SLOTS   : 3,
+	ConfigMapping.IDENTIFY           : "DISABLED",
+	ConfigMapping.LOOT_MODE          : "gm",
 	ConfigMapping.COMBAT_PACING      : "async",
 	ConfigMapping.COMBAT_ASYNC_TIMER : 12,
 	ConfigMapping.COMBAT_LIVE_TIMER  : 3,
@@ -273,6 +279,9 @@ roleplay_settings = {
 	ConfigMapping.MARKET_FEE         : ("number", 0, 50),
 	ConfigMapping.MARKET_DAYS        : ("number", 1, 90),
 	ConfigMapping.SHOP_MODE          : ("choice", ["global", "merchants", "both"]),
+	ConfigMapping.ATTUNEMENT_SLOTS   : ("number", 1, 10),
+	ConfigMapping.IDENTIFY           : ("toggle",),
+	ConfigMapping.LOOT_MODE          : ("choice", ["gm", "claim"]),
 }
 
 # Maps the keys of the old jsons/<guild_id>.json files onto config keys, used once by ConfigData.migrate().
@@ -326,6 +335,9 @@ docs = {
 	ConfigMapping.MARKET_FEE         : "The share of a market sale the market keeps, in percent (default 5). It leaves the economy.",
 	ConfigMapping.MARKET_DAYS        : "Days before an unsold market listing ends and the item goes back to its seller (default 14).",
 	ConfigMapping.SHOP_MODE          : "Where characters buy gear: `global` (the default; the catalog shop sells everything, and merchants at locations are extra), `both` (the catalog shop sells only Common and Uncommon items, merchants the rest) or `merchants` (no catalog shop: buying, selling and repairs go through merchants).",
+	ConfigMapping.ATTUNEMENT_SLOTS   : "How many magic items a character can be attuned to at once (default 3; legendary characters one more). Only attuned items' enchantments work.",
+	ConfigMapping.IDENTIFY           : "Whether enchanted loot drops unidentified (default off): it does nothing until attuned, identified with a day of downtime (/gear identify) or by a merchant.",
+	ConfigMapping.LOOT_MODE          : "How loot from a fight is shared: `gm` (the default; players claim items and the GM picks who gets each) or `claim` (when more than one player claims an item, they roll for it). Currency is split evenly among the winners.",
 	ConfigMapping.LEGENDARY_POINTS   : "How many extra SPECIAL points a character gets when staff make it legendary (default 5). Legendary characters also have doubled stat limits and one extra ability slot.",
 
 	# == combat ==

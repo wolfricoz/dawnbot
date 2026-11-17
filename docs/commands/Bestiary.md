@@ -55,6 +55,19 @@ NPCs and monsters for fights.
 
 ---
 
+### `loot`
+
+**Usage:** `/bestiary loot <name> <currency> <items> <clear>`
+
+> Sets what an entry drops when it is defeated: currency (dice or a number) and catalog items, each with a
+> chance (100% when left out) and an amount. After a fight, the GM presses Loot on the GM panel to roll it,
+> winners claim items, and the GM settles who gets what. Options you leave out keep their value.
+>
+> **Permissions:**
+> - `Manage Messages`
+
+---
+
 ### `list`
 
 **Usage:** `/bestiary list`

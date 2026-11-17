@@ -2,7 +2,7 @@
 layout: default
 title: Trade
 parent: Commands
-nav_order: 43
+nav_order: 44
 ---
 
 <h1>Trade</h1>

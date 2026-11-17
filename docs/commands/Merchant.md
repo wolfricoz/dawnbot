@@ -2,7 +2,7 @@
 layout: default
 title: Merchant
 parent: Commands
-nav_order: 27
+nav_order: 28
 ---
 
 <h1>Merchant</h1>
@@ -56,6 +56,15 @@ Trade with the merchants at your location.
 
 > Has a merchant with a repair service fix one of your character's items: 5%, 15% or 40% of its catalog price
 > (Worn, Damaged, Broken) times the merchant's markup, changed by Charisma.
+
+---
+
+### `identify`
+
+**Usage:** `/merchant identify <character> <merchant> <item>`
+
+> Has a merchant with an identify service tell your character what an unidentified item is, for 10% of its
+> catalog price (at least 10) times the merchant's markup.
 
 ---
 
