@@ -651,15 +651,18 @@ class CombatFlow :
 
 	# ============================================================
 	@staticmethod
-	def injury_text(current: str | None, title: str, text: str) -> str :
-		"""The character's Injuries field with a new line added."""
-		line = f"{text.strip()} ({title})"
+	def injury_text(current: str | None, title: str, text: str, severity: str | None = None) -> str :
+		"""The character's Injuries field with a new line added; serious and grave injuries say so up front (healers
+		price by it, see classes/economy/Spending.py)."""
+		from classes.economy.Spending import tagged
+
+		line = f"{tagged(text, severity)} ({title})"
 		return f"{current.rstrip()}\n{line}" if current and current.strip() else line
 
 	# ============================================================
 	@staticmethod
 	async def add_injury(bot: discord.Client, interaction: discord.Interaction, fight_id: int, character_id: int,
-	                     text: str) -> None :
+	                     text: str, severity: str | None = None) -> None :
 		"""Adds an injury to a fighter's sheet (the Injuries field), as free text the GM writes."""
 		from database.transactions.CharacterInfoTransactions import CharacterInfoTransactions
 
@@ -669,7 +672,7 @@ class CombatFlow :
 		character = CharacterTransactions().get_by_id(character_id)
 		infos = CharacterInfoTransactions()
 		current = next((info.value for info in infos.get_all(character_id) if info.key == INJURIES), None)
-		value = CombatFlow.injury_text(current, fight.title, text)[:INJURY_LIMIT]
+		value = CombatFlow.injury_text(current, fight.title, text, severity)[:INJURY_LIMIT]
 		if current is None :
 			infos.add(character_id, INJURIES, value)
 		else :

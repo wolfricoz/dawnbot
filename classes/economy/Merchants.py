@@ -38,7 +38,9 @@ SHOP_MODES = [GLOBAL, MERCHANTS, BOTH]
 REPAIR = "repair"
 LODGING = "lodging"
 IDENTIFY = "identify"
-SERVICES = [REPAIR, LODGING, IDENTIFY]
+HEALING = "healing"
+TRAINING = "training"
+SERVICES = [REPAIR, LODGING, IDENTIFY, HEALING, TRAINING]
 # What identifying an item costs: this share of its catalog price (at least 10), times the markup.
 IDENTIFY_SHARE = 0.1
 DAILY = "daily"
@@ -211,8 +213,13 @@ def haggle(merchant: Merchants, character: Characters, item: GearItems,
 	cycle = merchant.cycle or 0
 	if any(haggle.gear_item_id == item.id for haggle in MerchantTransactions().haggles(merchant.id, character.id, cycle)) :
 		return None, [f"{character.name} already haggled over {item.name}; try again after the next restock."]
+	from classes.combat.Rules import Bonus
+	from classes.economy import Lifestyle
+
+	lifestyle = Lifestyle.haggle_bonus(character)
+	extras = [Bonus("Lifestyle", lifestyle)] if lifestyle else []
 	result = Checks.roll(Checks.stats_of(character), "charisma", merchant.haggle_dc,
-	                     base=Special.rules(character.guild_id).base, rng=rng)
+	                     base=Special.rules(character.guild_id).base, extras=extras, rng=rng)
 	discount = HAGGLE_DISCOUNT.get(result.outcome, 0)
 	bad = result.outcome in (Checks.BAD, Checks.FUMBLE)
 	MerchantTransactions().add_haggle(merchant.id, character.id, item.id, cycle, discount, False)

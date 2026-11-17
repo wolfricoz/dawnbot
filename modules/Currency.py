@@ -20,7 +20,9 @@ from resources.configs.ConfigMapping import ConfigMapping
 HISTORY_LENGTH = 15
 # Ledger reasons from the economy round, shown with their note (who the other side was, which item).
 NOTED_REASONS = {"trade_in" : "trade", "trade_out" : "trade", "pay" : "payment", "market" : "market",
-                 "market_fee" : "market fee", "repair" : "repair", "refill" : "ammunition", "lodging" : "room"}
+                 "market_fee" : "market fee", "repair" : "repair", "refill" : "ammunition", "lodging" : "room",
+                 "training" : "training", "healing" : "healer", "lifestyle" : "lifestyle", "loot" : "loot",
+                 "service" : "service"}
 FREE_NOTE = "Gear is free on this server right now, so currency isn't spent."
 
 

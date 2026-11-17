@@ -2,7 +2,7 @@
 layout: default
 title: Market
 parent: Commands
-nav_order: 27
+nav_order: 28
 ---
 
 <h1>Market</h1>

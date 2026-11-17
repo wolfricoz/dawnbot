@@ -34,6 +34,9 @@ REASON_LABELS = {
 	"market_fee" : "market fees",
 	"lodging"  : "rooms",
 	"loot"     : "loot",
+	"training" : "weapon training",
+	"healing"  : "healers",
+	"lifestyle" : "lifestyles",
 	"service"  : "merchant services",
 }
 

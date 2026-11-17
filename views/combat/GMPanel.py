@@ -488,12 +488,15 @@ class GMPanel(discord.ui.View) :
 				if values[0] == "injury" :
 					async def written(form_interaction: discord.Interaction, fields: list[str]) :
 						await form_interaction.response.defer(ephemeral=True)
+						severity = (fields[1] or "").strip().lower() if len(fields) > 1 else ""
 						await CombatFlow.add_injury(form_interaction.client, form_interaction, self.fight_id,
-						                            character_id, fields[0])
+						                            character_id, fields[0],
+						                            severity if severity in ("serious", "grave") else None)
 
 					return await choice_interaction.response.send_modal(Form("Injury", [
 						Field("What happened to them?", "A deep cut across the left arm", long=True,
-						      max_length=300)], written))
+						      max_length=300),
+						Field("How bad? minor, serious or grave", "minor", required=False, max_length=10)], written))
 
 				async def broken(item_interaction: discord.Interaction, picked: list[str]) :
 					await item_interaction.response.defer(ephemeral=True)

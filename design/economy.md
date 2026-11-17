@@ -65,7 +65,7 @@ Migrations start at `0023`; the legacy combat drop is renumbered so it stays las
 
 ## 4. Phase 1 as built
 
-Migration `0023_economy_money` (the legacy drop is now `0028_drop_legacy_combat`).
+Migration `0023_economy_money` (the legacy drop is now `0029_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -78,7 +78,7 @@ Migration `0023_economy_money` (the legacy drop is now `0028_drop_legacy_combat`
 
 ## 5. Phase 2 as built
 
-Migration `0024_economy_equipment` (the legacy drop is now `0028_drop_legacy_combat`).
+Migration `0024_economy_equipment` (the legacy drop is now `0029_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -95,7 +95,7 @@ Migration `0024_economy_equipment` (the legacy drop is now `0028_drop_legacy_com
 
 ## 6. Phase 3 as built
 
-Migration `0025_economy_trading` (the legacy drop is now `0028_drop_legacy_combat`).
+Migration `0025_economy_trading` (the legacy drop is now `0029_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -109,7 +109,7 @@ Migration `0025_economy_trading` (the legacy drop is now `0028_drop_legacy_comba
 
 ## 7. Phase 4 as built
 
-Migration `0026_economy_merchants` (the legacy drop is now `0028_drop_legacy_combat`).
+Migration `0026_economy_merchants` (the legacy drop is now `0029_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -124,7 +124,7 @@ Migration `0026_economy_merchants` (the legacy drop is now `0028_drop_legacy_com
 
 ## 8. Phase 5 as built
 
-Migration `0027_economy_magic` (the legacy drop is now `0028_drop_legacy_combat`).
+Migration `0027_economy_magic` (the legacy drop is now `0029_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -136,3 +136,15 @@ Migration `0027_economy_magic` (the legacy drop is now `0028_drop_legacy_combat`
 | Designs | `/enchant design` (follows `ABILITY_CREATION`): a weapon, armor or accessory from the catalog, Uncommon to Very rare, one or two effects. Posted to `CHARACTER_REVIEW` with Approve / Deny buttons that survive restarts (`EnchantButton`); the player gets a DM. Approval (`classes/economy/Enchanting.py`) adds a crafted-only catalog item (base values + enchantment, price = base + 1,250 / 2,500 / 9,000) and an enchanting recipe (the base item; DC 12 / 15 / 18; 0 / 2 / 5 days). `/enchant designs` lists them. |
 | Crafting | An enchanting recipe needs a spellcaster (a character knowing a spell) or the recipe's occupation. A crit on an enchanted item adds a charge (weapons and armor are also masterwork); a bad failure curses enchanted accessories too. Crafted-only items are never bought (`Gear.lock_reason`). |
 | Loot | `/bestiary loot <entry> [currency] [items] [clear]` (`3d10`, `Healing Draught 50%, Hedge Knife 10% x2`). After a fight the GM presses **Loot** on the GM panel: `classes/economy/Loot.py` rolls each defeated bestiary enemy's loot once per fight and posts it with **Claim** and **Settle (GM)** buttons (`LootButton`). Winning players claim items; on Settle, a single claimant gets the item, contested items go to the GM's pick (`LOOT_MODE` `gm`, default) or the highest d20 (`claim`, ties reroll); unclaimed items are left behind; currency splits evenly among the winners (ledger `loot`). `reward_currency` stays as the GM's suggested reward. |
+
+## 9. Phase 6 as built
+
+Migration `0028_economy_spending` (the legacy drop is now `0029_drop_legacy_combat`). Property stays for later.
+
+| Topic | As built |
+|---|---|
+| Data | `occupations.kit` (catalog item ids) and `occupations.trains`; `characters.lifestyle` and `lifestyle_paid_until`; the `trainings` table (character, weapon entry, target tier, days done and needed, paid, trainer, state). |
+| Healers | `classes/economy/Spending.py`. Injury lines may start with `[serious]` or `[grave]` (minor otherwise); the GM panel's injury form has a "How bad?" field. A merchant with the `healing` service: `/merchant heal` removes one injury for 350 / 1,000 / 3,500 × markup × Charisma (ledger `healing`); the Injuries field goes away with its last line. |
+| Starter kits | `STARTER_KITS` (toggle, on). `/downtime occupation kit:` sets an occupation's kit (catalog names, `none` clears). A new character gets it when its interview is submitted, with the starting gear, as `source = kit`; kit items sell for nothing (`Pricing.sell_value`). |
+| Training | One step per training: Awful → Poor 500 / 1 day, Poor → Average 1,500 / 2, Average → Good 5,000 / 5, Good → Excellent 14,000 / 10. Paid up front with `/merchant train` (service `training`; × markup × Charisma; ledger `training`) or in `/downtime train ... member: trainer:` to another player's character whose occupation `trains` (paid to that character in one transfer; never between one player's own characters). Every `/downtime train` spends the day; the last day sets the proficiency through `Proficiency.set_weapon(staff=True)`. One open training per weapon; the two-at-Good-or-Excellent limit is checked when it starts. |
+| Lifestyle | `classes/economy/Lifestyle.py`, `LIFESTYLE` (toggle, off). Weekly costs as decided; no choice means Modest. `/lifestyle set` pays the first week; `/lifestyle view`. `tasks/LifestyleTask.py` charges every approved character whose week is due (hourly check), dropping to the best tier it can afford. Destitute −2 and Poor −1 to haggling; Comfortable and up restore Worn gear each week; Wealthy and Aristocratic +2 to haggling and to `/rumor listen`. Ledger `lifestyle`. |

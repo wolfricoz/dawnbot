@@ -294,6 +294,83 @@ class Merchant(commands.GroupCog, name="Merchant", group_name="merchant") :
 		                         f"{Magic.describe(catalog_item)}{cursed}")
 
 	# ============================================================
+	async def _injuries(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		from classes.economy import Spending
+
+		name = interaction.namespace.character
+		character = CharacterTransactions().get(interaction.user.id, interaction.guild_id, name) if name else None
+		if character is None :
+			return []
+		return [Choice(name=line[:100], value=str(index)) for index, line in enumerate(Spending.injuries(character))
+		        if current.lower() in line.lower()][:25]
+
+	# ============================================================
+	async def _weapons(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		name = interaction.namespace.character
+		character = CharacterTransactions().get(interaction.user.id, interaction.guild_id, name) if name else None
+		if character is None :
+			return []
+		return entry_choices([entry for entry in CharacterGearTransactions().get_all(character.id)
+		                      if entry.kind == "weapon"], current)
+
+	# ============================================================
+	@app_commands.command(name="heal", description="Has a healer here treat an injury")
+	@app_commands.autocomplete(character=AutoComplete().approved_character, merchant=_merchants, injury=_injuries)
+	async def heal(self, interaction: discord.Interaction, character: str, merchant: str, injury: str) :
+		"""
+		Has a merchant with the healing service treat one of your character's injuries, taking it off its sheet:
+		350 for a minor injury, 1,000 for a serious one and 3,500 for a grave one, times the merchant's markup and
+		changed by Charisma.
+		"""
+		from classes.economy import Spending
+
+		record = await self._here(interaction, merchant)
+		patient = await self._character(interaction, character) if record else None
+		if patient is None :
+			return
+		if Rules.HEALING not in (record.services or []) :
+			return await reply(interaction, f"{record.name} isn't a healer.")
+		lines = Spending.injuries(patient)
+		if not injury.isdigit() or not 0 <= int(injury) < len(lines) :
+			return await reply(interaction, "Pick one of the character's injuries from the list.")
+		severity = Spending.severity_of(lines[int(injury)])
+		cost = Spending.heal_price(record, severity, patient)
+		if cost :
+			_, problem = Gear.change_currency(patient, -cost, "healing", interaction.user.id,
+			                                  note=f"{severity.capitalize()} injury at {record.name}")
+			if problem :
+				return await reply(interaction, problem)
+		removed = Spending.remove_injury(patient, int(injury))
+		paid = f" for {balance_text(interaction.guild_id, cost)}" if cost else ""
+		await reply(interaction, f"{record.name} treated {patient.name}{paid}: *{removed}* is healed.")
+		await refresh_post(self.bot, patient.id)
+
+	# ============================================================
+	@app_commands.command(name="train", description="Pays a trainer here to improve with a weapon")
+	@app_commands.autocomplete(character=AutoComplete().approved_character, merchant=_merchants, weapon=_weapons)
+	async def train(self, interaction: discord.Interaction, character: str, merchant: str, weapon: str) :
+		"""
+		Pays a merchant with the training service to raise your character's proficiency with a weapon one step:
+		Awful to Poor 500, Poor to Average 1,500, Average to Good 5,000, Good to Excellent 14,000 (times the markup,
+		changed by Charisma). Then spend the days with /downtime train: 1, 2, 5 or 10.
+		"""
+		from classes.economy import Spending
+
+		record = await self._here(interaction, merchant)
+		trainee = await self._character(interaction, character) if record else None
+		if trainee is None :
+			return
+		entry = find_entry(CharacterGearTransactions().get_all(trainee.id), weapon)
+		if entry is None :
+			return await reply(interaction, f"{trainee.name} doesn't own {weapon}.")
+		training, problem = Spending.start_with_merchant(trainee, entry, record, interaction.user.id)
+		if problem :
+			return await reply(interaction, problem)
+		paid = f" for {balance_text(interaction.guild_id, training.paid)}" if training.paid else ""
+		await reply(interaction, f"{record.name} will train {trainee.name} to {training.target.capitalize()} with "
+		                         f"**{entry.name}**{paid}. Spend {training.days_needed} day(s) with /downtime train.")
+
+	# ============================================================
 	@app_commands.command(name="lodge", description="Rents a room from a merchant here")
 	@app_commands.autocomplete(character=AutoComplete().approved_character, merchant=_merchants)
 	async def lodge(self, interaction: discord.Interaction, character: str, merchant: str,
@@ -324,7 +401,8 @@ class Merchant(commands.GroupCog, name="Merchant", group_name="merchant") :
 	@app_commands.describe(markup="Times the catalog price (1 is the catalog price)",
 	                       buys="Gear kinds it buys: weapon, armor, consumable, accessory, material (or none)",
 	                       pays="Times the usual sale value it pays (1 is usual)",
-	                       services="repair, lodging, identify (or none)", lodging_price="What a room costs per week",
+	                       services="repair, lodging, identify, healing, training (or none)",
+	                       lodging_price="What a room costs per week",
 	                       haggle_dc="Charisma DC to haggle (leave out: no haggling)",
 	                       here="Trade at this channel's location", faction="Its faction (prices follow standing)")
 	async def add(self, interaction: discord.Interaction, name: app_commands.Range[str, 1, 100],
@@ -383,7 +461,8 @@ class Merchant(commands.GroupCog, name="Merchant", group_name="merchant") :
 	@gm_only()
 	@app_commands.autocomplete(merchant=_merchants)
 	@app_commands.choices(restock=RESTOCK_CHOICES)
-	@app_commands.describe(buys="Gear kinds it buys, or none", services="repair, lodging, identify, or none",
+	@app_commands.describe(buys="Gear kinds it buys, or none",
+	                       services="repair, lodging, identify, healing, training, or none",
 	                       haggle_dc="Charisma DC to haggle (0: no haggling)", faction="Its faction, or - for none")
 	async def edit(self, interaction: discord.Interaction, merchant: str, name: app_commands.Range[str, 1, 100] = None,
 	               description: app_commands.Range[str, 1, 1000] = None, avatar_url: str = None,

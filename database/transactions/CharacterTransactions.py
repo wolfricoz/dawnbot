@@ -20,7 +20,8 @@ FIELDS = ["name", "state", "prefix", "suffix", "avatar_id", "species_id", "occup
           "endurance", "charisma", "intelligence", "agility", "luck", "stat_method", "rerolls", "unspent_points", "xp",
           "level", "currency", "forum_thread_id", "forum_message_ids", "review_message_id", "pending_changes",
           "approved_by", "approved_at", "imported_from", "is_global", "legendary", "legendary_points",
-          "legendary_by", "legendary_at", "armor_proficiency", "bad_streak", "birthday", "speaking_language_id", "omen"]
+          "legendary_by", "legendary_at", "armor_proficiency", "bad_streak", "birthday", "speaking_language_id", "omen",
+          "lifestyle", "lifestyle_paid_until"]
 
 
 class CharacterTransactions(DatabaseTransactions) :

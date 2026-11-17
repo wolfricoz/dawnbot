@@ -2,7 +2,7 @@
 layout: default
 title: Merchant
 parent: Commands
-nav_order: 28
+nav_order: 29
 ---
 
 <h1>Merchant</h1>
@@ -65,6 +65,26 @@ Trade with the merchants at your location.
 
 > Has a merchant with an identify service tell your character what an unidentified item is, for 10% of its
 > catalog price (at least 10) times the merchant's markup.
+
+---
+
+### `heal`
+
+**Usage:** `/merchant heal <character> <merchant> <injury>`
+
+> Has a merchant with the healing service treat one of your character's injuries, taking it off its sheet:
+> 350 for a minor injury, 1,000 for a serious one and 3,500 for a grave one, times the merchant's markup and
+> changed by Charisma.
+
+---
+
+### `train`
+
+**Usage:** `/merchant train <character> <merchant> <weapon>`
+
+> Pays a merchant with the training service to raise your character's proficiency with a weapon one step:
+> Awful to Poor 500, Poor to Average 1,500, Average to Good 5,000, Good to Excellent 14,000 (times the markup,
+> changed by Charisma). Then spend the days with /downtime train: 1, 2, 5 or 10.
 
 ---
 

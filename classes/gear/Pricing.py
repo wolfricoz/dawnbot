@@ -72,7 +72,9 @@ def base_value(entry: CharacterGear, item: GearItems | None) -> int :
 # ============================================================
 def sell_value(entry: CharacterGear, character: Characters, item: GearItems | None) -> int :
 	"""What the character gets for the whole entry (all of a stack); masterwork 50% more, cursed nothing."""
-	if not economy(character.guild_id) or getattr(entry, "quality", None) == CURSED :
+	# Starter kit items (classes/economy/Spending.py) are worth nothing, so a kit can't be turned into money.
+	if not economy(character.guild_id) or getattr(entry, "quality", None) == CURSED or \
+			getattr(entry, "source", None) == "kit" :
 		return 0
 	value = base_value(entry, item) * sell_rate(character) * max(1, getattr(entry, "quantity", 1) or 1)
 	if getattr(entry, "quality", None) == MASTERWORK :

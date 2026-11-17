@@ -156,20 +156,90 @@ class Downtime(commands.GroupCog, name="Downtime", group_name="downtime") :
 		await interaction.response.send_message(embed=embed, ephemeral=private)
 
 	# ============================================================
+	async def _weapons(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		name = interaction.namespace.character
+		character = CharacterTransactions().get(interaction.user.id, interaction.guild_id, name) if name else None
+		if character is None :
+			return []
+		return entry_choices([entry for entry in CharacterGearTransactions().get_all(character.id)
+		                      if entry.kind == "weapon"], current)
+
+	# ============================================================
+	async def _trainers(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		member = interaction.namespace.member
+		if member is None :
+			return []
+		return [Choice(name=character.name, value=character.name)
+		        for character in CharacterTransactions().get_all(member.id, interaction.guild_id)
+		        if current.lower() in character.name.lower()][:25]
+
+	# ============================================================
+	@app_commands.command(name="train", description="Spends today's downtime training with a weapon")
+	@app_commands.autocomplete(character=AutoComplete().approved_character, weapon=_weapons, trainer=_trainers)
+	@app_commands.describe(character="Your character", weapon="The weapon it trains with",
+	                       member="To start: the player whose character trains yours",
+	                       trainer="To start: that player's character (its occupation has to train)")
+	async def train(self, interaction: discord.Interaction, character: str, weapon: str,
+	                member: discord.Member = None, trainer: str = None) :
+		"""
+		Spends the character's downtime for the day training with a weapon. Training is paid first, to a merchant
+		(/merchant train) or here to another player's character whose occupation trains (`member` and `trainer`):
+		Awful to Poor 500, Poor to Average 1,500, Average to Good 5,000, Good to Excellent 14,000. It then takes 1,
+		2, 5 or 10 days; the last one raises the weapon's proficiency.
+		"""
+		from classes.economy import Spending
+
+		record = CharacterTransactions().get(interaction.user.id, interaction.guild_id, character)
+		problem = DowntimeFlow.problem(record)
+		if problem :
+			return await reply(interaction, problem)
+		entry = find_entry(CharacterGearTransactions().get_all(record.id), weapon)
+		if entry is None :
+			return await reply(interaction, f"{record.name} doesn't own {weapon}.")
+		training = Spending.TrainingTransactions().open_for(entry.id)
+		lines = []
+		if training is None :
+			if member is None or not trainer :
+				return await reply(interaction, f"{record.name} isn't training with {entry.name} yet: pay a trainer "
+				                                f"first (/merchant train, or `member` and `trainer` here).")
+			teacher = CharacterTransactions().get(member.id, interaction.guild_id, trainer)
+			if teacher is None or teacher.state != "approved" :
+				return await reply(interaction, f"{member.display_name} has no approved character called {trainer}.")
+			training, problem = Spending.start_with_trainer(record, entry, teacher, interaction.user.id)
+			if problem :
+				return await reply(interaction, problem)
+			lines.append(f"{teacher.name} takes {record.name} on to reach {training.target.capitalize()} with "
+			             f"**{entry.name}** ({training.paid} paid, {training.days_needed} day(s)).")
+		training, day_lines = Spending.train_day(training)
+		lines += day_lines
+		EconomyTransactions().add_downtime(record.id, DowntimeFlow.day(interaction.guild_id), "train", "success",
+		                                   {"training_id" : training.id})
+		embed = discord.Embed(title="🌙 Downtime: Training", description="\n".join(lines)[:4096],
+		                      colour=discord.Colour.dark_gold())
+		embed.set_author(name=record.name)
+		private = RoleplaySettings.toggle(interaction.guild_id, ConfigMapping.DOWNTIME_PRIVATE)
+		await interaction.response.send_message(embed=embed, ephemeral=private)
+
+	# ============================================================
 	@app_commands.command(name="occupation", description="Sets what downtime work pays for an occupation (staff)")
 	@gm_only()
 	@app_commands.autocomplete(occupation=occupation_autocomplete, table=table_autocomplete)
 	@app_commands.choices(stat=STAT_CHOICES)
 	@app_commands.describe(pay="What a day pays (empty: WORK_PAY)", stat="The stat the work rolls",
 	                       table="A roll table for a great day", seer="Seers can read omens for others",
-	                       repairs="What it repairs: weapon, clothing, light, medium, heavy, accessory (or none)")
+	                       repairs="What it repairs: weapon, clothing, light, medium, heavy, accessory (or none)",
+	                       kit="Starter kit: catalog items, like Arming Sword, Padded Jack (or none)",
+	                       trains="Its characters can train others in weapons (/downtime train)")
 	async def occupation(self, interaction: discord.Interaction, occupation: str,
 	                     pay: app_commands.Range[int, 0, 100000] = None, stat: Choice[str] = None,
-	                     table: str = None, seer: bool = None, repairs: app_commands.Range[str, 1, 100] = None) :
+	                     table: str = None, seer: bool = None, repairs: app_commands.Range[str, 1, 100] = None,
+	                     kit: app_commands.Range[str, 1, 300] = None, trains: bool = None) :
 		"""
 		Sets an occupation's downtime work: its pay, the stat it rolls and a roll table for a crit. `seer` lets its
 		characters read omens for others (/omen read). `repairs` lists the gear its characters can repair with
 		/downtime repair, like `weapon, medium, heavy` for a blacksmith (armor goes by its class); `none` clears it.
+		`kit` is the starter kit a new character with the occupation gets (STARTER_KITS); `trains` lets its
+		characters train other players' characters in weapons for pay.
 
 		**Permissions:**
 		- `Manage Messages`, or the GM role
@@ -197,11 +267,26 @@ class Downtime(commands.GroupCog, name="Downtime", group_name="downtime") :
 				return await reply(interaction, f"Unknown gear kinds: {', '.join(unknown)}. Use "
 				                                f"{', '.join(Condition.REPAIR_KINDS)}.")
 			changes["repairs"] = kinds or None
+		if kit is not None :
+			if kit.strip().lower() in ("none", "-") :
+				changes["kit"] = None
+			else :
+				items = []
+				for name in [part.strip() for part in kit.split(",") if part.strip()] :
+					found = GearItemTransactions().find(interaction.guild_id, name)
+					if found is None :
+						return await reply(interaction, f"The catalog has no item called {name}.")
+					items.append(found.id)
+				changes["kit"] = items
+		if trains is not None :
+			changes["trains"] = trains
 		updated = OccupationTransactions().update(record.id, **changes)
 		await reply(interaction, f"**{record.name}**: pays {updated.pay if updated.pay is not None else 'WORK_PAY'}, "
 		                         f"rolls {(updated.work_stat or 'strength').capitalize()}"
 		                         f"{', seer' if updated.seer else ''}"
-		                         f"{', repairs ' + ', '.join(updated.repairs) if updated.repairs else ''}.")
+		                         f"{', repairs ' + ', '.join(updated.repairs) if updated.repairs else ''}"
+		                         f"{', trains' if updated.trains else ''}"
+		                         f"{f', kit of {len(updated.kit)} items' if updated.kit else ''}.")
 
 	# ============================================================
 	@app_commands.command(name="flavor", description="Adds a line to how an occupation's work day reads (staff)")

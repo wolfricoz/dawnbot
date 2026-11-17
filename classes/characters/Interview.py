@@ -1310,6 +1310,10 @@ class Interview :
 			if field_id in labels and value :
 				CharacterInfoTransactions().set_answer(character.id, int(field_id), labels[field_id], value)
 		not_bought += Interview._buy_starting_gear(character, basket, access, draft.uid)
+		# The occupation's starter kit, on top of the starting money (STARTER_KITS, classes/economy/Spending.py).
+		from classes.economy.Spending import grant_kit
+
+		grant_kit(character, draft.uid)
 		# Buying changed the currency, so the review card needs the character as it is now.
 		character = CharacterTransactions().get_by_id(character.id) or character
 		DraftTransactions().delete(draft.uid)

@@ -218,6 +218,10 @@ class Occupations(Base) :
 	faction_tier: Mapped[str | None] = mapped_column(String(16), nullable=True)
 	# The kinds of gear its characters can repair: weapon, clothing, light, medium, heavy, accessory.
 	repairs: Mapped[list | None] = mapped_column(JSON, nullable=True)
+	# The starter kit a new character with it gets: [catalog item ids] (design/economy.md, phase 6).
+	kit: Mapped[list | None] = mapped_column(JSON, nullable=True)
+	# Its characters can train other players' characters in weapons (/downtime train).
+	trains: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
 	__table_args__ = (
 		Index('uq_occupation_guild_name', 'guild_id', text('lower(name)'), unique=True),
@@ -306,6 +310,9 @@ class Characters(Timestamps, Base) :
 	speaking_language_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 	# The last omen drawn: {"card", "deck", "effect" (boon, bane or none), "used", "drawn_at"}.
 	omen: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+	# The lifestyle the character lives (classes/economy/Lifestyle.py) and until when it is paid; used with LIFESTYLE.
+	lifestyle: Mapped[str | None] = mapped_column(String(16), nullable=True)
+	lifestyle_paid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 	__table_args__ = (
 		Index('uq_character_uid_guild_name', 'uid', 'guild_id', text('lower(name)'), unique=True),
@@ -1561,6 +1568,23 @@ class FightLoot(Base) :
 	currency: Mapped[int] = mapped_column(Integer, default=0)
 	items: Mapped[list] = mapped_column(JSON, default=list)
 	mode: Mapped[str] = mapped_column(String(16), default="gm")
+	state: Mapped[str] = mapped_column(String(16), default="open")
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# A character learning to handle a weapon better: paid up front, then days_needed days of downtime raise the
+# weapon's proficiency to target (classes/economy/Training.py). state is open, done or cancelled.
+class Trainings(Base) :
+	"""Weapon training in progress."""
+	__tablename__ = "trainings"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+	character_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+	entry_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("character_gear.id", ondelete="CASCADE"))
+	target: Mapped[str] = mapped_column(String(16))
+	days_done: Mapped[int] = mapped_column(Integer, default=0)
+	days_needed: Mapped[int] = mapped_column(Integer)
+	paid: Mapped[int] = mapped_column(BigInteger, default=0)
+	trainer: Mapped[str | None] = mapped_column(String(100), nullable=True)
 	state: Mapped[str] = mapped_column(String(16), default="open")
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
