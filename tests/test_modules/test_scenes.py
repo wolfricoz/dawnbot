@@ -202,6 +202,40 @@ class TestSceneRecords(DatabaseTestCase) :
 			asyncio.run(SceneFlow._turn_timers(None, SceneTransactions().get(scene.id), NOW))
 		self.assertEqual(nudged.await_count, 1)
 
+	def write_chronicle(self, thread_fails=False) :
+		import discord
+		from classes.kernel.ConfigData import ConfigData
+
+		character = self.add_character("Aria")
+		post = {"kind" : "post", "name" : "Aria", "time" : NOW, "text" : "Hello there", "character_id" : character.id,
+		        "avatar" : None}
+		thread = SimpleNamespace(id=900, send=mock.AsyncMock())
+		create = mock.AsyncMock(side_effect=discord.HTTPException(mock.Mock(status=403), "no")) if thread_fails \
+			else mock.AsyncMock(return_value=thread)
+		card = SimpleNamespace(id=800, create_thread=create, edit=mock.AsyncMock())
+		target = SimpleNamespace(send=mock.AsyncMock(return_value=card))
+		guild = SimpleNamespace(id=GUILD_ID, name="Test")
+		with mock.patch.object(ConfigData, "get_channel", new=mock.AsyncMock(return_value=target)), \
+				mock.patch.object(Chronicle.ChronicleFlow, "gather", new=mock.AsyncMock(return_value=[post])) :
+			record, problem = asyncio.run(Chronicle.ChronicleFlow.write(
+				None, guild, "Heist", SimpleNamespace(id=CHANNEL_ID, name="tavern"), 1, 2, USER_ID))
+		self.assertIsNone(problem)
+		self.assertNotIn("files", target.send.await_args.kwargs)
+		return record, thread, card
+
+	def test_chronicle_files_go_in_its_thread(self) :
+		record, thread, card = self.write_chronicle()
+		self.assertEqual((record.thread_id, record.message_id), (900, 800))
+		names = [file.filename for file in thread.send.await_args.kwargs["files"]]
+		self.assertEqual(names, ["Heist.html", "Heist.md"])
+		card.edit.assert_not_awaited()
+
+	def test_chronicle_files_stay_on_the_card_without_a_thread(self) :
+		record, thread, card = self.write_chronicle(thread_fails=True)
+		self.assertIsNone(record.thread_id)
+		thread.send.assert_not_awaited()
+		self.assertEqual(len(card.edit.await_args.kwargs["attachments"]), 2)
+
 	def test_chronicles_of_a_character(self) :
 		character = self.add_character()
 		chronicle = SceneTransactions().add_chronicle(GUILD_ID, "Old tale", CHANNEL_ID)

@@ -85,7 +85,7 @@ it was in.
 |---|---|
 | Where | `CHRONICLE` (a forum channel). Without it, scenes still end but no transcript is made. |
 | What | The proxied posts in the scene's channel or thread between its start and end, read from Discord (one history pass, keeping messages whose ids are in `proxy_messages`), so edits and deletions are respected. Check, table and dice results in the scene become one-line notes ("🎲 Aria: Perception 17, success"). Language parts show the original text with a `‹Elvish›` marker: the chronicle is an out-of-character record. |
-| The post | One forum thread per scene named after its title. The first message is a summary embed: location, in-world and real dates, participants, posts and words per character, and a link to the scene's first message. Then the transcript as an HTML file (avatars, names, timestamps, styled like Discord) and a plain `.md` file. An "Add summary" button lets participants write the short summary that `/endscene` used to ask for. |
+| The post | One forum thread per scene named after its title. The first message is a summary embed: location, in-world and real dates, participants, posts and words per character, and a link to the scene's first message. Under it, in the thread, a message with the transcript as an HTML file (avatars, names, timestamps, styled like Discord) and a plain `.md` file. An "Add summary" button lets participants write the short summary that `/endscene` used to ask for. |
 | Older roleplay | `/chronicle make <first message link> <last message link> [title]` (staff, or anyone whose characters posted in that range) builds one without a scene. |
 | Characters | `/character scenes <character>` lists its scenes with links. With `CHRONICLE_CHARACTER_POSTS` on (default off), each scene also adds a line to the character's forum thread. |
 
@@ -435,7 +435,7 @@ Choices made while building, beyond (or instead of) sections 1 to 15. Settings a
 | Commands | `/scene start | end | join | leave | pass | away | back | add | remove | move | host | pause | resume | card`, `/chronicle make | character` (instead of `/character scenes`). `/endscene` ends an open scene (host or staff); `rpenddate` is optional and defaults to the calendar. |
 | Counting | `Proxy.handle` calls `SceneFlow.on_post` after the rewards; only the participant's scene character counts. Out-of-turn posts reorder as Rico decided. |
 | Timers | Nudges, skips, free-mode reminders, idle warnings and resuming after a fight run every 5 minutes from `WorldTask`. A fight started from the scene's channel (or its thread's parent) pauses the scene; it resumes when that fight ends. |
-| Chronicle | Read from the channel's history between the card and the end; check, dice and table cards become notes. Posted to `CHRONICLE` (a forum gets a thread; a text channel a message with a thread) with an HTML and a Markdown file and an **Add summary** button (players in it, or staff). |
+| Chronicle | Read from the channel's history between the card and the end; check, dice and table cards become notes. Posted to `CHRONICLE` (a forum gets a thread; a text channel a message with a thread) with an **Add summary** button; the HTML and Markdown files go in the thread under the card (players in it, or staff). |
 
 ### Phase D: languages and letters
 

@@ -1,5 +1,6 @@
 """The chronicle (design/roleplay-tools.md, section 3): a finished scene (or a stretch of older roleplay) written up as
-a transcript in the CHRONICLE forum, with a summary card, an HTML and a Markdown file, and per-character counts."""
+a transcript in the CHRONICLE forum: a summary card with per-character counts, and the HTML and Markdown transcript
+files posted in its thread under the card."""
 import html
 import io
 import logging
@@ -198,21 +199,22 @@ class ChronicleFlow :
 		from views.scenes.SceneButtons import chronicle_view
 
 		view = chronicle_view(record.id)
+		thread = None
 		try :
 			if isinstance(target, discord.ForumChannel) :
-				created = await target.create_thread(name=title[:100], embed=summary, files=files, view=view)
-				thread_id, message_id = created.thread.id, created.message.id
+				created = await target.create_thread(name=title[:100], embed=summary, view=view)
+				thread, message = created.thread, created.message
 			else :
-				message = await target.send(embed=summary, files=files, view=view)
-				thread_id, message_id = None, message.id
+				message = await target.send(embed=summary, view=view)
 				try :
 					thread = await message.create_thread(name=title[:100])
-					thread_id = thread.id
 				except discord.HTTPException :
-					pass
+					thread = None
 		except discord.HTTPException as e :
 			logging.warning(f"Could not post a chronicle in {guild.name}: {e}")
 			return None, "I couldn't post in the chronicle channel; check my permissions there."
+		thread_id, message_id = (thread.id if thread else None), message.id
+		await ChronicleFlow._post_transcript(thread, message, files)
 		record = SceneTransactions().update_chronicle(record.id, thread_id=thread_id, message_id=message_id)
 		SceneTransactions().set_chronicle_characters(record.id, tally)
 		if scene is not None :
@@ -220,6 +222,19 @@ class ChronicleFlow :
 		if RoleplaySettings.toggle(guild.id, ConfigMapping.CHRONICLE_CHARACTER_POSTS) :
 			await ChronicleFlow._tell_characters(bot, record, tally)
 		return record, None
+
+	# ============================================================
+	@staticmethod
+	async def _post_transcript(thread, card: discord.Message, files: list[discord.File]) -> None :
+		"""Posts the transcript files in the chronicle's thread, under the card. Without a thread (it couldn't be
+		made) they go on the card itself."""
+		try :
+			if thread is not None :
+				await thread.send("📄 The full transcript:", files=files)
+			else :
+				await card.edit(attachments=files)
+		except discord.HTTPException as e :
+			logging.warning(f"Could not post the transcript files of chronicle card {card.id}: {e}")
 
 	# ============================================================
 	@staticmethod
