@@ -1,0 +1,1178 @@
+{
+	"name": "modern",
+	"title": "Modern",
+	"starting_currency": 1500,
+	"currency_name": "dollars",
+	"items": [
+		{
+			"kind": "weapon",
+			"name": "Pocket Knife",
+			"description": "A folding knife that lives on a key ring.",
+			"price": 25,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "1d4",
+				"attack_stat": "agility",
+				"damage_stat": "agility",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"light"
+				],
+				"kind": "dagger"
+			},
+			"weight": 0.1
+		},
+		{
+			"kind": "weapon",
+			"name": "Baseball Bat",
+			"description": "Aluminium, dented, with tape around the grip.",
+			"price": 45,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "1d6",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [],
+				"kind": "club"
+			},
+			"weight": 1
+		},
+		{
+			"kind": "weapon",
+			"name": "Crowbar",
+			"description": "Opens crates, doors and arguments.",
+			"price": 60,
+			"requirements": {
+				"strength": 3
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "1d8",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [],
+				"kind": "club"
+			},
+			"weight": 2
+		},
+		{
+			"kind": "weapon",
+			"name": "Telescopic Baton",
+			"description": "A steel baton that snaps out to full length with a flick.",
+			"price": 90,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "1d6",
+				"attack_stat": "agility",
+				"damage_stat": "strength",
+				"hit_mod": 1,
+				"range": "melee",
+				"properties": [
+					"light"
+				],
+				"kind": "club"
+			},
+			"weight": 0.6
+		},
+		{
+			"kind": "weapon",
+			"name": "Tactical Knife",
+			"description": "A fixed blade with a serrated spine and a molded sheath.",
+			"price": 140,
+			"requirements": {
+				"agility": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Slashing",
+				"dice": "1d6",
+				"attack_stat": "agility",
+				"damage_stat": "agility",
+				"hit_mod": 1,
+				"range": "melee",
+				"properties": [
+					"light",
+					"thrown"
+				],
+				"kind": "dagger"
+			},
+			"weight": 0.3
+		},
+		{
+			"kind": "weapon",
+			"name": "Camp Hatchet",
+			"description": "A short-handled hatchet meant for firewood.",
+			"price": 110,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Slashing",
+				"dice": "1d8",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"thrown"
+				],
+				"kind": "hatchet"
+			},
+			"weight": 1
+		},
+		{
+			"kind": "weapon",
+			"name": "Ballistic Shield",
+			"description": "A black shield with a viewing slot, rated against handgun fire.",
+			"price": 600,
+			"requirements": {
+				"strength": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "1d4",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"shield"
+				],
+				"kind": "shield"
+			},
+			"weight": 8
+		},
+		{
+			"kind": "weapon",
+			"name": "Stun Gun",
+			"description": "A handheld shocker that crackles when you squeeze it.",
+			"price": 180,
+			"requirements": {},
+			"effect": "Non-lethal: the GM may rule a downed target is knocked out instead of dying.",
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Lightning",
+				"dice": "1d6",
+				"attack_stat": "agility",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"light"
+				]
+			},
+			"weight": 0.4
+		},
+		{
+			"kind": "weapon",
+			"name": "Compact Pistol",
+			"description": "A small semi-automatic that fits in a jacket pocket.",
+			"price": 300,
+			"requirements": {
+				"agility": 3
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "1d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"light"
+				],
+				"kind": "pistol"
+			},
+			"weight": 0.6
+		},
+		{
+			"kind": "weapon",
+			"name": "Service Pistol",
+			"description": "A full-size duty pistol with a fifteen-round magazine.",
+			"price": 450,
+			"requirements": {
+				"agility": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d4",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [],
+				"kind": "pistol"
+			},
+			"weight": 0.9
+		},
+		{
+			"kind": "weapon",
+			"name": "Heavy Revolver",
+			"description": "A long-barrelled revolver chambered for something that kicks.",
+			"price": 650,
+			"requirements": {
+				"strength": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "1d12",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [],
+				"kind": "pistol"
+			},
+			"weight": 1.4
+		},
+		{
+			"kind": "weapon",
+			"name": "Compound Bow",
+			"description": "Cams and cables make a light draw throw a heavy arrow.",
+			"price": 400,
+			"requirements": {
+				"agility": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "1d10",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				],
+				"kind": "bow"
+			},
+			"weight": 2
+		},
+		{
+			"kind": "weapon",
+			"name": "Pump Shotgun",
+			"description": "A pump-action shotgun, the kind kept under a shop counter.",
+			"price": 550,
+			"requirements": {
+				"strength": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				],
+				"kind": "scattergun"
+			},
+			"weight": 3.5
+		},
+		{
+			"kind": "weapon",
+			"name": "Hunting Rifle",
+			"description": "A bolt-action rifle with a good scope.",
+			"price": 800,
+			"requirements": {
+				"perception": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"loading"
+				],
+				"kind": "rifle"
+			},
+			"weight": 4
+		},
+		{
+			"kind": "weapon",
+			"name": "Submachine Gun",
+			"description": "A compact automatic that empties its magazine in a heartbeat.",
+			"price": 1200,
+			"requirements": {
+				"agility": 5,
+				"strength": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				],
+				"kind": "pistol"
+			},
+			"weight": 3
+		},
+		{
+			"kind": "weapon",
+			"name": "Patrol Carbine",
+			"description": "A short semi-automatic rifle with a red-dot sight.",
+			"price": 1450,
+			"requirements": {
+				"perception": 5,
+				"agility": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				],
+				"kind": "rifle"
+			},
+			"weight": 3.2
+		},
+		{
+			"kind": "weapon",
+			"name": "Precision Rifle",
+			"description": "A heavy-barrelled rifle that can split a playing card at a long walk.",
+			"price": 3300,
+			"requirements": {
+				"perception": 7,
+				"agility": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d10",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"keen"
+				],
+				"kind": "rifle"
+			},
+			"weight": 6
+		},
+		{
+			"kind": "armor",
+			"name": "Street Clothes",
+			"description": "Jeans, a hoodie and comfortable shoes.",
+			"price": 40,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "clothing",
+				"ac": 0,
+				"dt": 0,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 1
+		},
+		{
+			"kind": "armor",
+			"name": "Leather Jacket",
+			"description": "A heavy leather jacket that has seen a few fights.",
+			"price": 180,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 0,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 2.5
+		},
+		{
+			"kind": "armor",
+			"name": "Motorcycle Leathers",
+			"description": "A riding suit with padded elbows and spine.",
+			"price": 350,
+			"requirements": {
+				"strength": 3
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 4
+		},
+		{
+			"kind": "armor",
+			"name": "Concealable Vest",
+			"description": "A thin aramid vest that hides under a shirt.",
+			"price": 650,
+			"requirements": {
+				"agility": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 1,
+				"hit_mod": 1,
+				"ability_hit_mod": 0
+			},
+			"weight": 2.5
+		},
+		{
+			"kind": "armor",
+			"name": "Tactical Vest",
+			"description": "A load-bearing vest with soft armor panels and magazine pouches.",
+			"price": 900,
+			"requirements": {
+				"strength": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "medium",
+				"ac": 2,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 5
+		},
+		{
+			"kind": "armor",
+			"name": "Plate Carrier",
+			"description": "Hard plates front and back, built to stop rifle rounds.",
+			"price": 1400,
+			"requirements": {
+				"strength": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "medium",
+				"ac": 2,
+				"dt": 2,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 9
+		},
+		{
+			"kind": "armor",
+			"name": "Assault Armor",
+			"description": "Full tactical armor: helmet, plates, groin and shoulder guards.",
+			"price": 2200,
+			"requirements": {
+				"strength": 6,
+				"endurance": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "medium",
+				"ac": 3,
+				"dt": 2,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 14
+		},
+		{
+			"kind": "armor",
+			"name": "Bomb Disposal Suit",
+			"description": "Layered armor and a blast visor. Hot, slow and nearly impossible to hurt.",
+			"price": 3200,
+			"requirements": {
+				"strength": 8,
+				"endurance": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "heavy",
+				"ac": 4,
+				"dt": 3,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 30
+		},
+		{
+			"kind": "consumable",
+			"name": "Bandage Roll",
+			"description": "Gauze and tape from a glove-box first aid kit.",
+			"price": 15,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "bleeding",
+				"turns": 2
+			},
+			"weight": 0.1
+		},
+		{
+			"kind": "consumable",
+			"name": "Burn Dressing",
+			"description": "A cooling hydrogel dressing for burns.",
+			"price": 30,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "burning",
+				"turns": 2
+			},
+			"weight": 0.2
+		},
+		{
+			"kind": "consumable",
+			"name": "Ammonia Inhalant",
+			"description": "A snapped capsule under the nose wakes anyone up.",
+			"price": 35,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "stunned",
+				"turns": 2
+			},
+			"weight": 0.1
+		},
+		{
+			"kind": "consumable",
+			"name": "First Aid Kit",
+			"description": "A zippered kit of plasters, gauze and antiseptic.",
+			"price": 60,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "2d4",
+				"condition": null,
+				"turns": 2
+			},
+			"weight": 0.5
+		},
+		{
+			"kind": "consumable",
+			"name": "Caffeine Pills",
+			"description": "Too many of them, washed down with cold coffee.",
+			"price": 40,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "inspired",
+				"turns": 2
+			},
+			"weight": 0.1
+		},
+		{
+			"kind": "consumable",
+			"name": "Epinephrine Pen",
+			"description": "An auto-injector that keeps a body fighting while it heals.",
+			"price": 220,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "regenerating",
+				"turns": 3
+			},
+			"weight": 0.1
+		},
+		{
+			"kind": "consumable",
+			"name": "Trauma Pack",
+			"description": "A paramedic's pack: tourniquet, chest seal, clotting gauze.",
+			"price": 200,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "4d4",
+				"condition": null,
+				"turns": 2
+			},
+			"weight": 0.8
+		},
+		{
+			"kind": "accessory",
+			"name": "Sunglasses",
+			"description": "Dark lenses. They make everyone look calmer than they are.",
+			"price": 50,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "head",
+			"weight": 0.1
+		},
+		{
+			"kind": "accessory",
+			"name": "Work Gloves",
+			"description": "Leather-palmed gloves, good for broken glass.",
+			"price": 30,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "hands",
+			"weight": 0.2
+		},
+		{
+			"kind": "accessory",
+			"name": "Running Shoes",
+			"description": "Light shoes for when running is the plan.",
+			"price": 90,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "feet",
+			"weight": 0.6
+		},
+		{
+			"kind": "accessory",
+			"name": "Silver Chain",
+			"description": "A fine chain with a small medallion.",
+			"price": 120,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "neck",
+			"weight": 0.05
+		},
+		{
+			"kind": "accessory",
+			"name": "Class Ring",
+			"description": "A heavy ring with a school crest and a year.",
+			"price": 150,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "ring",
+			"weight": 0.05
+		},
+		{
+			"kind": "accessory",
+			"name": "Everyday Backpack",
+			"description": "A canvas backpack with a laptop sleeve.",
+			"price": 60,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "back",
+			"weight": 0.8
+		}
+	],
+	"bestiary": [
+		{
+			"name": "Stray Dog",
+			"preset": "minion",
+			"description": "Thin, wary and not afraid to bite.",
+			"attack_name": "Bite",
+			"damage_type": "Piercing",
+			"behavior": "aggressive",
+			"reward_xp": 5,
+			"reward_currency": 0
+		},
+		{
+			"name": "Street Thug",
+			"preset": "standard",
+			"description": "Hangs around the corner store, looking for a mark.",
+			"special": {
+				"strength": 6,
+				"perception": 4,
+				"endurance": 5,
+				"charisma": 4,
+				"intelligence": 4,
+				"agility": 5,
+				"luck": 4
+			},
+			"level": 1,
+			"weapons": [
+				"Baseball Bat"
+			],
+			"armor": "Street Clothes",
+			"behavior": "vengeful",
+			"reward_xp": 15,
+			"reward_currency": 20,
+			"loot": {
+				"currency": "2d10",
+				"items": [
+					{
+						"name": "Pocket Knife",
+						"chance": 30,
+						"amount": 1
+					},
+					{
+						"name": "Bandage Roll",
+						"chance": 30,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Gang Enforcer",
+			"preset": "standard",
+			"description": "Collects debts for people who don't ask twice.",
+			"special": {
+				"strength": 7,
+				"perception": 5,
+				"endurance": 6,
+				"charisma": 4,
+				"intelligence": 4,
+				"agility": 5,
+				"luck": 4
+			},
+			"level": 2,
+			"weapons": [
+				"Compact Pistol",
+				"Crowbar"
+			],
+			"armor": "Leather Jacket",
+			"behavior": "aggressive",
+			"reward_xp": 25,
+			"reward_currency": 40,
+			"loot": {
+				"currency": "3d10",
+				"items": [
+					{
+						"name": "Compact Pistol",
+						"chance": 25,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Crooked Guard",
+			"preset": "standard",
+			"description": "Private security who works for whoever pays.",
+			"special": {
+				"strength": 5,
+				"perception": 6,
+				"endurance": 5,
+				"charisma": 5,
+				"intelligence": 5,
+				"agility": 5,
+				"luck": 5
+			},
+			"level": 2,
+			"weapons": [
+				"Service Pistol",
+				"Telescopic Baton"
+			],
+			"armor": "Concealable Vest",
+			"behavior": "cautious",
+			"reward_xp": 25,
+			"reward_currency": 30,
+			"loot": {
+				"currency": "2d10",
+				"items": [
+					{
+						"name": "Telescopic Baton",
+						"chance": 30,
+						"amount": 1
+					},
+					{
+						"name": "First Aid Kit",
+						"chance": 30,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Contract Killer",
+			"preset": "elite",
+			"description": "Quiet, careful and very good at the job.",
+			"special": {
+				"strength": 5,
+				"perception": 8,
+				"endurance": 5,
+				"charisma": 6,
+				"intelligence": 6,
+				"agility": 8,
+				"luck": 6
+			},
+			"level": 4,
+			"weapons": [
+				"Service Pistol",
+				"Tactical Knife"
+			],
+			"armor": "Concealable Vest",
+			"behavior": "cautious",
+			"reward_xp": 60,
+			"reward_currency": 150,
+			"loot": {
+				"currency": "5d10",
+				"items": [
+					{
+						"name": "Tactical Knife",
+						"chance": 40,
+						"amount": 1
+					},
+					{
+						"name": "Epinephrine Pen",
+						"chance": 30,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Crime Boss",
+			"preset": "elite",
+			"description": "Runs half the docks and never carries anything small.",
+			"special": {
+				"strength": 6,
+				"perception": 6,
+				"endurance": 6,
+				"charisma": 8,
+				"intelligence": 7,
+				"agility": 5,
+				"luck": 6
+			},
+			"level": 5,
+			"weapons": [
+				"Heavy Revolver"
+			],
+			"armor": "Tactical Vest",
+			"behavior": "vengeful",
+			"reward_xp": 80,
+			"reward_currency": 300,
+			"loot": {
+				"currency": "10d10",
+				"items": [
+					{
+						"name": "Heavy Revolver",
+						"chance": 30,
+						"amount": 1
+					},
+					{
+						"name": "Silver Chain",
+						"chance": 50,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Escaped Lab Specimen",
+			"preset": "boss",
+			"description": "Something got out of the research park. It is big, fast and very angry.",
+			"attack_name": "Rend",
+			"damage_type": "Slashing",
+			"behavior": "vengeful",
+			"reward_xp": 200,
+			"reward_currency": 0,
+			"loot": {
+				"currency": "0",
+				"items": [
+					{
+						"name": "Epinephrine Pen",
+						"chance": 50,
+						"amount": 2
+					}
+				]
+			}
+		}
+	],
+	"merchants": [
+		{
+			"name": "Corner Pawn & Loan",
+			"description": "Guitars, watches, power tools and a few things behind the glass.",
+			"markup": 1.1,
+			"buys": [
+				"weapon",
+				"armor",
+				"accessory"
+			],
+			"pays": 1.0,
+			"services": [
+				"repair"
+			],
+			"haggle_dc": 11,
+			"restock": "weekly",
+			"stock": [
+				{
+					"name": "Pocket Knife"
+				},
+				{
+					"name": "Baseball Bat"
+				},
+				{
+					"name": "Crowbar"
+				},
+				{
+					"name": "Camp Hatchet"
+				},
+				{
+					"name": "Leather Jacket"
+				},
+				{
+					"name": "Sunglasses"
+				},
+				{
+					"name": "Class Ring",
+					"quantity": 2
+				},
+				{
+					"name": "Silver Chain",
+					"quantity": 2
+				},
+				{
+					"name": "Compact Pistol",
+					"quantity": 1,
+					"chance": 40
+				},
+				{
+					"name": "Motorcycle Leathers",
+					"quantity": 1,
+					"chance": 50
+				}
+			]
+		},
+		{
+			"name": "Urgent Care Clinic",
+			"description": "Bright lights, plastic chairs, and a nurse who has seen it all.",
+			"markup": 1.2,
+			"buys": [],
+			"pays": 1.0,
+			"services": [
+				"healing"
+			],
+			"restock": "daily",
+			"stock": [
+				{
+					"name": "Bandage Roll"
+				},
+				{
+					"name": "Burn Dressing"
+				},
+				{
+					"name": "Ammonia Inhalant"
+				},
+				{
+					"name": "First Aid Kit"
+				},
+				{
+					"name": "Trauma Pack",
+					"quantity": 3
+				},
+				{
+					"name": "Epinephrine Pen",
+					"quantity": 2,
+					"chance": 50
+				}
+			]
+		},
+		{
+			"name": "Outdoor & Range Supply",
+			"description": "Camping gear up front, a gun counter and a firing range in the back.",
+			"markup": 1.0,
+			"buys": [
+				"weapon"
+			],
+			"pays": 1.0,
+			"services": [
+				"training",
+				"repair"
+			],
+			"haggle_dc": 14,
+			"restock": "weekly",
+			"stock": [
+				{
+					"name": "Tactical Knife"
+				},
+				{
+					"name": "Camp Hatchet"
+				},
+				{
+					"name": "Compound Bow",
+					"quantity": 2
+				},
+				{
+					"name": "Service Pistol",
+					"quantity": 2
+				},
+				{
+					"name": "Pump Shotgun",
+					"quantity": 2
+				},
+				{
+					"name": "Hunting Rifle",
+					"quantity": 1
+				},
+				{
+					"name": "Work Gloves"
+				},
+				{
+					"name": "Everyday Backpack"
+				},
+				{
+					"name": "Patrol Carbine",
+					"quantity": 1,
+					"chance": 30
+				},
+				{
+					"name": "Precision Rifle",
+					"quantity": 1,
+					"chance": 10
+				}
+			]
+		},
+		{
+			"name": "Roadside Motel",
+			"description": "Twenty rooms, a flickering sign and a manager who takes cash.",
+			"markup": 1.0,
+			"buys": [],
+			"pays": 1.0,
+			"services": [
+				"lodging"
+			],
+			"lodging_price": 120,
+			"restock": "manual",
+			"stock": [
+				{
+					"name": "Caffeine Pills"
+				}
+			]
+		}
+	],
+	"kits": {
+		"Police Officer": [
+			"Service Pistol",
+			"Telescopic Baton",
+			"Concealable Vest"
+		],
+		"Paramedic": [
+			"Trauma Pack",
+			"First Aid Kit",
+			"Street Clothes"
+		],
+		"Mechanic": [
+			"Crowbar",
+			"Work Gloves",
+			"Street Clothes"
+		],
+		"Security Guard": [
+			"Telescopic Baton",
+			"Stun Gun",
+			"Leather Jacket"
+		],
+		"Student": [
+			"Everyday Backpack",
+			"Street Clothes",
+			"Running Shoes"
+		],
+		"Hunter": [
+			"Compound Bow",
+			"Camp Hatchet",
+			"Leather Jacket"
+		]
+	}
+}

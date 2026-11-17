@@ -163,4 +163,17 @@ original; a test checks a list of names from existing games stays out.
 | Merchants | A salvage yard (repairs, buys weapons, armor and materials), a clinic (healing, buys consumables) and a caravan quartermaster (rooms, training, rotating rare stock). |
 | Kits | Scavenger, Mechanic, Medic, Guard, Trader, Hunter. |
 
-Still to come: the modern and sci-fi packs, and property.
+## 11. Modern pack as built
+
+`resources/data/gear/modern.json` and `resources/data/recipes/modern.json`, original content with no brand or product
+names (a test checks a list of them stays out).
+
+| Topic | As built |
+|---|---|
+| Gear | 17 weapons (pocket and tactical knives, bat, crowbar, baton, hatchet, a stun gun, pistols, a revolver, a compound bow, shotgun, rifles, a submachine gun, a carbine, a precision rifle, a ballistic shield), 8 armors (street clothes to a bomb disposal suit), 7 consumables and 6 accessories, all weighted. Common to Rare (up to 3,300). The stun gun is melee Lightning with a non-lethal note for the GM. Suggested currency: dollars. |
+| Recipes | 10 materials (Toolbox and Sewing Kit are tools), 10 recipes (medical supplies, baton, knife, stun gun, leather jacket, concealable vest, compound bow), salvage for 23 items. |
+| Bestiary | 7 entries: a stray dog, a street thug, a gang enforcer, a crooked guard, a contract killer, a crime boss and an escaped lab specimen (boss), with loot. |
+| Merchants | A pawn shop (repairs; buys weapons, armor, accessories), an urgent care clinic (healing), an outdoor and range supply store (training, repairs) and a roadside motel (rooms). |
+| Kits | Police Officer, Paramedic, Mechanic, Security Guard, Student, Hunter. |
+
+Still to come: the sci-fi pack, and property.
