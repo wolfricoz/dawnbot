@@ -38,7 +38,6 @@ ITEM_CONDITION_CHOICES = [Choice(name="None", value="none")] + [Choice(name=Cond
                                                                 for name in Items.BOOST_CHOICES + Items.CURE_CHOICES]
 STAT_CHOICES = [Choice(name=stat.capitalize(), value=stat) for stat in STATS]
 DAMAGE_STAT_CHOICES = [Choice(name="None", value="none")] + STAT_CHOICES
-RANGE_CHOICES = [Choice(name=value.capitalize(), value=value) for value in Rules.RANGES]
 ARMOR_CLASS_CHOICES = [Choice(name=value.capitalize(), value=value) for value in Rules.ARMOR_CLASSES]
 RARITY_CHOICES = [Choice(name="From the price", value="auto")] + [Choice(name=Rarity.label(value), value=value)
                                                                   for value in Rarity.RARITIES]
@@ -46,14 +45,13 @@ OPTION_HELP = {
 	"rarity"          : "Leave out (or From the price) to take it from the price; Legendary items are never sold",
 	"weight"          : "In kilograms, for servers with a carry limit (CARRY_WEIGHT)",
 	"worn_slot"       : "Accessory: where it is worn (head, neck, back, hands, feet or ring)",
-	"requirements"    : "SPECIAL minimums, like: strength 8, agility 4",
+	"requirements"    : "SPECIAL minimums, like: strength 8, agility 4 (in /armory edit, - clears them)",
 	"dice"            : "Weapon damage dice, like 1d8 or 2d6",
 	"damage_type"     : "Weapon: its damage type (see /damagetype list), or none",
 	"attack_stat"     : "Weapon: the stat added to attack rolls",
 	"damage_stat"     : "Weapon: the stat added to damage, or none",
 	"hit_mod"         : "Weapon or armor: added to attack rolls",
-	"range"           : "Weapon: melee or ranged",
-	"properties"      : "Weapon: like light, thrown (light, heavy, two_handed, reach, loading, keen, focus, shield)",
+	"properties"      : "Weapon: like ranged, loading (melee or ranged, light, heavy, two_handed, reach, thrown...)",
 	"ap_cost"         : "Weapon: AP per attack, if not the usual (light 2, normal 3, heavy 4, loading 5)",
 	"weapon_kind"     : "Weapon: sword, spear, bow, claw... (which weapon techniques it allows), or none",
 	"armor_class"     : "Armor: clothing, light, medium or heavy",
@@ -102,6 +100,18 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 			return False, None
 		value = value.strip()
 		return True, None if value in ("", CLEAR) else value
+
+	# ============================================================
+	@staticmethod
+	def split_range(properties: str | None) -> tuple[str | None, str | None] :
+		"""Takes `melee` or `ranged` out of the properties text: (the other properties or None, the range or None).
+		Range has no option of its own because Discord allows a command at most 25 options."""
+		if properties is None :
+			return None, None
+		words = [word.strip() for word in properties.split(",") if word.strip()]
+		ranges = [word.lower() for word in words if word.lower() in Rules.RANGES]
+		rest = [word for word in words if word.lower() not in Rules.RANGES]
+		return (", ".join(rest) or None), (ranges[-1] if ranges else None)
 
 	# ============================================================
 	@staticmethod
@@ -186,8 +196,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(use=USE_CHOICES, condition=ITEM_CONDITION_CHOICES)
 	@app_commands.choices(kind=KIND_CHOICES, attack_stat=STAT_CHOICES, damage_stat=DAMAGE_STAT_CHOICES,
-	                      range=RANGE_CHOICES, armor_class=ARMOR_CLASS_CHOICES, rarity=RARITY_CHOICES,
-	                      worn_slot=WORN_SLOT_CHOICES)
+	                      armor_class=ARMOR_CLASS_CHOICES, rarity=RARITY_CHOICES, worn_slot=WORN_SLOT_CHOICES)
 	@app_commands.autocomplete(damage_type=_types, weapon_kind=_weapon_kinds)
 	@app_commands.describe(**OPTION_HELP)
 	async def add(self, interaction: discord.Interaction, kind: Choice[str], name: app_commands.Range[str, 1, 100],
@@ -198,7 +207,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	              effect_unmet: app_commands.Range[str, 1, TEXT_LIMIT] = None,
 	              dice: app_commands.Range[str, 3, 7] = None, damage_type: app_commands.Range[str, 1, 50] = None,
 	              attack_stat: Choice[str] = None, damage_stat: Choice[str] = None,
-	              hit_mod: app_commands.Range[int, -10, 10] = None, range: Choice[str] = None,
+	              hit_mod: app_commands.Range[int, -10, 10] = None,
 	              properties: app_commands.Range[str, 1, 200] = None, ap_cost: app_commands.Range[int, 1, 10] = None,
 	              armor_class: Choice[str] = None, ac: app_commands.Range[int, 0, 10] = None,
 	              dt: app_commands.Range[int, 0, 10] = None, ability_hit_mod: app_commands.Range[int, -10, 10] = None,
@@ -212,8 +221,8 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 		(a penalty) applies. `effect` is something the item always does.
 
 		Combat values are optional. Weapons use `dice` (like 2d6), `damage_type`, `attack_stat` and `damage_stat`
-		(the stats added to attack and damage rolls), `hit_mod`, `range`, `properties` (like `light, thrown`; a
-		`shield` gives +2 AC while equipped), `ap_cost` and `weapon_kind` (sword, spear, bow, claw...: which weapon
+		(the stats added to attack and damage rolls), `hit_mod`, `properties` (like `ranged, loading`: `melee` or
+		`ranged` sets its range; a `shield` gives +2 AC while equipped), `ap_cost` and `weapon_kind` (sword, spear, bow, claw...: which weapon
 		techniques it allows; without it the kind is read from the name). Armor uses `armor_class`, `ac` (added to
 		AC), `dt` (taken
 		off every hit), `hit_mod` and `ability_hit_mod`. Consumables use `use` (heal, cure, boost or nothing
@@ -235,7 +244,8 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 			return await interaction.followup.send("An accessory needs a `worn_slot`.")
 		try :
 			needs = Packs.parse_requirements(requirements)
-			changes = self.combat_changes(dice, damage_type, attack_stat, damage_stat, hit_mod, range, properties,
+			properties, range_ = self.split_range(properties)
+			changes = self.combat_changes(dice, damage_type, attack_stat, damage_stat, hit_mod, range_, properties,
 			                              ap_cost, armor_class, ac, dt, ability_hit_mod, use, condition, weapon_kind)
 			self.check_type(interaction.guild_id, changes)
 			combat = Packs.combat_for(kind.value, None, changes)
@@ -258,7 +268,7 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	@app_commands.command(name="edit")
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.autocomplete(name=_names)
-	@app_commands.choices(attack_stat=STAT_CHOICES, damage_stat=DAMAGE_STAT_CHOICES, range=RANGE_CHOICES,
+	@app_commands.choices(attack_stat=STAT_CHOICES, damage_stat=DAMAGE_STAT_CHOICES,
 	                      armor_class=ARMOR_CLASS_CHOICES, use=USE_CHOICES, condition=ITEM_CONDITION_CHOICES,
 	                      rarity=RARITY_CHOICES, worn_slot=WORN_SLOT_CHOICES)
 	@app_commands.autocomplete(damage_type=_types, weapon_kind=_weapon_kinds)
@@ -266,13 +276,13 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	async def edit(self, interaction: discord.Interaction, name: str, new_name: app_commands.Range[str, 1, 100] = None,
 	               price: app_commands.Range[int, 0, 10000000] = None,
 	               description: app_commands.Range[str, 1, TEXT_LIMIT] = None,
-	               requirements: app_commands.Range[str, 1, 200] = None, clear_requirements: bool = False,
+	               requirements: app_commands.Range[str, 1, 200] = None,
 	               effect: app_commands.Range[str, 1, TEXT_LIMIT] = None,
 	               effect_met: app_commands.Range[str, 1, TEXT_LIMIT] = None,
 	               effect_unmet: app_commands.Range[str, 1, TEXT_LIMIT] = None,
 	               dice: app_commands.Range[str, 3, 7] = None, damage_type: app_commands.Range[str, 1, 50] = None,
 	               attack_stat: Choice[str] = None, damage_stat: Choice[str] = None,
-	               hit_mod: app_commands.Range[int, -10, 10] = None, range: Choice[str] = None,
+	               hit_mod: app_commands.Range[int, -10, 10] = None,
 	               properties: app_commands.Range[str, 1, 200] = None, ap_cost: app_commands.Range[int, 1, 10] = None,
 	               armor_class: Choice[str] = None, ac: app_commands.Range[int, 0, 10] = None,
 	               dt: app_commands.Range[int, 0, 10] = None,
@@ -281,8 +291,8 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 	               weight: app_commands.Range[float, 0, 1000] = None, worn_slot: Choice[str] = None) :
 		"""
 		Changes a catalog item; options you leave out keep their value. `requirements` replaces all of the item's
-		requirements, and `clear_requirements` removes them. Type `-` in description or one of the effects to clear
-		it. An item's kind cannot change: remove it and add it again instead.
+		requirements, and `-` there removes them. Type `-` in description or one of the effects to clear it.
+		`melee` or `ranged` in `properties` changes a weapon's range; properties without either keep it. An item's kind cannot change: remove it and add it again instead.
 
 		Characters who own the item keep it under the name it had when they got it. The item's post in the gear forum
 		is updated. Pick `rarity` From the price to let the price decide it again. The reply suggests a price for the
@@ -317,14 +327,11 @@ class Armory(commands.GroupCog, name="Armory", group_name="armory") :
 			if change :
 				updates[field] = text
 		try :
-			if clear_requirements :
-				if requirements :
-					return await interaction.followup.send("Use either `requirements` or `clear_requirements`, not "
-					                                       "both.")
-				updates["requirements"] = {}
-			elif requirements is not None :
-				updates["requirements"] = Packs.parse_requirements(requirements)
-			changes = self.combat_changes(dice, damage_type, attack_stat, damage_stat, hit_mod, range, properties,
+			change, text = self.text_update(requirements)
+			if change :
+				updates["requirements"] = Packs.parse_requirements(text) if text else {}
+			properties, range_ = self.split_range(properties)
+			changes = self.combat_changes(dice, damage_type, attack_stat, damage_stat, hit_mod, range_, properties,
 			                              ap_cost, armor_class, ac, dt, ability_hit_mod, use, condition, weapon_kind)
 			self.check_type(interaction.guild_id, changes)
 			if changes :

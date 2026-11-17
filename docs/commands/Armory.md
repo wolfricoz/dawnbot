@@ -14,7 +14,7 @@ nav_order: 3
 
 ### `add`
 
-**Usage:** `/armory add <kind> <name> <price> <description> <requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind> <rarity> <weight> <worn_slot>`
+**Usage:** `/armory add <kind> <name> <price> <description> <requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind> <rarity> <weight> <worn_slot>`
 
 > Adds a weapon, armor set, consumable or accessory to the catalog. `requirements` are SPECIAL minimums written like
 > `strength 8, agility 4` (short names like `str 8` work too); they never stop a character from owning or using
@@ -22,8 +22,8 @@ nav_order: 3
 > (a penalty) applies. `effect` is something the item always does.
 >
 > Combat values are optional. Weapons use `dice` (like 2d6), `damage_type`, `attack_stat` and `damage_stat`
-> (the stats added to attack and damage rolls), `hit_mod`, `range`, `properties` (like `light, thrown`; a
-> `shield` gives +2 AC while equipped), `ap_cost` and `weapon_kind` (sword, spear, bow, claw...: which weapon
+> (the stats added to attack and damage rolls), `hit_mod`, `properties` (like `ranged, loading`: `melee` or
+> `ranged` sets its range; a `shield` gives +2 AC while equipped), `ap_cost` and `weapon_kind` (sword, spear, bow, claw...: which weapon
 > techniques it allows; without it the kind is read from the name). Armor uses `armor_class`, `ac` (added to
 > AC), `dt` (taken
 > off every hit), `hit_mod` and `ability_hit_mod`. Consumables use `use` (heal, cure, boost or nothing
@@ -44,11 +44,11 @@ nav_order: 3
 
 ### `edit`
 
-**Usage:** `/armory edit <name> <new_name> <price> <description> <requirements> <clear_requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <range> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind> <rarity> <weight> <worn_slot>`
+**Usage:** `/armory edit <name> <new_name> <price> <description> <requirements> <effect> <effect_met> <effect_unmet> <dice> <damage_type> <attack_stat> <damage_stat> <hit_mod> <properties> <ap_cost> <armor_class> <ac> <dt> <ability_hit_mod> <use> <condition> <weapon_kind> <rarity> <weight> <worn_slot>`
 
 > Changes a catalog item; options you leave out keep their value. `requirements` replaces all of the item's
-> requirements, and `clear_requirements` removes them. Type `-` in description or one of the effects to clear
-> it. An item's kind cannot change: remove it and add it again instead.
+> requirements, and `-` there removes them. Type `-` in description or one of the effects to clear it.
+> `melee` or `ranged` in `properties` changes a weapon's range; properties without either keep it. An item's kind cannot change: remove it and add it again instead.
 >
 > Characters who own the item keep it under the name it had when they got it. The item's post in the gear forum
 > is updated. Pick `rarity` From the price to let the price decide it again. The reply suggests a price for the
