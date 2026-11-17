@@ -247,6 +247,12 @@ class TestArmoryHelpers(DatabaseTestCase) :
 		                 {"dice" : "1d6", "damage_stat" : "none"})
 		self.assertEqual(Armory.combat_changes(dt=0, ap_cost=4), {"dt" : 0, "ap" : 4})
 
+	def test_range_comes_from_properties(self) :
+		self.assertEqual(Armory.split_range(None), (None, None))
+		self.assertEqual(Armory.split_range("light, Ranged, thrown"), ("light, thrown", "ranged"))
+		self.assertEqual(Armory.split_range("melee"), (None, "melee"))
+		self.assertEqual(Armory.split_range("heavy, reach"), ("heavy, reach", None))
+
 	def test_damage_types_are_checked(self) :
 		self.add_server()
 		changes = {"type" : "fire"}

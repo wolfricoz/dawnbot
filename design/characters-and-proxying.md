@@ -288,12 +288,12 @@ Magic school, Weapon proficiencies, Shield, Magics and Abilities used to be free
 1. `/character create` checks the cap and whether DMs are open, and makes sure there's no interview already in progress. Then it creates a `drafts` row.
 2. Each DM question names the server and the character. The order is:
    - built-in fields: name, then prefix/suffix (checked for uniqueness), then avatar (an image upload, png/jpg/webp/gif up to 8 MB, uploaded to storage right away)
-   - species (a multiple-choice list filtered by tag requirements)
+   - species (a menu filtered by tag requirements), asked whenever the server has a species, even just Human; a new character can make a new species here instead (see below)
    - occupation (a multiple-choice list; full occupations show as full and can't be picked), skipped if the server has none
    - the server's sheet fields
    - SPECIAL: point-buy or roll, depending on `STAT_METHOD`, within the species caps
    - starting gear (a shop with `STARTING_CURRENCY`; free picks in free mode)
-3. `back`, `skip` (optional fields only) and `cancel` work at every step. Every answer is saved as it comes in, so a restart loses nothing.
+3. `back`, `skip` (optional fields only) and `cancel` work at every step, as buttons and typed. Every answer is saved as it comes in, so a restart loses nothing.
 4. A summary lets the player fix any answer, then submit.
 
 **Pasting a sheet** (`classes/characters/SheetPaste.py`). At any step of a create, edit or import, the player can paste a whole sheet written elsewhere (a character site, a document, an old post) in one message. Typing `template` in the DM sends the server's blank sheet to fill in, the same as `/sheet template`.
@@ -304,6 +304,14 @@ Magic school, Weapon proficiencies, Shield, Magics and Abilities used to be free
 - Labels the sheet doesn't ask become extra fields on a new character. An edit lists them and points to `/character add_info`.
 - After a paste, the interview asks only the required questions that are still missing, then stats, gear and the summary. Optional questions that were left out can be answered from the summary.
 
+**Buttons and menus** (`classes/characters/Controls.py`, `views/buttons/InterviewControls.py`). Every interview message, for characters and species, carries the controls of its question; typing still works for all of them.
+- Back, Skip (optional questions, and the occupation when none is open) and Cancel on every step; a "Blank sheet to fill in" button on the first question of a create.
+- Menus for the species (with what each changes), the occupations open to the player, choice questions, starting gear (add, and take out of the bag; each item shows its price and whether it's more than is left), and the summary ("Change an answer", spread over up to four menus for long sheets). Buy points / Roll buttons for the stat method, Send to staff (or Save changes) on the summary. The species interview has Keep these on its stat steps and the same summary menu.
+- A press is handled as if the player typed it: buttons are commands, menu options numbers or names (species, occupations and gear are found by id at the moment of pressing, so a list that changed in between can't pick the wrong one).
+- Controls are dynamic items with the interview kind and step in their custom id (`iv:create:species:back`, `ivm:create:field.12:pick`), so they survive restarts and refuse once the question has moved on. When a question is answered (typed or pressed) its controls come off, and a press adds a `-# → picked` line under the question.
+
+**A new species during character creation.** Picking "Make a new species" (or typing `new`) at the species step of a create or import puts the character aside in the species draft (`answers["paused_character"]`; a user still has one draft) and starts the species interview. Submitting the species brings the character back with the new species picked and moves on; cancelling brings it back at the species step. The new species is `pending`: the player can pick it (and their other pending species) and submit the character, and the character card can't be approved until the species is (`Review.waiting_on`). Who may make one follows `SPECIES_CREATION` and needs the review channel, as `/species create` does (`SpeciesInterview.can_create`).
+
 **SPECIAL picker** (`classes/characters/StatPanel.py`, `views/multiselect/StatPicker.py`). When the interview reaches the stats step, a components v2 message follows the question, with one menu per stat. Typing seven numbers still works.
 - Point-buy: each menu lists only the values the points left can pay for, with the cost of each option, and the heading shows the points left. Unspent points are kept, as with typing.
 - Rolling: each menu lists the rolled values not placed on another stat yet (equal values share one option). Confirm unlocks once every value is placed, and Reroll rolls again and counts the reroll.
@@ -313,7 +321,7 @@ Magic school, Weapon proficiencies, Shield, Magics and Abilities used to be free
 ### 6.2 Review
 
 - The review card shows: avatar, sheet answers, extra fields, species, stats (with the method and the number of rerolls), starting gear, and "imported from" if it's an import.
-- **Approve**: status becomes `approved`, the character is posted (or updated) in the `CHARACTER` forum, and the card is marked done.
+- **Approve**: status becomes `approved`, the character is posted (or updated) in the `CHARACTER` forum, and the card is marked done. A character whose species is still waiting for review can't be approved until the species is.
 - **Deny**: a modal asks for the reason, which gets DM'd to the player. The character stays `denied`, and the player can edit and resubmit.
 - The forum post uses several messages when the sheet is longer than one embed allows (6000 characters total, 1024 per field).
 

@@ -26,6 +26,22 @@ class Review :
 
 	# ============================================================
 	@staticmethod
+	def waiting_on(character: Characters) -> str | None :
+		"""What has to be approved before this character can be, or None. A player can send a character in with a
+		species they made during the interview; that species is reviewed on its own card first."""
+		from database.transactions.SpeciesTransactions import APPROVED as SPECIES_APPROVED, SpeciesTransactions
+
+		species_id = character.species_id
+		if Review.kind(character) == CHANGES :
+			species_id = (character.pending_changes or {}).get("species_id", species_id)
+		species = SpeciesTransactions().get(species_id) if species_id else None
+		if species is not None and species.state != SPECIES_APPROVED :
+			return (f"{character.name}'s species, {species.name}, has not been approved yet. Approve or deny the "
+			        f"species on its own card first.")
+		return None
+
+	# ============================================================
+	@staticmethod
 	def approve(character: Characters, reviewer_id: int) -> tuple[Characters, list[int], str] :
 		"""Approves a new character, or applies the changes that were waiting.
 
