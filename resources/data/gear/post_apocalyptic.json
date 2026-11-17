@@ -1,0 +1,1196 @@
+{
+	"name": "post_apocalyptic",
+	"title": "Post-apocalyptic",
+	"starting_currency": 1500,
+	"currency_name": "scrip",
+	"items": [
+		{
+			"kind": "weapon",
+			"name": "Shiv",
+			"description": "A sharpened strip of scrap with a taped grip. Easy to hide, easy to lose.",
+			"price": 30,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "1d4",
+				"attack_stat": "agility",
+				"damage_stat": "agility",
+				"hit_mod": 1,
+				"range": "melee",
+				"properties": [
+					"light"
+				],
+				"kind": "dagger"
+			},
+			"weight": 0.3
+		},
+		{
+			"kind": "weapon",
+			"name": "Rebar Club",
+			"description": "A length of reinforcing bar bent into a handle at one end.",
+			"price": 40,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "1d6",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [],
+				"kind": "club"
+			},
+			"weight": 3
+		},
+		{
+			"kind": "weapon",
+			"name": "Machete",
+			"description": "A long brush blade, notched from years of clearing overgrown roads.",
+			"price": 120,
+			"requirements": {
+				"strength": 3
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Slashing",
+				"dice": "1d8",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [],
+				"kind": "sword"
+			},
+			"weight": 1
+		},
+		{
+			"kind": "weapon",
+			"name": "Riot Shield",
+			"description": "A scuffed polycarbonate shield from a police depot nobody guards any more.",
+			"price": 250,
+			"requirements": {
+				"strength": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "1d4",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"shield",
+					"light"
+				],
+				"kind": "shield"
+			},
+			"weight": 4
+		},
+		{
+			"kind": "weapon",
+			"name": "Fire Axe",
+			"description": "A red-handled emergency axe, pried off the wall of a burned-out station.",
+			"price": 220,
+			"requirements": {
+				"strength": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Slashing",
+				"dice": "1d10",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"heavy"
+				],
+				"kind": "axe"
+			},
+			"weight": 3
+		},
+		{
+			"kind": "weapon",
+			"name": "Sledgehammer",
+			"description": "A demolition hammer. Slow to swing, hard to stand up after.",
+			"price": 380,
+			"requirements": {
+				"strength": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Blunt",
+				"dice": "2d6",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": -1,
+				"range": "melee",
+				"properties": [
+					"two_handed",
+					"heavy"
+				],
+				"kind": "hammer"
+			},
+			"weight": 5
+		},
+		{
+			"kind": "weapon",
+			"name": "Motor Blade",
+			"description": "A salvaged engine driving a toothed chain along a long blade. Loud, hungry, rare.",
+			"price": 1400,
+			"requirements": {
+				"strength": 7
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Slashing",
+				"dice": "2d8",
+				"attack_stat": "strength",
+				"damage_stat": "strength",
+				"hit_mod": 0,
+				"range": "melee",
+				"properties": [
+					"two_handed",
+					"heavy"
+				],
+				"kind": "glaive"
+			},
+			"weight": 7
+		},
+		{
+			"kind": "weapon",
+			"name": "Scrap Crossbow",
+			"description": "Car leaf springs bolted to a stock; it shoots sharpened rods.",
+			"price": 200,
+			"requirements": {
+				"agility": 3
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "1d10",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"loading"
+				],
+				"kind": "crossbow"
+			},
+			"weight": 3
+		},
+		{
+			"kind": "weapon",
+			"name": "Pipe Pistol",
+			"description": "A single-shot handgun built from plumbing. It works, mostly.",
+			"price": 150,
+			"requirements": {
+				"agility": 3
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "1d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [],
+				"kind": "pistol"
+			},
+			"weight": 1
+		},
+		{
+			"kind": "weapon",
+			"name": "Service Revolver",
+			"description": "A six-shot revolver with a worn holster and a serial number filed off.",
+			"price": 450,
+			"requirements": {
+				"agility": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "1d10",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [],
+				"kind": "pistol"
+			},
+			"weight": 1.2
+		},
+		{
+			"kind": "weapon",
+			"name": "Sawn-Off Scattergun",
+			"description": "A double-barrelled shotgun cut down to fit under a coat.",
+			"price": 500,
+			"requirements": {
+				"strength": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				],
+				"kind": "scattergun"
+			},
+			"weight": 2.5
+		},
+		{
+			"kind": "weapon",
+			"name": "Lever Rifle",
+			"description": "A lever-action rifle, oiled and cared for. Reliable at the edge of sight.",
+			"price": 700,
+			"requirements": {
+				"agility": 4,
+				"perception": 4
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed"
+				],
+				"kind": "rifle"
+			},
+			"weight": 3.5
+		},
+		{
+			"kind": "weapon",
+			"name": "Bolt-Action Rifle",
+			"description": "An old hunting rifle with a scope that still holds its zero.",
+			"price": 900,
+			"requirements": {
+				"perception": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"loading"
+				],
+				"kind": "rifle"
+			},
+			"weight": 4
+		},
+		{
+			"kind": "weapon",
+			"name": "Combat Shotgun",
+			"description": "A pump-action shotgun with a drum magazine, military surplus from before.",
+			"price": 1300,
+			"requirements": {
+				"strength": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d8",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"heavy"
+				],
+				"kind": "scattergun"
+			},
+			"weight": 4.5
+		},
+		{
+			"kind": "weapon",
+			"name": "Arc Caster",
+			"description": "A welding rig rewired to throw lightning. It eats energy cells for breakfast.",
+			"price": 1500,
+			"requirements": {
+				"intelligence": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Lightning",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": []
+			},
+			"weight": 3
+		},
+		{
+			"kind": "weapon",
+			"name": "Flame Projector",
+			"description": "A tank on the back, a nozzle in the hands, and a pilot light that never goes out.",
+			"price": 1800,
+			"requirements": {
+				"strength": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Fire",
+				"dice": "2d6",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 0,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"heavy"
+				]
+			},
+			"weight": 9
+		},
+		{
+			"kind": "weapon",
+			"name": "Marksman Rifle",
+			"description": "A precision rifle built by someone who knew exactly what they were doing.",
+			"price": 3200,
+			"requirements": {
+				"perception": 7,
+				"agility": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"type": "Piercing",
+				"dice": "2d10",
+				"attack_stat": "perception",
+				"damage_stat": null,
+				"hit_mod": 1,
+				"range": "ranged",
+				"properties": [
+					"two_handed",
+					"keen"
+				],
+				"kind": "rifle"
+			},
+			"weight": 5
+		},
+		{
+			"kind": "armor",
+			"name": "Patched Duster",
+			"description": "A long coat, patched so often little of the original cloth is left.",
+			"price": 60,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "clothing",
+				"ac": 0,
+				"dt": 0,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 2
+		},
+		{
+			"kind": "armor",
+			"name": "Road Leathers",
+			"description": "Biker leathers, scuffed by a hundred falls on broken asphalt.",
+			"price": 150,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 0,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 4
+		},
+		{
+			"kind": "armor",
+			"name": "Hazmat Coverall",
+			"description": "A sealed suit with taped seams. It keeps the worst of the dust out.",
+			"price": 400,
+			"requirements": {},
+			"effect": "Keeps out dust, spores and fallout while sealed (the GM decides what that saves you from).",
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "clothing",
+				"ac": 0,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 3
+		},
+		{
+			"kind": "armor",
+			"name": "Tire-Tread Vest",
+			"description": "Rubber tread strips sewn onto a canvas vest.",
+			"price": 320,
+			"requirements": {
+				"strength": 3
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 6
+		},
+		{
+			"kind": "armor",
+			"name": "Scout Mesh",
+			"description": "A light weave of salvaged fibres that moves with you.",
+			"price": 600,
+			"requirements": {
+				"agility": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "light",
+				"ac": 1,
+				"dt": 1,
+				"hit_mod": 1,
+				"ability_hit_mod": 0
+			},
+			"weight": 3
+		},
+		{
+			"kind": "armor",
+			"name": "Scrap Plate Harness",
+			"description": "Road signs and car doors riveted onto a leather harness.",
+			"price": 850,
+			"requirements": {
+				"strength": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "medium",
+				"ac": 2,
+				"dt": 1,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 10
+		},
+		{
+			"kind": "armor",
+			"name": "Riot Gear",
+			"description": "A full set of police riot armor: helmet, plates and shin guards.",
+			"price": 1300,
+			"requirements": {
+				"strength": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "medium",
+				"ac": 2,
+				"dt": 2,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 12
+		},
+		{
+			"kind": "armor",
+			"name": "Ceramic Plate Carrier",
+			"description": "A military vest with ceramic plates front and back.",
+			"price": 1700,
+			"requirements": {
+				"strength": 6,
+				"endurance": 5
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "medium",
+				"ac": 3,
+				"dt": 2,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 13
+		},
+		{
+			"kind": "armor",
+			"name": "Salvaged Exo-Frame",
+			"description": "A powered work frame stripped from a loading dock and plated over.",
+			"price": 2400,
+			"requirements": {
+				"strength": 7
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "heavy",
+				"ac": 3,
+				"dt": 3,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 20
+		},
+		{
+			"kind": "armor",
+			"name": "Bulwark Combat Armor",
+			"description": "Pre-collapse heavy infantry armor, sealed and still humming.",
+			"price": 3400,
+			"requirements": {
+				"strength": 8,
+				"endurance": 6
+			},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"armor_class": "heavy",
+				"ac": 4,
+				"dt": 3,
+				"hit_mod": 0,
+				"ability_hit_mod": 0
+			},
+			"weight": 24
+		},
+		{
+			"kind": "consumable",
+			"name": "Field Dressing",
+			"description": "A wad of clean cloth and a strip of tape. Stops the bleeding.",
+			"price": 20,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "bleeding",
+				"turns": 2
+			},
+			"weight": 0.1
+		},
+		{
+			"kind": "consumable",
+			"name": "Burn Gel",
+			"description": "A tube of cooling gel for burns.",
+			"price": 30,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "burning",
+				"turns": 2
+			},
+			"weight": 0.2
+		},
+		{
+			"kind": "consumable",
+			"name": "Jolt Capsule",
+			"description": "A sharp-smelling capsule crushed under the nose; it clears the head fast.",
+			"price": 45,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "cure",
+				"dice": "1d4",
+				"condition": "stunned",
+				"turns": 2
+			},
+			"weight": 0.1
+		},
+		{
+			"kind": "consumable",
+			"name": "Med-Injector",
+			"description": "An auto-injector of painkiller and coagulant.",
+			"price": 50,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "2d4",
+				"condition": null,
+				"turns": 2
+			},
+			"weight": 0.2
+		},
+		{
+			"kind": "consumable",
+			"name": "Adrenaline Shot",
+			"description": "A shot straight to the heart: everything gets sharp and loud.",
+			"price": 120,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "inspired",
+				"turns": 2
+			},
+			"weight": 0.2
+		},
+		{
+			"kind": "consumable",
+			"name": "Ballistic Foam",
+			"description": "A can of quick-setting foam that hardens into a crude shield.",
+			"price": 150,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "2d4",
+				"condition": "shielded",
+				"turns": 2
+			},
+			"weight": 0.5
+		},
+		{
+			"kind": "consumable",
+			"name": "Trauma Kit",
+			"description": "A sealed military kit: sutures, clamps and a dose of something strong.",
+			"price": 180,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "heal",
+				"dice": "4d4",
+				"condition": null,
+				"turns": 2
+			},
+			"weight": 0.5
+		},
+		{
+			"kind": "consumable",
+			"name": "Regen Paste",
+			"description": "A grey paste from an old lab; wounds knit while it's on.",
+			"price": 260,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"combat": {
+				"use": "boost",
+				"dice": "1d4",
+				"condition": "regenerating",
+				"turns": 3
+			},
+			"weight": 0.2
+		},
+		{
+			"kind": "accessory",
+			"name": "Dog Tags",
+			"description": "Someone's name on a chain. Maybe yours now.",
+			"price": 20,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "neck",
+			"weight": 0.1
+		},
+		{
+			"kind": "accessory",
+			"name": "Wire Ring",
+			"description": "A ring twisted from copper wire.",
+			"price": 15,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "ring",
+			"weight": 0.0
+		},
+		{
+			"kind": "accessory",
+			"name": "Goggles",
+			"description": "Tinted goggles with a cracked lens. Keeps the sand out of your eyes.",
+			"price": 80,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "head",
+			"weight": 0.3
+		},
+		{
+			"kind": "accessory",
+			"name": "Gas Mask",
+			"description": "A rubber mask with a filter that still works, if you trust it.",
+			"price": 200,
+			"requirements": {},
+			"effect": "Filters smoke and gas while worn (the GM decides what that saves you from).",
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "head",
+			"weight": 1
+		},
+		{
+			"kind": "accessory",
+			"name": "Scavenger's Pack",
+			"description": "A frame pack with a dozen pockets for whatever you find.",
+			"price": 120,
+			"requirements": {},
+			"effect": null,
+			"effect_met": null,
+			"effect_unmet": null,
+			"slot": "back",
+			"weight": 2
+		}
+	],
+	"bestiary": [
+		{
+			"name": "Scrap Rat",
+			"preset": "minion",
+			"description": "A dog-sized rat that nests in junk piles.",
+			"attack_name": "Bite",
+			"damage_type": "Piercing",
+			"behavior": "aggressive",
+			"reward_xp": 5,
+			"reward_currency": 0,
+			"loot": {
+				"currency": "1d4"
+			}
+		},
+		{
+			"name": "Feral Hound",
+			"preset": "standard",
+			"description": "Half-starved and hunting in packs.",
+			"attack_name": "Bite",
+			"damage_type": "Piercing",
+			"behavior": "aggressive",
+			"reward_xp": 15,
+			"reward_currency": 0
+		},
+		{
+			"name": "Wasteland Raider",
+			"preset": "standard",
+			"description": "A road robber in mismatched armor.",
+			"special": {
+				"strength": 6,
+				"perception": 5,
+				"endurance": 5,
+				"charisma": 3,
+				"intelligence": 4,
+				"agility": 6,
+				"luck": 4
+			},
+			"level": 1,
+			"weapons": [
+				"Pipe Pistol",
+				"Machete"
+			],
+			"armor": "Road Leathers",
+			"behavior": "vengeful",
+			"reward_xp": 20,
+			"reward_currency": 25,
+			"loot": {
+				"currency": "2d10",
+				"items": [
+					{
+						"name": "Pipe Pistol",
+						"chance": 25,
+						"amount": 1
+					},
+					{
+						"name": "Med-Injector",
+						"chance": 30,
+						"amount": 1
+					},
+					{
+						"name": "Scrap Metal",
+						"chance": 50,
+						"amount": 2
+					}
+				]
+			}
+		},
+		{
+			"name": "Raider Sharpshooter",
+			"preset": "standard",
+			"description": "Stays back and picks people off.",
+			"special": {
+				"strength": 4,
+				"perception": 7,
+				"endurance": 4,
+				"charisma": 3,
+				"intelligence": 5,
+				"agility": 6,
+				"luck": 5
+			},
+			"level": 2,
+			"weapons": [
+				"Lever Rifle"
+			],
+			"armor": "Tire-Tread Vest",
+			"behavior": "cautious",
+			"reward_xp": 25,
+			"reward_currency": 30,
+			"loot": {
+				"currency": "2d10",
+				"items": [
+					{
+						"name": "Lever Rifle",
+						"chance": 15,
+						"amount": 1
+					},
+					{
+						"name": "Gunpowder",
+						"chance": 40,
+						"amount": 2
+					}
+				]
+			}
+		},
+		{
+			"name": "Rogue Security Drone",
+			"preset": "elite",
+			"description": "A hovering guard drone still following orders from a company long gone.",
+			"attack_name": "Laser",
+			"damage_type": "Fire",
+			"behavior": "aggressive",
+			"reward_xp": 60,
+			"reward_currency": 0,
+			"loot": {
+				"currency": "3d10",
+				"items": [
+					{
+						"name": "Energy Cell",
+						"chance": 60,
+						"amount": 2
+					},
+					{
+						"name": "Circuit Board",
+						"chance": 40,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Raider Warlord",
+			"preset": "elite",
+			"description": "Rules a gang by being the meanest one in it.",
+			"special": {
+				"strength": 8,
+				"perception": 6,
+				"endurance": 7,
+				"charisma": 6,
+				"intelligence": 5,
+				"agility": 5,
+				"luck": 5
+			},
+			"level": 4,
+			"weapons": [
+				"Combat Shotgun",
+				"Fire Axe"
+			],
+			"armor": "Riot Gear",
+			"behavior": "vengeful",
+			"reward_xp": 60,
+			"reward_currency": 120,
+			"loot": {
+				"currency": "5d10",
+				"items": [
+					{
+						"name": "Combat Shotgun",
+						"chance": 20,
+						"amount": 1
+					},
+					{
+						"name": "Trauma Kit",
+						"chance": 50,
+						"amount": 1
+					}
+				]
+			}
+		},
+		{
+			"name": "Irradiated Behemoth",
+			"preset": "boss",
+			"description": "Something that was a bear, once. The Geiger counters scream near it.",
+			"attack_name": "Slam",
+			"damage_type": "Blunt",
+			"behavior": "vengeful",
+			"reward_xp": 200,
+			"reward_currency": 150,
+			"loot": {
+				"currency": "10d10",
+				"items": [
+					{
+						"name": "Regen Paste",
+						"chance": 50,
+						"amount": 2
+					}
+				]
+			}
+		}
+	],
+	"merchants": [
+		{
+			"name": "Rust & Rivet Salvage",
+			"description": "A scrapyard with a counter. If it's metal, they'll buy it.",
+			"markup": 1.0,
+			"buys": [
+				"weapon",
+				"armor",
+				"material"
+			],
+			"pays": 1.0,
+			"services": [
+				"repair"
+			],
+			"haggle_dc": 12,
+			"restock": "weekly",
+			"stock": [
+				{
+					"name": "Rebar Club"
+				},
+				{
+					"name": "Machete"
+				},
+				{
+					"name": "Pipe Pistol",
+					"quantity": 3
+				},
+				{
+					"name": "Scrap Crossbow",
+					"quantity": 2
+				},
+				{
+					"name": "Road Leathers"
+				},
+				{
+					"name": "Tire-Tread Vest"
+				},
+				{
+					"name": "Scrap Metal"
+				},
+				{
+					"name": "Duct Tape"
+				},
+				{
+					"name": "Spring"
+				},
+				{
+					"name": "Fire Axe",
+					"quantity": 1,
+					"chance": 50
+				},
+				{
+					"name": "Scrap Plate Harness",
+					"quantity": 1,
+					"chance": 40
+				}
+			]
+		},
+		{
+			"name": "Halloway's Clinic",
+			"description": "A converted bus with clean sheets and a doctor who doesn't ask questions.",
+			"markup": 1.2,
+			"buys": [
+				"consumable"
+			],
+			"pays": 1.0,
+			"services": [
+				"healing"
+			],
+			"restock": "daily",
+			"stock": [
+				{
+					"name": "Field Dressing"
+				},
+				{
+					"name": "Burn Gel"
+				},
+				{
+					"name": "Jolt Capsule"
+				},
+				{
+					"name": "Med-Injector"
+				},
+				{
+					"name": "Trauma Kit",
+					"quantity": 3
+				},
+				{
+					"name": "Clean Cloth"
+				},
+				{
+					"name": "Chemical Reagents"
+				},
+				{
+					"name": "Regen Paste",
+					"quantity": 1,
+					"chance": 30
+				}
+			]
+		},
+		{
+			"name": "Caravan Quartermaster",
+			"description": "Travels with the trade caravans; sells the good stuff, at a price.",
+			"markup": 1.3,
+			"buys": [
+				"weapon",
+				"armor",
+				"accessory"
+			],
+			"pays": 1.0,
+			"services": [
+				"lodging",
+				"training"
+			],
+			"lodging_price": 150,
+			"haggle_dc": 14,
+			"restock": "weekly",
+			"stock": [
+				{
+					"name": "Service Revolver",
+					"quantity": 2
+				},
+				{
+					"name": "Sawn-Off Scattergun",
+					"quantity": 1
+				},
+				{
+					"name": "Lever Rifle",
+					"quantity": 1
+				},
+				{
+					"name": "Gas Mask"
+				},
+				{
+					"name": "Goggles"
+				},
+				{
+					"name": "Scavenger's Pack"
+				},
+				{
+					"name": "Riot Gear",
+					"quantity": 1,
+					"chance": 50
+				},
+				{
+					"name": "Combat Shotgun",
+					"quantity": 1,
+					"chance": 25
+				},
+				{
+					"name": "Marksman Rifle",
+					"quantity": 1,
+					"chance": 10
+				}
+			]
+		}
+	],
+	"kits": {
+		"Scavenger": [
+			"Shiv",
+			"Patched Duster",
+			"Scavenger's Pack"
+		],
+		"Mechanic": [
+			"Rebar Club",
+			"Road Leathers",
+			"Goggles"
+		],
+		"Medic": [
+			"Pipe Pistol",
+			"Patched Duster",
+			"Med-Injector",
+			"Field Dressing"
+		],
+		"Guard": [
+			"Machete",
+			"Tire-Tread Vest",
+			"Riot Shield"
+		],
+		"Trader": [
+			"Pipe Pistol",
+			"Patched Duster",
+			"Dog Tags"
+		],
+		"Hunter": [
+			"Scrap Crossbow",
+			"Road Leathers"
+		]
+	}
+}

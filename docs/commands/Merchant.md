@@ -157,6 +157,19 @@ Trade with the merchants at your location.
 
 ---
 
+### `import`
+
+**Usage:** `/merchant import <pack>`
+
+> Adds a genre pack's merchants with their stock (import the pack's gear and recipes first, so the stock is in
+> the catalog). Merchants the server already has are skipped. They have no location yet, so they trade
+> anywhere until you /merchant place them.
+>
+> **Permissions:**
+> - `Manage Messages`, or the GM role
+
+---
+
 ### `restock`
 
 **Usage:** `/merchant restock <merchant>`

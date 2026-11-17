@@ -579,6 +579,42 @@ class Merchant(commands.GroupCog, name="Merchant", group_name="merchant") :
 		await reply(interaction, f"{record.name} sells **{ware.name}** ({amount}{rotating}).")
 
 	# ============================================================
+	async def _packs(self, interaction: discord.Interaction, current: str) -> list[Choice[str]] :
+		from classes.gear.Packs import Packs
+
+		return [Choice(name=title, value=name) for name, title in Packs.available()
+		        if current.lower() in title.lower()][:25]
+
+	# ============================================================
+	@app_commands.command(name="import", description="Adds a genre pack's merchants (GMs)")
+	@gm_only()
+	@app_commands.autocomplete(pack=_packs)
+	async def import_pack(self, interaction: discord.Interaction, pack: str) :
+		"""
+		Adds a genre pack's merchants with their stock (import the pack's gear and recipes first, so the stock is in
+		the catalog). Merchants the server already has are skipped. They have no location yet, so they trade
+		anywhere until you /merchant place them.
+
+		**Permissions:**
+		- `Manage Messages`, or the GM role
+		"""
+		from classes.gear.Packs import Packs
+
+		try :
+			data = Packs.load(pack)
+		except ValueError as e :
+			return await reply(interaction, str(e))
+		if not data.get("merchants") :
+			return await reply(interaction, f"The {data['title']} pack has no merchants.")
+		added, skipped, problems = Packs.import_merchants(interaction.guild_id, data)
+		lines = [f"Added {len(added)} merchant{'s' if len(added) != 1 else ''}" + (f": {', '.join(added)}" if added else "")
+		         + (f"; skipped {', '.join(skipped)}" if skipped else "") + "."]
+		lines += problems
+		if added :
+			lines.append("Place them at locations with /merchant place, or they trade everywhere.")
+		await reply(interaction, "\n".join(lines)[:2000])
+
+	# ============================================================
 	@app_commands.command(name="restock", description="Restocks a merchant now (GMs)")
 	@gm_only()
 	@app_commands.autocomplete(merchant=_merchants)

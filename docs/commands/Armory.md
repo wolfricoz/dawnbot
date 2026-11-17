@@ -109,9 +109,12 @@ nav_order: 3
 
 **Usage:** `/armory import <pack> <refresh>`
 
-> Copies a ready-made genre pack (like Fantasy) into the catalog. Items whose name the catalog already has are
-> skipped, so importing again only adds what is missing and never overwrites your changes. When a gear forum is
-> set, every new item is posted there. You can edit or remove imported items like any other.
+> Copies a ready-made genre pack (like Fantasy or Post-apocalyptic) into the catalog. Items whose name the
+> catalog already has are skipped, so importing again only adds what is missing and never overwrites your
+> changes. When a gear forum is set, every new item is posted there. You can edit or remove imported items like
+> any other. Occupations named like the pack's get its starter kits when they have none; the reply suggests the
+> pack's currency name. Import its recipes with /craft recipe import, its bestiary with /bestiary import and its
+> merchants with /merchant import.
 >
 > With `refresh`, items that came from the pack instead get the pack's current combat values (for catalogs
 > imported before the combat rework); nothing else about them changes.

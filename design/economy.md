@@ -148,3 +148,19 @@ Migration `0028_economy_spending` (the legacy drop is now `0029_drop_legacy_comb
 | Starter kits | `STARTER_KITS` (toggle, on). `/downtime occupation kit:` sets an occupation's kit (catalog names, `none` clears). A new character gets it when its interview is submitted, with the starting gear, as `source = kit`; kit items sell for nothing (`Pricing.sell_value`). |
 | Training | One step per training: Awful → Poor 500 / 1 day, Poor → Average 1,500 / 2, Average → Good 5,000 / 5, Good → Excellent 14,000 / 10. Paid up front with `/merchant train` (service `training`; × markup × Charisma; ledger `training`) or in `/downtime train ... member: trainer:` to another player's character whose occupation `trains` (paid to that character in one transfer; never between one player's own characters). Every `/downtime train` spends the day; the last day sets the proficiency through `Proficiency.set_weapon(staff=True)`. One open training per weapon; the two-at-Good-or-Excellent limit is checked when it starts. |
 | Lifestyle | `classes/economy/Lifestyle.py`, `LIFESTYLE` (toggle, off). Weekly costs as decided; no choice means Modest. `/lifestyle set` pays the first week; `/lifestyle view`. `tasks/LifestyleTask.py` charges every approved character whose week is due (hourly check), dropping to the best tier it can afford. Destitute −2 and Poor −1 to haggling; Comfortable and up restore Worn gear each week; Wealthy and Aristocratic +2 to haggling and to `/rumor listen`. Ledger `lifestyle`. |
+
+## 10. Post-apocalyptic pack as built
+
+`resources/data/gear/post_apocalyptic.json` and `resources/data/recipes/post_apocalyptic.json`. All names and items are
+original; a test checks a list of names from existing games stays out.
+
+| Topic | As built |
+|---|---|
+| Pack format | Gear packs may now carry `currency_name` (a suggestion), `kits` ({occupation name: [item names]}), `merchants` (templates: the `merchants` fields plus `stock` [{name, quantity, chance, price}]) and bestiary entries with `loot`. `/armory import` gives the kits to occupations of the same name that have none (`Packs.apply_kits`) and suggests the currency name; `/merchant import <pack>` (GMs) adds the merchants without locations, stocking what the catalog has (`Packs.import_merchants`); `/bestiary import` keeps loot items the catalog has. |
+| Gear | 17 weapons (melee scrap weapons, pipe and service pistols, scatterguns, rifles, a crossbow, an arc caster and a flame projector; guns are ranged without a damage stat and use ammunition when `AMMO` is on), 10 armors (clothing to heavy), 8 consumables, 5 accessories. Every item has a weight. Prices run Common to Rare (up to 3,400); ranged weapons are priced above the fantasy-fitted price hint on purpose. Suggested currency: scrip. |
+| Recipes | 11 materials (two of them tools: Toolkit, Chem Lab), 12 recipes (medicine, scrap weapons, pipe pistol, crossbow, armor, the arc caster) and salvage lists for 25 items. |
+| Bestiary | 7 entries from minion to boss (rats, hounds, raiders, a security drone, a warlord, an irradiated behemoth), with loot. |
+| Merchants | A salvage yard (repairs, buys weapons, armor and materials), a clinic (healing, buys consumables) and a caravan quartermaster (rooms, training, rotating rare stock). |
+| Kits | Scavenger, Mechanic, Medic, Guard, Trader, Hunter. |
+
+Still to come: the modern and sci-fi packs, and property.

@@ -1,0 +1,291 @@
+{
+	"name": "post_apocalyptic",
+	"title": "Post-apocalyptic",
+	"materials": [
+		{
+			"name": "Scrap Metal",
+			"price": 10,
+			"description": "Bent sheet metal, bolts and wire. Useful for almost anything."
+		},
+		{
+			"name": "Duct Tape",
+			"price": 8,
+			"description": "Holds the world together."
+		},
+		{
+			"name": "Spring",
+			"price": 12,
+			"description": "Coil springs from old mattresses and car seats."
+		},
+		{
+			"name": "Gunpowder",
+			"price": 15,
+			"description": "Black powder, scraped from old shells or mixed by hand."
+		},
+		{
+			"name": "Leather Scraps",
+			"price": 8,
+			"description": "Offcuts of hide and old jackets."
+		},
+		{
+			"name": "Clean Cloth",
+			"price": 6,
+			"description": "Boiled cloth, as clean as anything gets out here."
+		},
+		{
+			"name": "Chemical Reagents",
+			"price": 20,
+			"description": "Labelled jars from a pharmacy storeroom."
+		},
+		{
+			"name": "Circuit Board",
+			"price": 40,
+			"description": "Green boards full of parts nobody makes any more."
+		},
+		{
+			"name": "Energy Cell",
+			"price": 35,
+			"description": "A charged battery cell. Some still hold a charge."
+		},
+		{
+			"name": "Toolkit",
+			"price": 120,
+			"description": "Wrenches, files and a hand drill. Needed for gunsmithing and armor work; not used up."
+		},
+		{
+			"name": "Chem Lab",
+			"price": 150,
+			"description": "Beakers, a burner and a scale. Needed for medicine; not used up."
+		}
+	],
+	"recipes": [
+		{
+			"name": "Field Dressing",
+			"result": "Field Dressing",
+			"amount": 2,
+			"ingredients": {
+				"Clean Cloth": 1
+			},
+			"stat": "agility",
+			"dc": 8
+		},
+		{
+			"name": "Burn Gel",
+			"result": "Burn Gel",
+			"ingredients": {
+				"Chemical Reagents": 1
+			},
+			"tool": "Chem Lab",
+			"stat": "intelligence",
+			"dc": 12
+		},
+		{
+			"name": "Med-Injector",
+			"result": "Med-Injector",
+			"ingredients": {
+				"Chemical Reagents": 1,
+				"Clean Cloth": 1
+			},
+			"tool": "Chem Lab",
+			"stat": "intelligence",
+			"dc": 12
+		},
+		{
+			"name": "Trauma Kit",
+			"result": "Trauma Kit",
+			"ingredients": {
+				"Chemical Reagents": 2,
+				"Clean Cloth": 2
+			},
+			"tool": "Chem Lab",
+			"stat": "intelligence",
+			"dc": 15
+		},
+		{
+			"name": "Shiv",
+			"result": "Shiv",
+			"ingredients": {
+				"Scrap Metal": 1,
+				"Duct Tape": 1
+			},
+			"stat": "agility",
+			"dc": 8
+		},
+		{
+			"name": "Rebar Club",
+			"result": "Rebar Club",
+			"ingredients": {
+				"Scrap Metal": 2
+			},
+			"stat": "strength",
+			"dc": 8
+		},
+		{
+			"name": "Machete",
+			"result": "Machete",
+			"ingredients": {
+				"Scrap Metal": 2,
+				"Duct Tape": 1
+			},
+			"tool": "Toolkit",
+			"stat": "agility",
+			"dc": 12
+		},
+		{
+			"name": "Pipe Pistol",
+			"result": "Pipe Pistol",
+			"ingredients": {
+				"Scrap Metal": 2,
+				"Spring": 1,
+				"Gunpowder": 1
+			},
+			"tool": "Toolkit",
+			"stat": "intelligence",
+			"dc": 13,
+			"days": 1
+		},
+		{
+			"name": "Scrap Crossbow",
+			"result": "Scrap Crossbow",
+			"ingredients": {
+				"Scrap Metal": 2,
+				"Spring": 2,
+				"Duct Tape": 1
+			},
+			"tool": "Toolkit",
+			"stat": "agility",
+			"dc": 12
+		},
+		{
+			"name": "Tire-Tread Vest",
+			"result": "Tire-Tread Vest",
+			"ingredients": {
+				"Leather Scraps": 3,
+				"Scrap Metal": 2
+			},
+			"stat": "agility",
+			"dc": 12,
+			"days": 1
+		},
+		{
+			"name": "Scrap Plate Harness",
+			"result": "Scrap Plate Harness",
+			"ingredients": {
+				"Scrap Metal": 6,
+				"Leather Scraps": 2
+			},
+			"tool": "Toolkit",
+			"stat": "strength",
+			"dc": 15,
+			"days": 3
+		},
+		{
+			"name": "Arc Caster",
+			"result": "Arc Caster",
+			"ingredients": {
+				"Circuit Board": 2,
+				"Energy Cell": 2,
+				"Scrap Metal": 2
+			},
+			"tool": "Toolkit",
+			"stat": "intelligence",
+			"dc": 16,
+			"days": 3
+		}
+	],
+	"salvage": {
+		"Shiv": {
+			"Scrap Metal": 1
+		},
+		"Rebar Club": {
+			"Scrap Metal": 2
+		},
+		"Machete": {
+			"Scrap Metal": 2
+		},
+		"Fire Axe": {
+			"Scrap Metal": 2
+		},
+		"Sledgehammer": {
+			"Scrap Metal": 3
+		},
+		"Motor Blade": {
+			"Scrap Metal": 4,
+			"Spring": 2
+		},
+		"Scrap Crossbow": {
+			"Scrap Metal": 1,
+			"Spring": 2
+		},
+		"Pipe Pistol": {
+			"Scrap Metal": 2,
+			"Spring": 1
+		},
+		"Service Revolver": {
+			"Scrap Metal": 2,
+			"Spring": 1
+		},
+		"Sawn-Off Scattergun": {
+			"Scrap Metal": 3,
+			"Spring": 1
+		},
+		"Lever Rifle": {
+			"Scrap Metal": 3,
+			"Spring": 2
+		},
+		"Bolt-Action Rifle": {
+			"Scrap Metal": 3,
+			"Spring": 2
+		},
+		"Combat Shotgun": {
+			"Scrap Metal": 4,
+			"Spring": 2
+		},
+		"Arc Caster": {
+			"Circuit Board": 1,
+			"Energy Cell": 1,
+			"Scrap Metal": 2
+		},
+		"Flame Projector": {
+			"Scrap Metal": 4,
+			"Chemical Reagents": 2
+		},
+		"Marksman Rifle": {
+			"Scrap Metal": 4,
+			"Spring": 2
+		},
+		"Road Leathers": {
+			"Leather Scraps": 2
+		},
+		"Tire-Tread Vest": {
+			"Leather Scraps": 2,
+			"Scrap Metal": 1
+		},
+		"Scout Mesh": {
+			"Clean Cloth": 2
+		},
+		"Scrap Plate Harness": {
+			"Scrap Metal": 4,
+			"Leather Scraps": 1
+		},
+		"Riot Gear": {
+			"Scrap Metal": 4
+		},
+		"Ceramic Plate Carrier": {
+			"Scrap Metal": 3,
+			"Clean Cloth": 2
+		},
+		"Salvaged Exo-Frame": {
+			"Scrap Metal": 8,
+			"Circuit Board": 1,
+			"Energy Cell": 1
+		},
+		"Bulwark Combat Armor": {
+			"Scrap Metal": 8,
+			"Circuit Board": 2
+		},
+		"Riot Shield": {
+			"Scrap Metal": 2
+		}
+	}
+}

@@ -113,8 +113,69 @@ class Packs :
 				raise ValueError(f"{source}: the name {item['name']} is used twice.")
 			seen.add(item["name"].lower())
 			checked.append(item)
+		currency = data.get("currency_name")
+		if currency is not None and (not isinstance(currency, str) or not 1 <= len(currency.strip()) <= 30) :
+			raise ValueError(f"{source}: currency_name must be text of 1 to 30 characters.")
+		kits = data.get("kits") or {}
+		if not isinstance(kits, dict) or not all(isinstance(names, list) and all(isinstance(name, str) for name in names)
+		                                         for names in kits.values()) :
+			raise ValueError(f"{source}: kits must map occupation names to lists of item names.")
+		merchants = data.get("merchants") or []
+		if not isinstance(merchants, list) or not all(isinstance(merchant, dict) and isinstance(merchant.get("name"), str)
+		                                              for merchant in merchants) :
+			raise ValueError(f"{source}: merchants must be a list of objects with a name.")
 		return data | {"name" : data.get("name") or source, "title" : data.get("title") or source.capitalize(),
-		               "starting_currency" : starting, "items" : checked}
+		               "starting_currency" : starting, "items" : checked, "kits" : kits, "merchants" : merchants}
+
+	# ============================================================
+	@staticmethod
+	def apply_kits(guild_id: int, data: dict) -> list[str] :
+		"""Gives the pack's starter kits to the server's occupations of the same name that have no kit yet; items
+		missing from the catalog are left out. @return: lines saying which occupation got what."""
+		from database.transactions.OccupationTransactions import OccupationTransactions
+
+		done = []
+		occupations = {occupation.name.lower() : occupation for occupation in OccupationTransactions().get_all(guild_id)}
+		for name, item_names in (data.get("kits") or {}).items() :
+			occupation = occupations.get(name.lower())
+			if occupation is None or occupation.kit :
+				continue
+			items = [item for item in (GearItemTransactions().find(guild_id, item_name) for item_name in item_names)
+			         if item is not None]
+			if items :
+				OccupationTransactions().update(occupation.id, kit=[item.id for item in items])
+				done.append(f"{occupation.name}: {', '.join(item.name for item in items)}")
+		return done
+
+	# ============================================================
+	@staticmethod
+	def import_merchants(guild_id: int, data: dict) -> tuple[list[str], list[str], list[str]] :
+		"""Adds the pack's merchant templates (without locations, so they trade anywhere until placed) with the stock
+		the catalog has. @return: names added, names skipped (already there), and problems."""
+		from database.transactions.MerchantTransactions import MerchantTransactions
+
+		added, skipped, problems = [], [], []
+		fields = ("description", "markup", "buys", "pays", "services", "lodging_price", "haggle_dc", "restock")
+		for template in data.get("merchants") or [] :
+			name = template["name"].strip()
+			if MerchantTransactions().find(guild_id, name) is not None :
+				skipped.append(name)
+				continue
+			merchant = MerchantTransactions().add(guild_id, name, **{key : template[key] for key in fields
+			                                                         if key in template})
+			missing = []
+			for line in template.get("stock") or [] :
+				item = GearItemTransactions().find(guild_id, line.get("name", ""))
+				if item is None :
+					missing.append(line.get("name", "?"))
+					continue
+				MerchantTransactions().set_stock(merchant.id, item.id, quantity=line.get("quantity"),
+				                                 chance=int(line.get("chance", 100)), price=line.get("price"),
+				                                 in_stock=line.get("quantity"), available=True)
+			if missing :
+				problems.append(f"{name}: not in the catalog yet, so not stocked: {', '.join(missing)}.")
+			added.append(name)
+		return added, skipped, problems
 
 	# ============================================================
 	@staticmethod
