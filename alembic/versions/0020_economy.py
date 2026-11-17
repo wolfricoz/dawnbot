@@ -1,7 +1,7 @@
 """the economy round: factions and standing, jobs and claims, downtime, language study, recipes and crafting projects;
 occupation work settings, faction and salvage data on catalog items, stacks and quality on owned gear
 
-Phase E of design/roleplay-tools.md. Comes before the legacy drop, which stays last.
+Phase E of design/roleplay-tools.md. Comes before the legacy drop (0026_drop_legacy_combat).
 
 Revision ID: 0020_economy
 Revises: 0019_languages_letters

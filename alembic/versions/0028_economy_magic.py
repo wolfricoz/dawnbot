@@ -2,10 +2,10 @@
 
 Phase 5 of design/economy.md: gear_items.enchantments, unidentified_name and crafted_only; character_gear.attuned,
 charges_left, charges_day, extra_charges and identified; bestiary.loot; recipes.enchanting; and the enchant_designs and
-fight_loot tables. Comes before the legacy drop, which stays last.
+fight_loot tables. Comes after the legacy drop (0026_drop_legacy_combat).
 
-Revision ID: 0027_economy_magic
-Revises: 0026_economy_merchants
+Revision ID: 0028_economy_magic
+Revises: 0027_economy_merchants
 Create Date: 2026-11-17 14:00:00.000000
 
 """
@@ -16,8 +16,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0027_economy_magic'
-down_revision: Union[str, None] = '0026_economy_merchants'
+revision: str = '0028_economy_magic'
+down_revision: Union[str, None] = '0027_economy_merchants'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

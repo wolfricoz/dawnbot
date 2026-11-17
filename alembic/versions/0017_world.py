@@ -1,6 +1,6 @@
 """the world: in-world calendar and events, regions, locations, routes, weather and travel; character birthdays
 
-Phase B of design/roleplay-tools.md. Comes before the legacy drop, which stays last.
+Phase B of design/roleplay-tools.md. Comes before the legacy drop (0026_drop_legacy_combat).
 
 Revision ID: 0017_world
 Revises: 0016_checks_tables

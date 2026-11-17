@@ -1,6 +1,6 @@
 """scenes and the chronicle: scenes with their participants, chronicles with their characters, and members' away dates
 
-Phase C of design/roleplay-tools.md. Comes before the legacy drop, which stays last.
+Phase C of design/roleplay-tools.md. Comes before the legacy drop (0026_drop_legacy_combat).
 
 Revision ID: 0018_scenes
 Revises: 0017_world

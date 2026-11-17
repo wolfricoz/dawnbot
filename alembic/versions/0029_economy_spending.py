@@ -1,11 +1,10 @@
 """economy phase 6: starter kits, weapon training and lifestyle
 
 Phase 6 of design/economy.md: occupations.kit and occupations.trains, characters.lifestyle and lifestyle_paid_until,
-and the trainings table. Healers need no new data (injuries stay on the sheet). Comes before the legacy drop, which
-stays last.
+and the trainings table. Healers need no new data (injuries stay on the sheet). Comes after the legacy drop (0026_drop_legacy_combat).
 
-Revision ID: 0028_economy_spending
-Revises: 0027_economy_magic
+Revision ID: 0029_economy_spending
+Revises: 0028_economy_magic
 Create Date: 2026-11-17 18:00:00.000000
 
 """
@@ -16,8 +15,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0028_economy_spending'
-down_revision: Union[str, None] = '0027_economy_magic'
+revision: str = '0029_economy_spending'
+down_revision: Union[str, None] = '0028_economy_magic'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

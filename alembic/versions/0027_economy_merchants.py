@@ -1,11 +1,11 @@
 """economy phase 4: merchants, their stock, haggles, lodgings and stashes
 
 Phase 4 of design/economy.md: merchants (NPC shops at locations), merchant_stock, merchant_haggles, lodgings, and
-character_gear.stash_location_id for stashed items. Comes before the legacy drop, which stays last. A downgrade gives
+character_gear.stash_location_id for stashed items. Comes after the legacy drop (0026_drop_legacy_combat). A downgrade gives
 stashed items back to their owners.
 
-Revision ID: 0026_economy_merchants
-Revises: 0025_economy_trading
+Revision ID: 0027_economy_merchants
+Revises: 0026_drop_legacy_combat
 Create Date: 2026-11-17 10:00:00.000000
 
 """
@@ -16,8 +16,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0026_economy_merchants'
-down_revision: Union[str, None] = '0025_economy_trading'
+revision: str = '0027_economy_merchants'
+down_revision: Union[str, None] = '0026_drop_legacy_combat'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

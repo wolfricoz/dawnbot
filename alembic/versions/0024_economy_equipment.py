@@ -8,7 +8,7 @@ Phase 2 of design/economy.md.
 - Equipped gear gets a slot: worn armor the body, the first equipped shield the off hand, the first other equipped
   weapon the main hand. Other equipped weapons are put away; every owned weapon can still be used in a fight.
 
-Comes before the legacy drop, which stays last. A downgrade turns Broken items back into the broken status.
+Comes before the legacy drop (0026_drop_legacy_combat). A downgrade turns Broken items back into the broken status.
 
 Revision ID: 0024_economy_equipment
 Revises: 0023_economy_money

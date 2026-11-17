@@ -3,7 +3,7 @@
 Phase 1 of design/economy.md. The defaults for starting money (3000 → 1500), post pay (30 → 8 characters per unit)
 and downtime work pay (50 → 125) change, but servers that already exist keep what they have: each server without its
 own STARTING_CURRENCY, CURRENCY_GAIN or WORK_PAY setting gets the old default written as its setting. Servers added
-later use the new defaults. Comes before the legacy drop, which stays last.
+later use the new defaults. Comes before the legacy drop (0026_drop_legacy_combat).
 
 A downgrade drops the rarity column and leaves the written settings, which hold the values those servers used anyway.
 

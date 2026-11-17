@@ -1,7 +1,7 @@
 """economy phase 3: trades between characters and the market
 
 Phase 3 of design/economy.md: the trades table (a trade window's offers and who accepted) and market_listings (items
-offered on the market forum). Comes before the legacy drop, which stays last.
+offered on the market forum). Comes before the legacy drop (0026_drop_legacy_combat).
 
 Revision ID: 0025_economy_trading
 Revises: 0024_economy_equipment

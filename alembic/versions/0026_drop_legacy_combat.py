@@ -4,8 +4,10 @@ THIS DELETES THE OLD ARMOR SETS, WEAPONS, NPCS AND MONSTERS. Nothing reads them 
 gear catalog (gear_items) and NPCs and monsters in the bestiary. Copy anything worth keeping into those first
 with /armory import legacy and /bestiary import legacy. A downgrade brings the tables back empty.
 
-Revision ID: 0029_drop_legacy_combat
-Revises: 0028_economy_spending
+It stays at 0026: real databases applied it under this id, so later migrations come after it and it is never renumbered again.
+
+Revision ID: 0026_drop_legacy_combat
+Revises: 0025_economy_trading
 Create Date: 2026-11-15 20:30:00.000000
 
 """
@@ -16,8 +18,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0029_drop_legacy_combat'
-down_revision: Union[str, None] = '0028_economy_spending'
+revision: str = '0026_drop_legacy_combat'
+down_revision: Union[str, None] = '0025_economy_trading'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

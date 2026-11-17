@@ -40,7 +40,7 @@ choices made while building that the doc left open. Each phase adds its "as buil
 6. **Spending:** healers, training, starter kits, lifestyle.
 7. **Packs:** post-apocalyptic, modern, sci-fi.
 
-Migrations start at `0023`; the legacy combat drop is renumbered so it stays last.
+Migrations start at `0023`. The legacy combat drop is `0026_drop_legacy_combat`: real databases applied it there, so it stays at 0026 and later migrations come after it.
 
 ## 3. Settings
 
@@ -65,7 +65,7 @@ Migrations start at `0023`; the legacy combat drop is renumbered so it stays las
 
 ## 4. Phase 1 as built
 
-Migration `0023_economy_money` (the legacy drop is now `0029_drop_legacy_combat`).
+Migration `0023_economy_money`.
 
 | Topic | As built |
 |---|---|
@@ -78,7 +78,7 @@ Migration `0023_economy_money` (the legacy drop is now `0029_drop_legacy_combat`
 
 ## 5. Phase 2 as built
 
-Migration `0024_economy_equipment` (the legacy drop is now `0029_drop_legacy_combat`).
+Migration `0024_economy_equipment`.
 
 | Topic | As built |
 |---|---|
@@ -95,7 +95,7 @@ Migration `0024_economy_equipment` (the legacy drop is now `0029_drop_legacy_com
 
 ## 6. Phase 3 as built
 
-Migration `0025_economy_trading` (the legacy drop is now `0029_drop_legacy_combat`).
+Migration `0025_economy_trading`.
 
 | Topic | As built |
 |---|---|
@@ -109,7 +109,7 @@ Migration `0025_economy_trading` (the legacy drop is now `0029_drop_legacy_comba
 
 ## 7. Phase 4 as built
 
-Migration `0026_economy_merchants` (the legacy drop is now `0029_drop_legacy_combat`).
+Migration `0027_economy_merchants` (after the legacy drop, `0026_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -124,7 +124,7 @@ Migration `0026_economy_merchants` (the legacy drop is now `0029_drop_legacy_com
 
 ## 8. Phase 5 as built
 
-Migration `0027_economy_magic` (the legacy drop is now `0029_drop_legacy_combat`).
+Migration `0028_economy_magic` (after the legacy drop, `0026_drop_legacy_combat`).
 
 | Topic | As built |
 |---|---|
@@ -139,7 +139,7 @@ Migration `0027_economy_magic` (the legacy drop is now `0029_drop_legacy_combat`
 
 ## 9. Phase 6 as built
 
-Migration `0028_economy_spending` (the legacy drop is now `0029_drop_legacy_combat`). Property stays for later.
+Migration `0029_economy_spending` (after the legacy drop, `0026_drop_legacy_combat`). Property stays for later.
 
 | Topic | As built |
 |---|---|

@@ -3,7 +3,7 @@ weapon/armor proficiency
 
 Replaces the old combat tables (combat_instances, combat_instance_entities, combat_instance_log); fights in progress
 under the old system are lost. The old armors, weapons, npcs and monsters tables are dropped separately by
-0029_drop_legacy_combat.
+0026_drop_legacy_combat.
 
 Revision ID: 0011_combat
 Revises: 0010_global_characters

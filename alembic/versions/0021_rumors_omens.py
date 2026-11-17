@@ -1,6 +1,6 @@
 """rumors and omens: rumors, who heard them, rumor listens and blocks, omen draws
 
-Phase F of design/roleplay-tools.md (characters.omen came in 0019). Comes before the legacy drop, which stays last.
+Phase F of design/roleplay-tools.md (characters.omen came in 0019). Comes before the legacy drop (0026_drop_legacy_combat).
 
 Revision ID: 0021_rumors_omens
 Revises: 0020_economy

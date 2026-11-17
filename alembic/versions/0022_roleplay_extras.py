@@ -1,7 +1,7 @@
 """roleplay extras: occupations can need faction standing, locations belong to a faction, crafting projects can be
 flawed
 
-The pieces of design/roleplay-tools.md built after phases A to F. Comes before the legacy drop, which stays last.
+The pieces of design/roleplay-tools.md built after phases A to F. Comes before the legacy drop (0026_drop_legacy_combat).
 
 Revision ID: 0022_roleplay_extras
 Revises: 0021_rumors_omens
