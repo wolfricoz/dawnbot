@@ -113,6 +113,34 @@ class TestCompose(unittest.TestCase) :
 		self.assertTrue(allowed.everyone)
 		self.assertTrue(allowed.roles)
 
+	def test_an_edit_keeps_the_pings_the_post_has(self) :
+		post = SimpleNamespace(mention_everyone=False, mentions=[SimpleNamespace(id=42)],
+		                       role_mentions=[SimpleNamespace(id=3)])
+		allowed = Compose.kept_mentions(post)
+		self.assertEqual([user.id for user in allowed.users], [42])
+		self.assertEqual([role.id for role in allowed.roles], [3])
+		self.assertFalse(allowed.everyone)
+		self.assertFalse(allowed.replied_user)
+
+
+class TestOwnerPing(unittest.TestCase) :
+
+	def test_a_new_character_post_pings_its_player(self) :
+		from classes.characters.ForumPost import ForumPost
+
+		forum = AsyncMock(spec=discord.ForumChannel)
+		forum.create_thread.return_value = SimpleNamespace(thread=SimpleNamespace(id=900),
+		                                                   message=SimpleNamespace(id=901))
+		character = SimpleNamespace(id=5, uid=USER_ID, name="Aria")
+		with patch.object(ConfigData, "get_channel", AsyncMock(return_value=forum)), 				patch.object(CharacterTransactions, "update") as update :
+			asyncio.run(ForumPost._create(SimpleNamespace(), character, [discord.Embed()], None))
+		arguments = forum.create_thread.call_args.kwargs
+		self.assertEqual(arguments["content"], f"<@{USER_ID}>")
+		self.assertEqual([user.id for user in arguments["allowed_mentions"].users], [USER_ID])
+		self.assertFalse(arguments["allowed_mentions"].roles)
+		self.assertFalse(arguments["allowed_mentions"].everyone)
+		update.assert_called_once_with(5, forum_thread_id=900, forum_message_ids=[901])
+
 
 class TestProxyLog(DatabaseTestCase) :
 

@@ -71,3 +71,15 @@ class Compose :
 		can_mention_everyone = message.channel.permissions_for(message.author).mention_everyone
 		roles = True if can_mention_everyone else [role for role in message.role_mentions if role.mentionable]
 		return discord.AllowedMentions(everyone=can_mention_everyone, users=users, roles=roles, replied_user=False)
+
+	# ============================================================
+	@staticmethod
+	def kept_mentions(message: discord.Message) -> discord.AllowedMentions :
+		"""The mentions an edit of a proxied post may keep: the ones the post already pings.
+
+		Discord reads the mentions of a message again on every edit, so an edit that allows none takes the ping off
+		the post (the reply ping among them) and it no longer shows as a mention. An edit never notifies anyone again,
+		and it cannot ping anyone the post did not already ping.
+		"""
+		return discord.AllowedMentions(everyone=message.mention_everyone, users=list(message.mentions),
+		                               roles=list(message.role_mentions), replied_user=False)

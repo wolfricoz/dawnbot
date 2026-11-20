@@ -64,20 +64,33 @@ class ForumPost :
 
 	# ============================================================
 	@staticmethod
+	def owner_ping(character: Characters) -> tuple[str, discord.AllowedMentions] :
+		"""The line above a new post that pings the player whose character it is, and lets only them be pinged.
+
+		In a forum the mention also adds them to the character's thread. Later edits of the post leave the line as it
+		is and ping no one.
+		"""
+		return f"<@{character.uid}>", discord.AllowedMentions(everyone=False, roles=False,
+		                                                      users=[discord.Object(id=character.uid)])
+
+	# ============================================================
+	@staticmethod
 	async def _create(guild: discord.Guild, character: Characters, embeds: list[discord.Embed],
 	                  avatar: discord.File | None) -> bool :
 		channel = await ConfigData().get_channel(guild, ConfigMapping.CHARACTER, optional=True)
 		if channel is None :
 			return False
 		files = [avatar] if avatar is not None else []
+		content, mentions = ForumPost.owner_ping(character)
 		thread_id = None
 		if isinstance(channel, discord.ForumChannel) :
-			created = await channel.create_thread(name=character.name[:THREAD_NAME_LIMIT], embed=embeds[0], files=files)
+			created = await channel.create_thread(name=character.name[:THREAD_NAME_LIMIT], content=content,
+			                                      embed=embeds[0], files=files, allowed_mentions=mentions)
 			target, first = created.thread, created.message
 			thread_id = target.id
 		else :
 			target = channel
-			first = await channel.send(embed=embeds[0], files=files)
+			first = await channel.send(content, embed=embeds[0], files=files, allowed_mentions=mentions)
 		message_ids = [first.id]
 		for embed in embeds[1 :] :
 			message_ids.append((await target.send(embed=embed)).id)

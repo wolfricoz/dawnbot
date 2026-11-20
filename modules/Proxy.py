@@ -49,7 +49,7 @@ class EditPost(discord.ui.Modal, title="Edit message") :
 		thread = self.message.channel if isinstance(self.message.channel, discord.Thread) else discord.utils.MISSING
 		try :
 			await self.webhook.edit_message(self.message.id, content=content, thread=thread,
-			                                allowed_mentions=discord.AllowedMentions.none())
+			                                allowed_mentions=Compose.kept_mentions(self.message))
 		except discord.HTTPException as e :
 			logging.warning(f"Editing proxied message {self.message.id} failed: {e}")
 			return await interaction.response.send_message("I could not edit that message.", ephemeral=True)
